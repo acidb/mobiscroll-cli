@@ -2,7 +2,6 @@ const utils = require('./utils.js');
 const fs = require('fs');
 const ncp = require('ncp').ncp;
 
-
 module.exports = {
     configAngular: function (packageJson, packageJsonLocation, currDir, jsFileName, cssFileName) {
 

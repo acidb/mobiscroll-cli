@@ -25,7 +25,7 @@ function runCommand(cmd) {
                 printWarning('There was an stderror during executing the following command ' + chalk.gray(cmd) + '. \n\nHere is the warning message: \n\n' + stderr);
             }
             if (error !== null && !skipError) {
-                printError('There was an error during executing the following command ' + chalk.gray(cmd) + '. \n\nHere is the error message:\n\n' + error);
+                printError('Could not run command ' + chalk.gray(cmd) + '. \n\n' + error);
                 reject(error);
             }
             resolve(stdout);
@@ -43,13 +43,13 @@ module.exports = {
                 callback();
             })
             .catch((reason) => {
-                printError('There was an error at Mobiscroll npm installation. Please see the error message for more information: ' + reason)
+                printError('Could not install Mobiscroll.\n\n' + reason)
             });
     },
     writeToFile: function (location, data) {
         fs.writeFile(location, data, function (err) {
             if (err) {
-                printError('There was an error during editing this file: ' + chalk.gray(location) + '. \n\nHere is the error message:\n\n' + err);
+                printError('Could not write to file ' + chalk.gray(location) + '. \n\n' + err);
             }
         });
     },
@@ -63,5 +63,5 @@ module.exports = {
     },
     printFeedback: printFeedback,
     printWarning: printWarning,
-    printError: printError,
+    printError: printError
 }

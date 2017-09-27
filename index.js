@@ -28,7 +28,7 @@ function handleNpmInstall() {
 }
 
 function getApiKey(userName, callback) {
-    http.get('http://api.mobiscrollprod.com/api/getUserApiKey/' + userName, function (res) {
+    http.get('http://api.mobiscroll.com/api/getUserApiKey/' + userName, function (res) {
         var data = '';
         res.on('data', function (chunk) {
             data += chunk;
@@ -82,7 +82,7 @@ function handleConfig(projectType, second) {
                     name: 'email',
                     message: 'What is your Mobiscroll email?'
                 }
-            ]
+            ];
 
             jsFileName = '@mobiscroll/angular';
             cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
@@ -100,7 +100,7 @@ function handleConfig(projectType, second) {
                             });
                         });
                     }).catch(err => {
-                        printError('There was an error during npm login. Please see the error message for more information: ' + err);
+                        printError('npm login failed.\n\n' + err);
                     });
                 }).catch(err => {
                     printError('There was an error during npm login. Please see the error message for more information: ' + err);
@@ -114,7 +114,7 @@ function handleConfig(projectType, second) {
                     });
                 });
             }
-        })
+        });
     } else {
         // if --no-np option is set
         printFeedback('Config without npm install started.');
@@ -127,7 +127,7 @@ function handleConfig(projectType, second) {
         if (fs.existsSync(jsFileLocation)) {
             files = fs.readdirSync(currDir + '\\src\\lib\\mobiscroll\\js');
             jsFileName = files.filter(function (item) {
-                return item.match(/^mobiscroll\..*\.js$/)
+                return item.match(/^mobiscroll\..*\.js$/);
             });
         }
 
@@ -135,7 +135,7 @@ function handleConfig(projectType, second) {
         if (fs.existsSync(cssFileLocation)) {
             files = fs.readdirSync(currDir + '\\src\\lib\\mobiscroll\\css');
             cssFileName = files.filter(function (item) {
-                return item.match(/^mobiscroll\..*\.css$/)
+                return item.match(/^mobiscroll\..*\.css$/);
             });
         }
 
@@ -171,7 +171,7 @@ program
 program
     .command('config [type]')
     .description('Configures your current project with the Mobiscroll resources and dependecies. Installs Mobiscroll resources from npm and includes the necesarry dependecies. (Currently it only supports ionic2/3 projects.)')
-    .action(handleConfig)
+    .action(handleConfig);
 
 program.parse(process.argv);
 

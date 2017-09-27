@@ -18,7 +18,7 @@ module.exports = {
 
                 ncp(__dirname + '\\..\\resources\\ionic\\scripts', currDir + '\\scripts', function (err) {
                     if (err) {
-                        utils.printError('There was an error during copying mobiscroll resources.\n\nHere is the error message:\n\n' + err);
+                        utils.printError('Could not copy mobiscroll resources.\n\n' + err);
                         return;
                     }
                 });
@@ -27,7 +27,7 @@ module.exports = {
             // load css in the index.html
             fs.readFile(currDir + '\\src\\index.html', 'utf8', function (err, data) {
                 if (err) {
-                    utils.printError('There was an error during reading index.html \n\nHere is the error message:\n\n' + err);
+                    utils.printError('Could not read index.html \n\n' + err);
                     return;
                 }
     
