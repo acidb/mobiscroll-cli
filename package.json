@@ -1,13 +1,13 @@
 {
   "name": "mobiscroll-cli",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Mobiscroll command line tool",
   "main": "index.js",
   "scripts": {
     "test": "mobiscroll"
   },
   "bin": {
-    "mobiscroll": "./index.js"
+    "mobiscroll": "./mobiscroll.js"
   },
   "author": "Mobiscroll",
   "license": "ISC",
@@ -16,6 +16,6 @@
     "commander": "^2.11.0",
     "inquirer": "^3.3.0",
     "ncp": "^2.0.0",
-    "npm-cli-login": "git://github.com/petrvecera/npm-cli-login.git"
+    "npm-cli-login": "git://github.com/petrvecera/npm-cli-login.git#43e4211"
   }
 }
