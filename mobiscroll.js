@@ -169,7 +169,7 @@ function handleLogin() {
 function handleLogout() {
     run('npm whoami --registry=https://npm.mobiscroll.com', false, true).then((userName) => {
         if (userName) {
-            run('npm logout --registry=https://npm.mobiscroll.com').then(() => {
+            run('npm logout --registry=https://npm.mobiscroll.com --scope=@mobiscroll').then(() => {
                 printFeedback('Successful logout!\n');
             });
         } else {
