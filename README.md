@@ -1,4 +1,12 @@
-# mobiscroll-cli
-Mobiscroll CLI app
+Mobiscroll CLI
+==============
 
-For local testing please run `npm install -g` in the Mobiscroll CLI's directory.
+Installation
+------------
+
+    npm install -g @mobiscroll/cli
+
+Usage
+-----
+
+    mobiscroll config ionic

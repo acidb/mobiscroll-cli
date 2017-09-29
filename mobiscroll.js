@@ -38,7 +38,37 @@ function getApiKey(userName, callback) {
             callback(data ? JSON.parse(data) : {});
         });
     }).on('error', function (err) {
-        printError('There was an error during getting the users apikey. Please see the error message for more information: ' + err);
+        printError('There was an error during getting the user\'s trial code. Please see the error message for more information: ' + err);
+    });
+}
+
+function login() {
+    // input questions
+    var questions = [{
+            type: 'input',
+            name: 'username',
+            message: 'What is your Mobiscroll user name?'
+        },
+        {
+            type: 'password',
+            name: 'password',
+            message: 'What is your Mobiscroll password?'
+        }
+    ];
+
+    return new Promise((resolve, reject) => {
+        inquirer.prompt(questions).then((answers) => {
+            // Email address is not used by the Mobiscroll NPM registry
+            npmLogin(answers.username, answers.password, 'any@any.com', 'https://npm.mobiscroll.com', '@mobiscroll').then(() => {
+                printFeedback('Successful login!\n');
+                resolve(answers.username);
+            }).catch(err => {
+                printError('npm login failed.\n\n' + err);
+                reject(err);
+            });
+        }).catch(err => {
+            reject(err);
+        });
     });
 }
 
@@ -62,6 +92,11 @@ function handleConfig(projectType) {
         return;
     }
 
+    if (projectType != 'ionic') {
+        printWarning('Currently only Ionic 2/3 projects are supported.\n\nPlease run ' + chalk.gray('mobiscroll --help') + ' for details!');
+        return;
+    }
+
     var cssFileName,
         jsFileName,
         // get the directory where the mobiscroll command was executed
@@ -71,42 +106,20 @@ function handleConfig(projectType) {
 
     // check if package.json is in the current directory
     if (!fs.existsSync(packageJsonLocation)) {
-        printWarning('There is no ' + projectType + ' package.json found in this directorty.\nPlease run this command in the project\'s root directory!');
+        printWarning('There is no ' + projectType + ' package.json in this directorty.\nPlease run this command in the project\'s root directory!');
         return;
     }
 
     if (isNpmSource) {
         printFeedback('Mobiscroll config started.');
         // check if the user is already logged in
-        run('npm whoami --registry=https://npm.mobiscroll.com').then((userName) => {
-            // input questions
-            var questions = [{
-                    type: 'input',
-                    name: 'username',
-                    message: 'What is your Mobiscroll user name?'
-                },
-                {
-                    type: 'password',
-                    name: 'password',
-                    message: 'What is your Mobiscroll password?'
-                }
-            ];
-
+        run('npm whoami --registry=https://npm.mobiscroll.com', false, true).then((userName) => {
             jsFileName = '@mobiscroll/angular';
             cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
 
             if (!userName) {
-                // if not logged in ask for user info
-                inquirer.prompt(questions).then((answers) => {
-                    // Email address is not used by the Mobiscroll NPM registry
-                    npmLogin(answers.username, answers.password, 'any@any.com', 'https://npm.mobiscroll.com', '@mobiscroll').then(() => {
-                        printFeedback('\nSuccessful login!\n');
-                        config(answers.username, packageJsonLocation, currDir, jsFileName, cssFileName)
-                    }).catch(err => {
-                        printError('npm login failed.\n\n' + err);
-                    });
-                }).catch(err => {
-                    printError('There was an error during npm login. Please see the error message for more information: ' + err);
+                login.then((userName) => {
+                    config(userName, packageJsonLocation, currDir, jsFileName, cssFileName);
                 });
             } else {
                 // if the user is logged in install mobiscroll form npm and run ionc config
@@ -149,9 +162,25 @@ function handleConfig(projectType) {
     }
 }
 
+function handleLogin() {
+    login();
+}
+
+function handleLogout() {
+    run('npm whoami --registry=https://npm.mobiscroll.com', false, true).then((userName) => {
+        if (userName) {
+            run('npm logout --registry=https://npm.mobiscroll.com').then(() => {
+                printFeedback('Successful logout!\n');
+            });
+        } else {
+            printFeedback('You are not logged in to the Mobiscroll npm registry!\n');
+        }
+    });
+}
+
 // options
 program
-    .version('0.1.0')
+    .version('0.1.2')
     .usage('[commands] [options]')
     .option('-t, --trial', 'The project will be tuned up with trial configuration.', handleTrial)
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.', handleNpmInstall);
@@ -168,8 +197,18 @@ program
 // config command
 program
     .command('config [type]')
-    .description('Configures your current project with the Mobiscroll resources and dependecies. Installs Mobiscroll resources from npm and includes the necesarry dependecies. (Currently it only supports ionic2/3 projects.)')
+    .description('Configures your current project with the Mobiscroll resources and dependecies. Installs Mobiscroll resources from npm and includes the necessary dependencies. (Currently it only supports Ionic 2/3 projects.)')
     .action(handleConfig);
+
+program
+    .command('login')
+    .description('Logs you in to the Mobiscroll npm registry.')
+    .action(handleLogin);
+
+program
+    .command('logout')
+    .description('Logs you out from the Mobiscroll npm registry.')
+    .action(handleLogout);
 
 program.parse(process.argv);
 

@@ -15,20 +15,18 @@ function printFeedback(text) {
     console.log('\n' + chalk.bold.cyan(text));
 }
 
-function runCommand(cmd) {
-    var skipError = cmd.indexOf('npm whoami') != -1, // if `npm whoami` command passed
-        skipWarning = cmd.indexOf('npm install @mobiscroll') != -1; // if there are node warnings after installation
-
+function runCommand(cmd, skipWarning, skipError) {
     return new Promise((resolve, reject) => {
         exec(cmd, function (error, stdout, stderr) {
-            if (stderr !== null && !skipError && !skipWarning) {
+            if (stderr && !skipError && !skipWarning) {
                 printWarning('There was an stderror during executing the following command ' + chalk.gray(cmd) + '. \n\nHere is the warning message: \n\n' + stderr);
             }
-            if (error !== null && !skipError) {
+            if (error && !skipError) {
                 printError('Could not run command ' + chalk.gray(cmd) + '. \n\n' + error);
                 reject(error);
+            } else {
+                resolve(stdout);
             }
-            resolve(stdout);
         });
     });
 }
@@ -36,7 +34,8 @@ function runCommand(cmd) {
 module.exports = {
     run: runCommand,
     installMobiscroll: function (framework, packageJsonLocation, isTrial, callback) {
-        runCommand('npm install @mobiscroll/' + framework + (isTrial ? '-trial' : '') + ' --save').then(() => {
+        // Skip node warnings
+        runCommand('npm install @mobiscroll/' + framework + (isTrial ? '-trial' : '') + ' --save', true).then(() => {
             printFeedback('Mobiscroll ' + framework + ' installed.');
             callback();
         }).catch((reason) => {
