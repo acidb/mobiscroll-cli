@@ -118,7 +118,7 @@ function handleConfig(projectType) {
             cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
 
             if (!userName) {
-                login.then((userName) => {
+                login().then((userName) => {
                     config(userName, packageJsonLocation, currDir, jsFileName, cssFileName);
                 });
             } else {
@@ -180,7 +180,7 @@ function handleLogout() {
 
 // options
 program
-    .version('0.1.2')
+    .version('0.1.3')
     .usage('[commands] [options]')
     .option('-t, --trial', 'The project will be tuned up with trial configuration.', handleTrial)
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.', handleNpmInstall);
