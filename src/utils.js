@@ -22,7 +22,7 @@ function runCommand(cmd, skipWarning, skipError) {
                 printWarning('There was an stderror during executing the following command ' + chalk.gray(cmd) + '. \n\nHere is the warning message: \n\n' + stderr);
             }
             if (error && !skipError) {
-                printError('Could not run command ' + chalk.gray(cmd) + '. \n\n' + error);
+                //printError('Could not run command ' + chalk.gray(cmd) + '. \n\n' + error);
                 reject(error);
             } else {
                 resolve(stdout);
@@ -33,12 +33,17 @@ function runCommand(cmd, skipWarning, skipError) {
 
 module.exports = {
     run: runCommand,
-    installMobiscroll: function (framework, packageJsonLocation, isTrial, callback) {
+    installMobiscroll: function (framework, userName, isTrial, callback) {
+        var pkgName = framework + (isTrial ? '-trial' : '');
         // Skip node warnings
-        runCommand('npm install @mobiscroll/' + framework + (isTrial ? '-trial' : '') + ' --save', true).then(() => {
-            printFeedback('Mobiscroll ' + framework + ' installed.');
+        printFeedback(`Installing @mobiscroll/${pkgName} npm package...`);
+        runCommand(`npm install @mobiscroll/${pkgName} --save`, true).then(() => {
+            printFeedback(`Mobiscroll for ${framework} installed.`);
             callback();
         }).catch((reason) => {
+            if (/403 Forbidden/.test(reason)) {
+                reason = `User ${userName} has no access to package @mobiscroll/${pkgName}.`;
+            }
             printError('Could not install Mobiscroll.\n\n' + reason)
         });
     },

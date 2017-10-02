@@ -80,7 +80,7 @@ function config(userName, packageJsonLocation, currDir, jsFileName, cssFileName)
             jsFileName += '-trial';
         }
         // Install mobiscroll npm package
-        utils.installMobiscroll('angular', packageJsonLocation, useTrial, function () {
+        utils.installMobiscroll('angular', userName, useTrial, function () {
             configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
         });
     });
@@ -123,7 +123,7 @@ function handleConfig(projectType) {
                 });
             } else {
                 // if the user is logged in install mobiscroll form npm and run ionc config
-                config(userName, packageJsonLocation, currDir, jsFileName, cssFileName)
+                config(userName.trim(), packageJsonLocation, currDir, jsFileName, cssFileName)
             }
         });
     } else {
@@ -180,7 +180,7 @@ function handleLogout() {
 
 // options
 program
-    .version('0.1.3')
+    .version('0.1.4')
     .usage('[commands] [options]')
     .option('-t, --trial', 'The project will be tuned up with trial configuration.', handleTrial)
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.', handleNpmInstall);
