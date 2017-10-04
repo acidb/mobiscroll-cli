@@ -6,7 +6,7 @@ const fs = require('fs');
 const npmLogin = require('npm-cli-login');
 const utils = require('./src/utils.js');
 const configIonic = require('./src/configIonic.js').configIonic;
-//const configAngular = require('./src/configAngular.js').configAngular;
+const configAngular = require('./src/configAngular.js').configAngular;
 const chalk = require('chalk');
 const http = require('http');
 
@@ -42,6 +42,17 @@ function getApiKey(userName, callback) {
     });
 }
 
+function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey) {
+    switch (projectType) {
+        case 'angular':
+            configAngular(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey);
+            break;
+        case 'ionic':
+            configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey);
+            break;
+    }
+}
+
 function login() {
     // input questions
     var questions = [{
@@ -60,6 +71,7 @@ function login() {
         inquirer.prompt(questions).then((answers) => {
             // Email address is not used by the Mobiscroll NPM registry
             npmLogin(answers.username, answers.password, 'any@any.com', 'https://npm.mobiscroll.com', '@mobiscroll').then(() => {
+                console.log(`  Logged in as ${answers.username}`);
                 printFeedback('Successful login!\n');
                 resolve(answers.username);
             }).catch(err => {
@@ -72,28 +84,14 @@ function login() {
     });
 }
 
-function config(userName, packageJsonLocation, currDir, jsFileName, cssFileName) {
-    // if returns an api key it is a trial user
-    getApiKey(userName, function (data) {
-        var useTrial = !data.HasLicense || isTrial;
-        if (useTrial) {
-            jsFileName += '-trial';
-        }
-        // Install mobiscroll npm package
-        utils.installMobiscroll('angular', userName, useTrial, function () {
-            configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
-        });
-    });
-}
-
 function handleConfig(projectType) {
     if (!projectType) {
-        printWarning('No project type specified. Please specify the project type. [ionic] \n\nPlease run ' + chalk.gray('mobiscroll --help') + ' to see which projects are supported.');
+        printWarning('No project type specified. Please specify the project type. [ionic, angular] \n\nPlease run ' + chalk.gray('mobiscroll --help') + ' to see which projects are supported.');
         return;
     }
 
-    if (projectType != 'ionic') {
-        printWarning('Currently only Ionic 2/3 projects are supported.\n\nPlease run ' + chalk.gray('mobiscroll --help') + ' for details!');
+    if (projectType != 'ionic' && projectType != 'angular') {
+        printWarning('Currently only Angular 2+ and Ionic 2+ projects are supported.\n\nPlease run ' + chalk.gray('mobiscroll --help') + ' for details!');
         return;
     }
 
@@ -106,30 +104,39 @@ function handleConfig(projectType) {
 
     // check if package.json is in the current directory
     if (!fs.existsSync(packageJsonLocation)) {
-        printWarning('There is no ' + projectType + ' package.json in this directorty.\nPlease run this command in the project\'s root directory!');
+        printWarning('There is no package.json in this directorty.\nPlease run this command in the project\'s root directory!');
         return;
     }
 
+    printFeedback('Mobiscroll configuration started.');
+
     if (isNpmSource) {
-        printFeedback('Mobiscroll config started.');
+        printFeedback('Checking logged in status...')
         // check if the user is already logged in
         run('npm whoami --registry=https://npm.mobiscroll.com', false, true).then((userName) => {
-            jsFileName = '@mobiscroll/angular';
-            cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
-
-            if (!userName) {
-                login().then((userName) => {
-                    config(userName, packageJsonLocation, currDir, jsFileName, cssFileName);
-                });
-            } else {
-                // if the user is logged in install mobiscroll form npm and run ionc config
-                config(userName.trim(), packageJsonLocation, currDir, jsFileName, cssFileName)
+            if (userName) {
+                userName = userName.trim();
+                console.log(`  Logged in as ${userName}`);
+                return userName;
             }
+            console.log(`  Logging in to the Mobiscroll NPM registry...`);
+            return login();
+        }).then((userName) => {
+            // if returns an api key it is a trial user
+            getApiKey(userName, function (data) {
+                var useTrial = !data.HasLicense || isTrial;
+
+                jsFileName = `@mobiscroll/angular${useTrial ? '-trial' : ''}`;
+                cssFileName = `../node_modules/@mobiscroll/angular${useTrial ? '-trial' : ''}/dist/css/mobiscroll.min.css`;
+
+                // Install mobiscroll npm package
+                utils.installMobiscroll('angular', userName, useTrial, function () {
+                    config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
+                });
+            });
         });
     } else {
         // if --no-npm option is set
-        printFeedback('Config without npm install started.');
-
         var files,
             jsFileLocation = currDir + '/src/lib/mobiscroll/js',
             cssFileLocation = currDir + '/src/lib/mobiscroll/css';
@@ -158,7 +165,7 @@ function handleConfig(projectType) {
         jsFileName = '../lib/mobiscroll/js/' + jsFileName[0];
         cssFileName = 'lib/mobiscroll/css/' + cssFileName[0];
 
-        configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
+        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
     }
 }
 
@@ -180,7 +187,7 @@ function handleLogout() {
 
 // options
 program
-    .version('0.1.4')
+    .version('0.2.0')
     .usage('[commands] [options]')
     .option('-t, --trial', 'The project will be tuned up with trial configuration.', handleTrial)
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.', handleNpmInstall);
@@ -197,7 +204,7 @@ program
 // config command
 program
     .command('config [type]')
-    .description('Configures your current project with the Mobiscroll resources and dependecies. Installs Mobiscroll resources from npm and includes the necessary dependencies. (Currently it only supports Ionic 2/3 projects.)')
+    .description('Configures your current project with the Mobiscroll resources and dependecies. Installs Mobiscroll resources from npm and includes the necessary dependencies. (Currently it only supports Angular 2+ and Ionic 2+ projects.)')
     .action(handleConfig);
 
 program

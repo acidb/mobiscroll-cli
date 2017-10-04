@@ -16,6 +16,7 @@ function printFeedback(text) {
 }
 
 function runCommand(cmd, skipWarning, skipError) {
+    console.log(`${chalk.green('>')} ${cmd}`);
     return new Promise((resolve, reject) => {
         exec(cmd, function (error, stdout, stderr) {
             if (stderr && !skipError && !skipWarning) {
@@ -31,12 +32,29 @@ function runCommand(cmd, skipWarning, skipError) {
     });
 }
 
+function writeToFile(location, data) {
+    fs.writeFile(location, data, function (err) {
+        if (err) {
+            printError('Could not write to file ' + chalk.gray(location) + '. \n\n' + err);
+        }
+    });
+}
+
+function importModule(moduleName, location, data, mobiscrollGlobal) {
+    if (data.indexOf(moduleName) == -1) { // check if module is not loaded
+        data = "import { " + moduleName + (mobiscrollGlobal ? ", mobiscroll" : '') + " } from '" + location + "';\n" + data;
+        data = data.replace('imports: [', 'imports: [ \n' + '    ' + moduleName + ',');
+    }
+    return data;
+}
+
 module.exports = {
     run: runCommand,
+    writeToFile: writeToFile,
     installMobiscroll: function (framework, userName, isTrial, callback) {
         var pkgName = framework + (isTrial ? '-trial' : '');
         // Skip node warnings
-        printFeedback(`Installing @mobiscroll/${pkgName} npm package...`);
+        printFeedback(`Installing packages via npm...`);
         runCommand(`npm install @mobiscroll/${pkgName} --save`, true).then(() => {
             printFeedback(`Mobiscroll for ${framework} installed.`);
             callback();
@@ -47,20 +65,33 @@ module.exports = {
             printError('Could not install Mobiscroll.\n\n' + reason)
         });
     },
-    writeToFile: function (location, data) {
-        fs.writeFile(location, data, function (err) {
+    importModules: function (currDir, jsFileName, apiKey) {
+        console.log(`  Adding module loading scripts to ${chalk.grey('src/app/app.module.ts')}`);
+        // Modify app.module.ts add necesarry modules
+        fs.readFile(currDir + '/src/app/app.module.ts', 'utf8', function (err, data) {
             if (err) {
-                printError('Could not write to file ' + chalk.gray(location) + '. \n\n' + err);
+                printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
+                return;
             }
-        });
-    },
-    addAngularModuleImport: function (moduleName, location, data, mobiscrollGlobal) {
-        if (data.indexOf(moduleName) == -1) { // check if module is not loaded
-            data = "import { " + moduleName + (mobiscrollGlobal ? ", mobiscroll" : '') + " } from '" + location + "';\n" + data;
-            data = data.replace('imports: [', 'imports: [ \n' + '    ' + moduleName + ',');
-        }
 
-        return data;
+            // Remove previous module load
+            data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
+            data = data.replace(/[ \t]*MbscModule,[ \t\r]*\n/, '');
+
+            // Add angular module imports which are needed for mobscroll
+            data = importModule('MbscModule', jsFileName, data, apiKey);
+            data = importModule('FormsModule', '@angular/forms', data);
+
+            // Remove previous api key if present
+            data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
+
+            // Inject api key if trial
+            if (apiKey) {
+                data = data.replace('@NgModule', 'mobiscroll.apiKey = \'' + apiKey + '\';\n\n@NgModule');
+            }
+
+            writeToFile(currDir + '/src/app/app.module.ts', data);
+        });
     },
     printFeedback: printFeedback,
     printWarning: printWarning,

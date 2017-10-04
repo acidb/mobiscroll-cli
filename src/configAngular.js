@@ -1,35 +1,38 @@
 const utils = require('./utils.js');
 const fs = require('fs');
-const ncp = require('ncp').ncp;
+const chalk = require('chalk');
 
 module.exports = {
-    configAngular: function (packageJson, packageJsonLocation, currDir, jsFileName, cssFileName) {
+    configAngular: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey) {
+        utils.printFeedback('Configuring Angular app...');
 
-        // modify app.module.ts with 
-        fs.readFile(currDir + '\\src\\app\\app.module.ts', 'utf8', function (err, data) {
-            if (err) {
-                utils.printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
-                return;
-            }
+        // Modify app.module.ts add necesarry modules
+        utils.importModules(currDir, jsFileName, apiKey);
 
-            // add angular module imports which are needed for mobscroll
-            data = utils.addAngularModuleImport('MbscModule', '../lib/mobiscroll/js/' + jsFileName + '.js', data);
-            data = utils.addAngularModuleImport('FormsModule', '@angular/forms', data);
+        console.log(`  Adding stylesheet to ${chalk.grey('angular-cli.json')}`);
 
-            utils.writeToFile(currDir + '\\src\\app\\app.module.ts', data);
-        });
+        if (fs.existsSync(currDir + '/.angular-cli.json')) {
+            // Modify .angular-cli.json to load styles
+            fs.readFile(currDir + '/.angular-cli.json', 'utf8', function (err, data) {
+                if (err) {
+                    utils.printError('There was an error during reading angular-cli.json. \n\nHere is the error message:\n\n' + err);
+                    return;
+                }
 
-        // modify .angular-cli.json with 
-        fs.readFile(currDir + '\\.angular-cli.json', 'utf8', function (err, data) {
-            if (err) {
-                utils.printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
-                return;
-            }
+                // Remove old configuration
+                data = data.replace(/"\.\.\/node_modules\/@mobiscroll\/angular(?:-trial)?\/dist\/css\/mobiscroll\.min\.css",\s*/, '');
+                data = data.replace(/"lib\/mobiscroll\/css\/mobiscroll\..*\.css",\s*/, '');
 
-            // add angular module imports which are needed for mobscroll
-            data = data.replace('"styles": ["', '"styles": [\n        "./node_modules/@mobiscroll/angular/dist/css/*",');
+                // add angular module imports which are needed for mobscroll
+                data = data.replace('"styles": [', `"styles": [\n        "${cssFileName}",`);
 
-            utils.writeToFile(currDir + '\\.angular-cli.json', data);
-        });
+                utils.writeToFile(currDir + '/.angular-cli.json', data);
+
+                utils.printFeedback('Mobiscroll configuration ready.');
+            });
+        } else {
+            utils.printWarning(`The file ${chalk.grey('angular-cli.json')} could not be found. If this is not an Angular CLI app, make sure to load ${chalk.grey(cssFileName)} into your app.`)
+            utils.printFeedback('Mobiscroll configuration ready.');
+        }
     }
 }

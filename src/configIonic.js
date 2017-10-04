@@ -1,16 +1,23 @@
 const utils = require('./utils.js');
 const fs = require('fs');
 const ncp = require('ncp').ncp;
+const chalk = require('chalk');
 
 module.exports = {
     configIonic: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey) {
+        utils.printFeedback('Configuring Ionic app...');
+
         var ionicPackage = require(packageJsonLocation);
 
         // if it is an ionic project(has ionic-angular package between dependecies)
         if (ionicPackage && ionicPackage.dependencies['ionic-angular']) {
 
+            console.log(`  Adding stylesheet copy script to ${chalk.grey('package.json')}`);
+
             // Add ionic_copy script to package.json and copy the scrips folder
             ionicPackage.config = ionicPackage.config || {};
+
+            console.log(`  Copying scripts`);
 
             ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css' + (isNpmSource ? '-npm' : '') + (apiKey ? '-trial' : '') + '.js';
             utils.writeToFile(packageJsonLocation, JSON.stringify(ionicPackage, null, 4));
@@ -22,11 +29,17 @@ module.exports = {
                 }
             });
 
+            console.log(`  Loading stylesheet in ${chalk.grey('src/index.html')}`);
+
             // Load css in the index.html
             fs.readFile(currDir + '/src/index.html', 'utf8', function (err, data) {
                 if (err) {
                     utils.printError('Could not read index.html \n\n' + err);
                     return;
+                }
+
+                if (isNpmSource) {
+                    cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
                 }
 
                 if (data.indexOf(cssFileName) == -1) {
@@ -39,32 +52,9 @@ module.exports = {
             });
 
             // Modify app.module.ts add necesarry modules
-            fs.readFile(currDir + '/src/app/app.module.ts', 'utf8', function (err, data) {
-                if (err) {
-                    utils.printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
-                    return;
-                }
+            utils.importModules(currDir, jsFileName, apiKey);
 
-                // Remove previous module load
-                data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
-                data = data.replace(/[ \t]*MbscModule,[ \t\r]*\n/, '');
-
-                // Add angular module imports which are needed for mobscroll
-                data = utils.addAngularModuleImport('MbscModule', jsFileName, data, apiKey);
-                data = utils.addAngularModuleImport('FormsModule', '@angular/forms', data);
-
-                // Remove previous api key if present
-                data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
-
-                // Inject api key if trial
-                if (apiKey) {
-                    data = data.replace('@NgModule', 'mobiscroll.apiKey = \'' + apiKey + '\';\n\n@NgModule');
-                }
-
-                utils.writeToFile(currDir + '/src/app/app.module.ts', data);
-            });
-
-            utils.printFeedback('Mobiscroll config ionic finished!');
+            utils.printFeedback('Mobiscroll configuration ready!');
         }
     }
 }
