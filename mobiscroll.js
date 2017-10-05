@@ -58,12 +58,12 @@ function login() {
     var questions = [{
             type: 'input',
             name: 'username',
-            message: 'What is your Mobiscroll user name?'
+            message: 'Mobiscroll email or user name:'
         },
         {
             type: 'password',
             name: 'password',
-            message: 'What is your Mobiscroll password?'
+            message: 'Mobiscroll password:'
         }
     ];
 
@@ -187,7 +187,7 @@ function handleLogout() {
 
 // options
 program
-    .version('0.2.0')
+    .version('0.2.1')
     .usage('[commands] [options]')
     .option('-t, --trial', 'The project will be tuned up with trial configuration.', handleTrial)
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.', handleNpmInstall);
