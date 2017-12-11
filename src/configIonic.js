@@ -17,6 +17,14 @@ module.exports = {
             // Add ionic_copy script to package.json and copy the scrips folder
             ionicPackage.config = ionicPackage.config || {};
 
+            if (!apiKey && ionicPackage.dependencies['@mobiscroll/angular-trial']) {
+                // Remove mobiscroll-trial package form package.json if the licenced version is installed
+                delete ionicPackage.dependencies['@mobiscroll/angular-trial'];
+            } else if (apiKey && ionicPackage.dependencies['@mobiscroll/angular']) {
+                // Remove mobiscroll package form package.json if the trial version is installed
+                delete ionicPackage.dependencies['@mobiscroll/angular'];
+            }
+
             console.log(`  Copying scripts`);
 
             ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css' + (isNpmSource ? '-npm' : '') + (apiKey ? '-trial' : '') + '.js';
