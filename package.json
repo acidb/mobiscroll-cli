@@ -27,6 +27,6 @@
     "commander": "^2.11.0",
     "inquirer": "^3.3.0",
     "ncp": "^2.0.0",
-    "npm-cli-login": "git://github.com/petrvecera/npm-cli-login.git#43e4211"
+    "npm-registry-client": "7.0.9"
   }
 }
