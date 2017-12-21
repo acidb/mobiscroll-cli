@@ -7,7 +7,6 @@ const npmLogin = require('./src/npm-login/');
 const utils = require('./src/utils.js');
 const configIonic = require('./src/configIonic.js').configIonic;
 const configAngular = require('./src/configAngular.js').configAngular;
-const configIonicPro = require('./src/configIonicPro.js').configIonicPro;
 const chalk = require('chalk');
 const http = require('http');
 
@@ -54,7 +53,8 @@ function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileNa
             configAngular(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey);
             break;
         case 'ionic':
-            configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy);
+        case 'ionic-pro':
+            configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro');
             break;
     }
 }
@@ -135,12 +135,7 @@ function handleConfig(projectType) {
 
                 // Install mobiscroll npm package
                 utils.installMobiscroll('angular', userName, useTrial, function () {
-                    if (projectType == 'ionic-pro') {
-                        configIonicPro(currDir, packageJsonLocation, (useTrial ? data.TrialCode : ''));
-                        return;
-                    } else {
-                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
-                    }
+                    config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
                 });
             });
         });

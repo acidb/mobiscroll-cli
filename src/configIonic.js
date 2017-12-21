@@ -2,9 +2,40 @@ const utils = require('./utils.js');
 const fs = require('fs');
 const ncp = require('ncp').ncp;
 const chalk = require('chalk');
+const path = require('path');
+
+function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
+    var mobisrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular' + (trial ? '-trial' : ''));
+
+    utils.run('cd ' + mobisrollNpmFolder + ' && npm pack').then((arg) => {
+        fs.readdir(mobisrollNpmFolder, function (err, files) {
+            var mbscPackage = files.filter((f) => {
+                return f.includes('mobiscroll-angular');
+            });
+
+            if (mbscPackage.length) {
+
+                ncp(path.join(mobisrollNpmFolder, mbscPackage[0]), path.join(currDir, mbscPackage[0]), function (err) {
+                    if (err) {
+                        utils.printError('Could not copy generated mobiscroll package.\n\n' + err);
+                        return;
+                    }
+
+                    console.log('\n' + chalk.green('>') + ' ' + mbscPackage[0] + ' copied to the root folder.\n');
+                    packageJson.dependencies['@mobiscroll/angular' + (trial ? '-trial' : '')] = "file:./" + mbscPackage[0];
+                    utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4));
+                    console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll package form the generated tzg file. `);
+                    utils.printFeedback(`Mobiscroll ionic-pro configuration ready!`);
+                });
+            }
+
+        });
+
+    });
+}
 
 module.exports = {
-    configIonic: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy) {
+    configIonic: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro) {
         utils.printFeedback('Configuring Ionic app...');
 
         var ionicPackage = require(packageJsonLocation);
@@ -60,11 +91,21 @@ module.exports = {
             });
 
             if (isLazy) {
-                utils.printFeedback(`Lazy mode: skipping MbscModule module inejction to the app.module.ts file.`);
+                utils.printFeedback(`Lazy mode: skipping MbscModule injection from app.module.ts`);
+            } else {
+                // Modify app.module.ts add necesarry modules
+                utils.importModules(currDir, jsFileName, apiKey);
+            }
 
-                console.log(`\nTo use Mobiscroll components on ionic lazy loaded pages you will have to include manually the MbscModule and the FormsModule modules into the specific page's module.ts file.\n\nExample:\n`);
+            if (ionicPro) {
+                configIonicPro(currDir, ionicPackage, packageJsonLocation, apiKey);
+            } else {
+                utils.printFeedback('Mobiscroll configuration ready!');
+            }
 
-                console.log("    import { MbscModule } from '@mobiscroll/angular'");
+            if (isLazy) {
+                console.log(`\nIf you are using ionic lazy loading you'll have to manually include the MbscModule and FormsModule into the page's module.ts file where you'll be using Mobiscroll.\n\nExample:\n`);
+                console.log("    import { MbscModule } from '@mobiscroll/angular" + (apiKey ? '-trial' : '') + "'");
                 console.log("    import { FormsModule } from '@angular/forms';\n");
                 console.log("    @NgModule({");
                 console.log("        imports: [");
@@ -74,13 +115,7 @@ module.exports = {
                 console.log("            FormsModule // add the forms module");
                 console.log("        ],");
                 console.log("        declarations: // ...");
-
-            } else {
-                // Modify app.module.ts add necesarry modules
-                utils.importModules(currDir, jsFileName, apiKey);
             }
-
-            utils.printFeedback('Mobiscroll configuration ready!');
         }
     }
 }
