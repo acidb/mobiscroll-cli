@@ -55,7 +55,7 @@ module.exports = {
         var pkgName = framework + (isTrial ? '-trial' : '');
         // Skip node warnings
         printFeedback(`Installing packages via npm...`);
-        runCommand(`npm install @mobiscroll/${pkgName} --save`, true).then(() => {
+        runCommand(`npm install @mobiscroll/${pkgName}@latest --save`, true).then(() => {
             printFeedback(`Mobiscroll for ${framework} installed.`);
             callback();
         }).catch((reason) => {

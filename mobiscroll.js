@@ -7,11 +7,13 @@ const npmLogin = require('./src/npm-login/');
 const utils = require('./src/utils.js');
 const configIonic = require('./src/configIonic.js').configIonic;
 const configAngular = require('./src/configAngular.js').configAngular;
+const configIonicPro = require('./src/configIonicPro.js').configIonicPro;
 const chalk = require('chalk');
 const http = require('http');
 
 var isNpmSource = true;
 var isTrial = false;
+var isLazy = false;
 var run = utils.run;
 var printFeedback = utils.printFeedback;
 var printError = utils.printError;
@@ -25,6 +27,10 @@ function handleTrial() {
 
 function handleNpmInstall() {
     isNpmSource = false;
+}
+
+function handleLazy() {
+    isLazy = true;
 }
 
 function getApiKey(userName, callback) {
@@ -48,7 +54,7 @@ function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileNa
             configAngular(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey);
             break;
         case 'ionic':
-            configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey);
+            configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy);
             break;
     }
 }
@@ -56,16 +62,14 @@ function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileNa
 function login() {
     // input questions
     var questions = [{
-            type: 'input',
-            name: 'username',
-            message: 'Mobiscroll email or user name:'
-        },
-        {
-            type: 'password',
-            name: 'password',
-            message: 'Mobiscroll password:'
-        }
-    ];
+        type: 'input',
+        name: 'username',
+        message: 'Mobiscroll email or user name:'
+    }, {
+        type: 'password',
+        name: 'password',
+        message: 'Mobiscroll password:'
+    }];
 
     return new Promise((resolve, reject) => {
         inquirer.prompt(questions).then((answers) => {
@@ -90,7 +94,7 @@ function handleConfig(projectType) {
         return;
     }
 
-    if (projectType != 'ionic' && projectType != 'angular') {
+    if (projectType != 'ionic' && projectType != 'angular' && projectType != 'ionic-pro') {
         printWarning('Currently only Angular 2+ and Ionic 2+ projects are supported.\n\nPlease run ' + chalk.gray('mobiscroll --help') + ' for details!');
         return;
     }
@@ -111,7 +115,7 @@ function handleConfig(projectType) {
     printFeedback('Mobiscroll configuration started.');
 
     if (isNpmSource) {
-        printFeedback('Checking logged in status...')
+        printFeedback('Checking logged in status...');
         // check if the user is already logged in
         run('npm whoami --registry=https://npm.mobiscroll.com', false, true).then((userName) => {
             if (userName) {
@@ -131,7 +135,12 @@ function handleConfig(projectType) {
 
                 // Install mobiscroll npm package
                 utils.installMobiscroll('angular', userName, useTrial, function () {
-                    config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
+                    if (projectType == 'ionic-pro') {
+                        configIonicPro(currDir, packageJsonLocation, (useTrial ? data.TrialCode : ''));
+                        return;
+                    } else {
+                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
+                    }
                 });
             });
         });
@@ -187,9 +196,10 @@ function handleLogout() {
 
 // options
 program
-    .version('0.2.1')
+    .version('0.3.0')
     .usage('[commands] [options]')
     .option('-t, --trial', 'The project will be tuned up with trial configuration.', handleTrial)
+    .option('-l, --lazy', '.', handleLazy)
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.', handleNpmInstall);
 
 // commands

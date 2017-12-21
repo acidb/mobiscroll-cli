@@ -4,7 +4,7 @@ const ncp = require('ncp').ncp;
 const chalk = require('chalk');
 
 module.exports = {
-    configIonic: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey) {
+    configIonic: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy) {
         utils.printFeedback('Configuring Ionic app...');
 
         var ionicPackage = require(packageJsonLocation);
@@ -59,8 +59,26 @@ module.exports = {
                 }
             });
 
-            // Modify app.module.ts add necesarry modules
-            utils.importModules(currDir, jsFileName, apiKey);
+            if (isLazy) {
+                utils.printFeedback(`Lazy mode: skipping MbscModule module inejction to the app.module.ts file.`);
+
+                console.log(`\nTo use Mobiscroll components on ionic lazy loaded pages you will have to include manually the MbscModule and the FormsModule modules into the specific page's module.ts file.\n\nExample:\n`);
+
+                console.log("    import { MbscModule } from '@mobiscroll/angular'");
+                console.log("    import { FormsModule } from '@angular/forms';\n");
+                console.log("    @NgModule({");
+                console.log("        imports: [");
+                console.log("            // leave the other imports as they are");
+                console.log("            // ... ");
+                console.log("            MbscModule, // add the mobiscroll module");
+                console.log("            FormsModule // add the forms module");
+                console.log("        ],");
+                console.log("        declarations: // ...");
+
+            } else {
+                // Modify app.module.ts add necesarry modules
+                utils.importModules(currDir, jsFileName, apiKey);
+            }
 
             utils.printFeedback('Mobiscroll configuration ready!');
         }
