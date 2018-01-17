@@ -34,9 +34,10 @@ function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
                     // set the current durectory back to the default
                     process.chdir(currDir);
                     // run npm install
-                    utils.run('npm install');
+                    utils.run('npm install').then(() => {
+                        utils.printFeedback(`Mobiscroll ionic-pro configuration ready!`);
+                    });
 
-                    utils.printFeedback(`Mobiscroll ionic-pro configuration ready!`);
                 });
             }
 

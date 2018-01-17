@@ -9,6 +9,7 @@ const configIonic = require('./src/configIonic.js').configIonic;
 const configAngular = require('./src/configAngular.js').configAngular;
 const chalk = require('chalk');
 const http = require('http');
+const path = require('path');
 
 var isNpmSource = true;
 var isTrial = false;
@@ -101,9 +102,8 @@ function handleConfig(projectType) {
 
     var cssFileName,
         jsFileName,
-        // get the directory where the mobiscroll command was executed
-        currDir = process.cwd(),
-        packageJsonLocation = currDir + '/package.json';
+        currDir = process.cwd(), // get the directory where the mobiscroll command was executed
+        packageJsonLocation = path.resolve(process.cwd(), 'package.json');
 
 
     // check if package.json is in the current directory
@@ -193,7 +193,7 @@ function configHelp() {
     console.log('\n  Types:\n');
     console.log('    angular        Use it for configuring Angular 2+ applications.\n');
     console.log('    ionic          Use it for configuring Ionic 2+ applications.\n');
-    console.log('    ionic-pro      Use it for configuring Ionic 2+ applications. Use this if you are using Ionic pro. \n');
+    console.log('    ionic-pro      Use it for configuring Ionic 2+ applications. Use this command if you are using Ionic pro. \n');
 }
 
 // options
