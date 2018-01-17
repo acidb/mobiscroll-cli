@@ -189,6 +189,13 @@ function handleLogout() {
     });
 }
 
+function configHelp() {
+    console.log('\n  Types:\n');
+    console.log('    angular        Use it for configuring Angular 2+ applications.\n');
+    console.log('    ionic          Use it for configuring Ionic 2+ applications.\n');
+    console.log('    ionic-pro      Use it for configuring Ionic 2+ applications. Use this if you are using Ionic pro. \n');
+}
+
 // options
 program
     .version('0.3.0')
@@ -208,9 +215,10 @@ program
 
 // config command
 program
-    .command('config [type]')
-    .description('Configures your current project with the Mobiscroll resources and dependecies. Installs Mobiscroll resources from npm and includes the necessary dependencies. (Currently it only supports Angular 2+ and Ionic 2+ projects.)')
-    .action(handleConfig);
+    .command('config [types]')
+    .description('Configures your current project with the Mobiscroll resources and dependecies. Installs Mobiscroll resources from npm and includes the necessary dependencies. (types: angular, ionic, ionic-pro)')
+    .action(handleConfig)
+    .on('--help', configHelp);
 
 program
     .command('login')

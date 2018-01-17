@@ -7,14 +7,19 @@ const path = require('path');
 function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
     var mobisrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular' + (trial ? '-trial' : ''));
 
-    utils.run('cd ' + mobisrollNpmFolder + ' && npm pack').then((arg) => {
+    process.chdir(mobisrollNpmFolder); // change directory to node modules folder
+
+    console.log(`\n${chalk.green('>')} changed current directory to node_modules/@mobiscroll/angular \n`);
+
+    utils.run('npm pack').then((arg) => { // run npm pack which will generate the mobiscroll package
         fs.readdir(mobisrollNpmFolder, function (err, files) {
             var mbscPackage = files.filter((f) => {
+                // return the full name of the generated package
                 return f.includes('mobiscroll-angular');
             });
 
             if (mbscPackage.length) {
-
+                // copy the generated package to the rootfolder
                 ncp(path.join(mobisrollNpmFolder, mbscPackage[0]), path.join(currDir, mbscPackage[0]), function (err) {
                     if (err) {
                         utils.printError('Could not copy generated mobiscroll package.\n\n' + err);
@@ -24,7 +29,13 @@ function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
                     console.log('\n' + chalk.green('>') + ' ' + mbscPackage[0] + ' copied to the root folder.\n');
                     packageJson.dependencies['@mobiscroll/angular' + (trial ? '-trial' : '')] = "file:./" + mbscPackage[0];
                     utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4));
-                    console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll package form the generated tzg file. `);
+                    console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll form the generated tzg file. \n`);
+
+                    // set the current durectory back to the default
+                    process.chdir(currDir);
+                    // run npm install
+                    utils.run('npm install');
+
                     utils.printFeedback(`Mobiscroll ionic-pro configuration ready!`);
                 });
             }
@@ -33,7 +44,6 @@ function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
 
     });
 }
-
 module.exports = {
     configIonic: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro) {
         utils.printFeedback('Configuring Ionic app...');
