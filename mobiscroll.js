@@ -48,14 +48,56 @@ function getApiKey(userName, callback) {
     });
 }
 
+function getProjectFramework(packageLocation) {
+    var framework,
+        packageJson = require(packageLocation);
+
+    if (packageJson.dependencies.vue) {
+        return "vue";
+    }
+
+    if (packageJson.dependencies.react) {
+        return "react";
+    }
+
+    if (packageJson.dependencies["@angular/core"]) {
+        return "angular";
+    }
+
+    return;
+}
+
 function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey) {
     switch (projectType) {
         case 'angular':
             configAngular(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey);
             break;
+        case 'angularjs':
+
+            break;
         case 'ionic':
         case 'ionic-pro':
             configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro');
+            break;
+        case 'react':
+            //console.log('mobiscroll React version is installed');
+            console.log('\nYou can import Mobiscroll to your react component like:\n');
+
+            console.log('import mobiscroll from "@mobiscroll/react' + (apiKey ? '-trial' : '') + '";');
+            console.log('import "@mobiscroll/react' + (apiKey ? '-trial' : '') + '/dist/css/mobiscroll.min.css";\n');
+
+            break;
+        case 'jquery':
+        case 'javascript':
+            var fr = getProjectFramework(packageJsonLocation);
+            console.log('\n itt finished vue :' + fr + '  \n ', fr == 'vue')
+            if (fr == 'vue') {
+                vueHelp();
+            } else {
+                console.log('Mobiscroll javascript version is installed, you can include the mobiscroll');
+            }
+
+            //configJavascript();
             break;
     }
 }
@@ -95,16 +137,15 @@ function handleConfig(projectType) {
         return;
     }
 
-    if (projectType != 'ionic' && projectType != 'angular' && projectType != 'ionic-pro') {
-        printWarning('Currently only Angular 2+ and Ionic 2+ projects are supported.\n\nPlease run ' + chalk.gray('mobiscroll --help') + ' for details!');
-        return;
-    }
+    // if (projectType != 'ionic' && projectType != 'angular' && projectType != 'ionic-pro') {
+    //     printWarning('Currently only Angular 2+ and Ionic 2+ projects are supported.\n\nPlease run ' + chalk.gray('mobiscroll --help') + ' for details!');
+    //     return;
+    // }
 
     var cssFileName,
         jsFileName,
         currDir = process.cwd(), // get the directory where the mobiscroll command was executed
         packageJsonLocation = path.resolve(process.cwd(), 'package.json');
-
 
     // check if package.json is in the current directory
     if (!fs.existsSync(packageJsonLocation)) {
@@ -134,13 +175,18 @@ function handleConfig(projectType) {
                 cssFileName = `../node_modules/@mobiscroll/angular${useTrial ? '-trial' : ''}/dist/css/mobiscroll.min.css`;
 
                 // Install mobiscroll npm package
-                utils.installMobiscroll('angular', userName, useTrial, function () {
+                utils.installMobiscroll(projectType, userName, useTrial, function () {
                     config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
                 });
             });
         });
     } else {
         // if --no-npm option is set
+        if (projectType.indexOf('ionic') > -1 || projectType != 'angular') {
+            printWarning('Currenly the --no-npm option is only available for angular/ionic projets.\n');
+            return;
+        }
+
         var files,
             jsFileLocation = currDir + '/src/lib/mobiscroll/js',
             cssFileLocation = currDir + '/src/lib/mobiscroll/css';
@@ -191,9 +237,50 @@ function handleLogout() {
 
 function configHelp() {
     console.log('\n  Types:\n');
-    console.log('    angular        Use it for configuring Angular 2+ applications.\n');
-    console.log('    ionic          Use it for configuring Ionic 2+ applications.\n');
-    console.log('    ionic-pro      Use it for configuring Ionic 2+ applications. Use this command if you are using Ionic pro. \n');
+    console.log('    angular         Use it for configuring Angular 2+ applications.\n');
+    console.log('    angularjs       Use it for configuring Angularjs(1.x) applications.\n');
+    console.log('    ionic           Use it for configuring Ionic 2+ applications.\n');
+    console.log('    ionic-pro       Use it for configuring Ionic 2+ applications. Use this command if you are using Ionic pro. \n');
+    console.log('    javascript      Use it for configuring plain javascript applications or other curently unsuported framework applications like: Vue, Knockout, Ember.js...\n');
+    console.log('    jquery          Use it for configuring jQuery based applications.\n');
+    console.log('    react           Use it for configuring React applications.\n');
+}
+
+function vueHelp() {
+    console.log('A vue.js application is detected. If this is a vue-cli app. Here is an example how to use your vue app:\n');
+
+    console.log('<template>');
+    console.log('  <div class="hello">');
+    console.log('    <label>');
+    console.log('        Date');
+    console.log('        <input class="date-select" />');
+    console.log('    </label>');
+    console.log('  </div>');
+    console.log('</template>');
+    console.log('\n');
+    console.log('<script>');
+    console.log('\n');
+    console.log('    import mobiscroll from "@mobiscroll/javascript-trial"; // import js');
+    console.log('    import "@mobiscroll/javascript-trial/dist/css/mobiscroll.min.css"; // import css');
+    console.log('\n');
+    console.log('    export default {');
+    console.log('        data () {');
+    console.log('            return {');
+    console.log('                birthday: new Date(),');
+    console.log('             }');
+    console.log('        },');
+    console.log('        mounted() {');
+    console.log('            // init date picker');
+    console.log('            mobiscroll.date(".date-select", {');
+    console.log('                max: new Date(),');
+    console.log('                onSet: (event, inst) => {');
+    console.log('                    // update the model value manually');
+    console.log('                    this.birthday = inst.getVal();');
+    console.log('                 }');
+    console.log('            }');
+    console.log('         }');
+    console.log('     }');
+    console.log('</script>');
 }
 
 // options

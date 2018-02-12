@@ -1,6 +1,7 @@
 const fs = require('fs');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
+const request = require('request');
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -52,17 +53,38 @@ module.exports = {
     run: runCommand,
     writeToFile: writeToFile,
     installMobiscroll: function (framework, userName, isTrial, callback) {
-        var pkgName = framework + (isTrial ? '-trial' : '');
-        // Skip node warnings
-        printFeedback(`Installing packages via npm...`);
-        runCommand(`npm install @mobiscroll/${pkgName}@latest --save`, true).then(() => {
-            printFeedback(`Mobiscroll for ${framework} installed.`);
-            callback();
-        }).catch((reason) => {
-            if (/403 Forbidden/.test(reason)) {
-                reason = `User ${userName} has no access to package @mobiscroll/${pkgName}.`;
+        var pkgName = (framework.indexOf('ionic') > -1 ? 'angular' : framework) + (isTrial ? '-trial' : ''),
+            command;
+
+        // TODO: modify the url before publishing !!!
+        request('http://api.mobiscrollprod.com/api/getmobiscrollversion', function (error, response, body) {
+            if (error) {
+                printError(error);
             }
-            printError('Could not install Mobiscroll.\n\n' + reason)
+
+            if (!error && response.statusCode === 200) {
+                body = JSON.parse(body);
+
+                if (isTrial) {
+                    command = `npm install https://npm.mobiscroll.com/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --registry=https://npm.mobiscroll.com`;
+                } else {
+                    command = `npm install @mobiscroll/${pkgName}@latest --save`;
+                }
+
+                console.log('install command', command);
+
+                // Skip node warnings
+                printFeedback(`Installing packages via npm...`);
+                runCommand(command, true).then(() => {
+                    printFeedback(`Mobiscroll for ${framework} installed.`);
+                    callback();
+                }).catch((reason) => {
+                    if (/403 Forbidden/.test(reason)) {
+                        reason = `User ${userName} has no access to package @mobiscroll/${pkgName}.`;
+                    }
+                    printError('Could not install Mobiscroll.\n\n' + reason);
+                });
+            }
         });
     },
     importModules: function (currDir, jsFileName, apiKey) {
@@ -96,4 +118,4 @@ module.exports = {
     printFeedback: printFeedback,
     printWarning: printWarning,
     printError: printError
-}
+};
