@@ -3,7 +3,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 
 module.exports = {
-    configAngular: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey) {
+    configAngular: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite) {
         utils.printFeedback('Configuring Angular app...');
 
         // Modify app.module.ts add necesarry modules
@@ -21,7 +21,6 @@ module.exports = {
                     return;
                 }
 
-                
                 if (!apiKey && packageJson.dependencies['@mobiscroll/angular-trial']) {
                     // Remove mobiscroll-trial package form package.json if the licenced version is installed
                     delete packageJson.dependencies['@mobiscroll/angular-trial'];

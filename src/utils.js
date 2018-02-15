@@ -2,6 +2,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
 const request = require('request');
+const mbscNpmUrl = 'https://npmdev.mobiscroll.com'; // 'https://npm.mobiscroll.com'
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -16,8 +17,10 @@ function printFeedback(text) {
     console.log('\n' + chalk.bold.cyan(text));
 }
 
-function runCommand(cmd, skipWarning, skipError) {
-    console.log(`${chalk.green('>')} ${cmd}`);
+function runCommand(cmd, skipWarning, skipError, skipLog) {
+    if (!skipLog) {
+        console.log(`${chalk.green('>')} ${cmd}`);
+    }
     return new Promise((resolve, reject) => {
         exec(cmd, function (error, stdout, stderr) {
             if (stderr && !skipError && !skipWarning) {
@@ -41,9 +44,9 @@ function writeToFile(location, data) {
     });
 }
 
-function importModule(moduleName, location, data, mobiscrollGlobal) {
+function importModule(moduleName, location, data) {
     if (data.indexOf(moduleName) == -1) { // check if module is not loaded
-        data = "import { " + moduleName + (mobiscrollGlobal ? ", mobiscroll" : '') + " } from '" + location + "';\n" + data;
+        data = "import { " + moduleName + " } from '" + location + "';\n" + data;
         data = data.replace('imports: [', 'imports: [ \n' + '    ' + moduleName + ',');
     }
     return data;
@@ -52,12 +55,18 @@ function importModule(moduleName, location, data, mobiscrollGlobal) {
 module.exports = {
     run: runCommand,
     writeToFile: writeToFile,
+    installMobiscrollLite: function (framework, callback) {
+        framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
+        runCommand(`npm install mobiscroll-${framework}@latest --save`, true).then(() => {
+            printFeedback(`The lite version of Mobiscroll for ${framework} installed.`);
+            callback();
+        });
+    },
     installMobiscroll: function (framework, userName, isTrial, callback) {
         var pkgName = (framework.indexOf('ionic') > -1 ? 'angular' : framework) + (isTrial ? '-trial' : ''),
             command;
 
-        // TODO: modify the url before publishing !!!
-        request('http://api.mobiscrollprod.com/api/getmobiscrollversion', function (error, response, body) {
+        request('http://api.mobiscroll.com/api/getmobiscrollversion', function (error, response, body) {
             if (error) {
                 printError(error);
             }
@@ -66,7 +75,7 @@ module.exports = {
                 body = JSON.parse(body);
 
                 if (isTrial) {
-                    command = `npm install https://npm.mobiscroll.com/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --registry=https://npm.mobiscroll.com`;
+                    command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --registry=${mbscNpmUrl}`;
                 } else {
                     command = `npm install @mobiscroll/${pkgName}@latest --save`;
                 }
@@ -87,7 +96,7 @@ module.exports = {
             }
         });
     },
-    importModules: function (currDir, jsFileName, apiKey) {
+    importModules: function (currDir, jsFileName, apiKey, ) {
         console.log(`  Adding module loading scripts to ${chalk.grey('src/app/app.module.ts')}`);
         // Modify app.module.ts add necesarry modules
         fs.readFile(currDir + '/src/app/app.module.ts', 'utf8', function (err, data) {
@@ -101,21 +110,14 @@ module.exports = {
             data = data.replace(/[ \t]*MbscModule,[ \t\r]*\n/, '');
 
             // Add angular module imports which are needed for mobscroll
-            data = importModule('MbscModule', jsFileName, data, apiKey);
+            data = importModule('MbscModule', jsFileName, data);
             data = importModule('FormsModule', '@angular/forms', data);
-
-            // Remove previous api key if present
-            data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
-
-            // Inject api key if trial
-            if (apiKey) {
-                data = data.replace('@NgModule', 'mobiscroll.apiKey = \'' + apiKey + '\';\n\n@NgModule');
-            }
 
             writeToFile(currDir + '/src/app/app.module.ts', data);
         });
     },
     printFeedback: printFeedback,
     printWarning: printWarning,
-    printError: printError
+    printError: printError,
+    npmUrl: mbscNpmUrl
 };

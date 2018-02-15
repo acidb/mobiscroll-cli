@@ -3,6 +3,7 @@ const fs = require('fs');
 const ncp = require('ncp').ncp;
 const chalk = require('chalk');
 const path = require('path');
+const helperMessages = require('./helperMessages.js');
 
 function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
     var mobisrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular' + (trial ? '-trial' : ''));
@@ -42,11 +43,10 @@ function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
             }
 
         });
-
     });
 }
 module.exports = {
-    configIonic: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro) {
+    configIonic: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite) {
         utils.printFeedback('Configuring Ionic app...');
 
         var ionicPackage = require(packageJsonLocation);
@@ -62,14 +62,16 @@ module.exports = {
             if (!apiKey && ionicPackage.dependencies['@mobiscroll/angular-trial']) {
                 // Remove mobiscroll-trial package form package.json if the licenced version is installed
                 delete ionicPackage.dependencies['@mobiscroll/angular-trial'];
+                delete ionicPackage.dependencies['mobiscroll-angular'];
             } else if (apiKey && ionicPackage.dependencies['@mobiscroll/angular']) {
                 // Remove mobiscroll package form package.json if the trial version is installed
                 delete ionicPackage.dependencies['@mobiscroll/angular'];
+                delete ionicPackage.dependencies['mobiscroll-angular'];
             }
 
             console.log(`  Copying scripts`);
 
-            ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css' + (isNpmSource ? '-npm' : '') + (apiKey ? '-trial' : '') + '.js';
+            ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css' + (isNpmSource || isLite ? '-npm' : '') + (apiKey ? '-trial' : '') + '.js';
             utils.writeToFile(packageJsonLocation, JSON.stringify(ionicPackage, null, 4));
 
             ncp(__dirname + '/../resources/ionic/scripts', currDir + '/scripts', function (err) {
@@ -88,7 +90,7 @@ module.exports = {
                     return;
                 }
 
-                if (isNpmSource) {
+                if (isNpmSource || isLite) {
                     cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
                 }
 
@@ -115,17 +117,7 @@ module.exports = {
             }
 
             if (isLazy) {
-                console.log(`\nIf you are using ionic lazy loading you'll have to manually include the MbscModule and FormsModule into the page's module.ts file where you'll be using Mobiscroll.\n\nExample:\n`);
-                console.log("    import { MbscModule } from '@mobiscroll/angular" + (apiKey ? '-trial' : '') + "'");
-                console.log("    import { FormsModule } from '@angular/forms';\n");
-                console.log("    @NgModule({");
-                console.log("        imports: [");
-                console.log("            // leave the other imports as they are");
-                console.log("            // ... ");
-                console.log("            MbscModule, // add the mobiscroll module");
-                console.log("            FormsModule // add the forms module");
-                console.log("        ],");
-                console.log("        declarations: // ...");
+                helperMessages.ionicLazy(apiKey, isLite);
             }
         }
     }
