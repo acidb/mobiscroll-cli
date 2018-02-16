@@ -36,10 +36,13 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
     });
 }
 
-function writeToFile(location, data) {
+function writeToFile(location, data, callback) {
     fs.writeFile(location, data, function (err) {
         if (err) {
             printError('Could not write to file ' + chalk.gray(location) + '. \n\n' + err);
+        }
+        if (callback) {
+            callback();
         }
     });
 }
@@ -62,6 +65,28 @@ module.exports = {
             callback();
         });
     },
+    removeUnusedaPackages: function (framework, packageJsonLocaltion, isTrial, isLite, callback) {
+        framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
+        var packageName = `'@mobiscroll/${framework}`,
+            trialPackageName = packageName + '-trial',
+            litePackageName = `mobiscroll-${framework}`,
+            packageJson = require(packageJsonLocaltion);
+        //console.log(packageJson);
+        if (!isTrial && packageJson.dependencies[trialPackageName]) {
+            // Remove mobiscroll-trial package form package.json if the licenced version is installed
+            delete packageJson.dependencies[trialPackageName];
+        } else if (isTrial && packageJson.dependencies[packageName]) {
+            // Remove mobiscroll package form package.json if the trial version is installed
+            delete packageJson.dependencies[packageName];
+        }
+
+        if (!isLite && packageJson.dependencies[litePackageName]) {
+            // delete lite package
+            delete packageJson.dependencies[litePackageName];
+        }
+
+        writeToFile(packageJsonLocaltion, JSON.stringify(packageJson, null, 4), callback);
+    },
     installMobiscroll: function (framework, userName, isTrial, callback) {
         var pkgName = (framework.indexOf('ionic') > -1 ? 'angular' : framework) + (isTrial ? '-trial' : ''),
             command;
@@ -75,7 +100,7 @@ module.exports = {
                 body = JSON.parse(body);
 
                 if (isTrial) {
-                    command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --registry=${mbscNpmUrl}`;
+                    command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --save --registry=${mbscNpmUrl}`;
                 } else {
                     command = `npm install @mobiscroll/${pkgName}@latest --save`;
                 }
@@ -94,7 +119,7 @@ module.exports = {
             }
         });
     },
-    importModules: function (currDir, jsFileName, apiKey, ) {
+    importModules: function (currDir, jsFileName, apiKey) {
         console.log(`  Adding module loading scripts to ${chalk.grey('src/app/app.module.ts')}`);
         // Modify app.module.ts add necesarry modules
         fs.readFile(currDir + '/src/app/app.module.ts', 'utf8', function (err, data) {

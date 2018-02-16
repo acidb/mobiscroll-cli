@@ -3,7 +3,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 
 module.exports = {
-    configAngular: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite) {
+    configAngular: function (currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLite) {
         utils.printFeedback('Configuring Angular app...');
 
         // Modify app.module.ts add necesarry modules
@@ -12,21 +12,11 @@ module.exports = {
         console.log(`  Adding stylesheet to ${chalk.grey('angular-cli.json')}`);
 
         if (fs.existsSync(currDir + '/.angular-cli.json')) {
-            var packageJson = require(packageJsonLocation);
-
             // Modify .angular-cli.json to load styles
             fs.readFile(currDir + '/.angular-cli.json', 'utf8', function (err, data) {
                 if (err) {
                     utils.printError('There was an error during reading angular-cli.json. \n\nHere is the error message:\n\n' + err);
                     return;
-                }
-
-                if (!apiKey && packageJson.dependencies['@mobiscroll/angular-trial']) {
-                    // Remove mobiscroll-trial package form package.json if the licenced version is installed
-                    delete packageJson.dependencies['@mobiscroll/angular-trial'];
-                } else if (apiKey && packageJson.dependencies['@mobiscroll/angular']) {
-                    // Remove mobiscroll package form package.json if the trial version is installed
-                    delete packageJson.dependencies['@mobiscroll/angular'];
                 }
 
                 // Remove old configuration

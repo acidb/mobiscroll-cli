@@ -87,9 +87,8 @@ function getApiKey(userName, callback) {
     });
 }
 
-function detectProjectFramework(packageJsonLocation, apiKey, isLite, projectType) {
-    var framework,
-        packageJson = require(packageJsonLocation);
+function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
+    var framework;
 
     if (packageJson.dependencies.vue) {
         helperMessages.vueHelp(projectType, apiKey, isLite);
@@ -104,24 +103,24 @@ function detectProjectFramework(packageJsonLocation, apiKey, isLite, projectType
     return;
 }
 
-function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite) {
+function config(projectType, currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLite) {
 
     switch (projectType) {
         case 'angular':
-            configAngular(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite);
+            configAngular(currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLite);
             break;
         case 'angularjs':
             break;
         case 'ionic':
         case 'ionic-pro':
-            configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro', isLite);
+            configIonic(currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro', isLite);
             break;
         case 'react':
             helperMessages.reactHelp(apiKey, isLite);
             break;
         case 'jquery':
         case 'javascript':
-            detectProjectFramework(packageJsonLocation, apiKey, isLite, projectType);
+            detectProjectFramework(packageJson, apiKey, isLite, projectType);
             break;
     }
 
@@ -166,7 +165,8 @@ function handleConfig(projectType) {
         var cssFileName,
             jsFileName,
             currDir = process.cwd(), // get the directory where the mobiscroll command was executed
-            packageJsonLocation = path.resolve(process.cwd(), 'package.json');
+            packageJsonLocation = path.resolve(process.cwd(), 'package.json'),
+            packageJson = require(packageJsonLocation);
 
         // check if package.json is in the current directory
         // if (!fs.existsSync(packageJsonLocation)) {
@@ -181,7 +181,7 @@ function handleConfig(projectType) {
                 jsFileName = 'mobiscroll-angular';
                 cssFileName = `../node_modules/mobiscroll-angular/dist/css/mobiscroll.min.css`;
 
-                config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, false, false, true);
+                config(projectType, currDir, require(packageJsonLocation), jsFileName, cssFileName, false, false, true);
             })
         } else if (isNpmSource) {
             printFeedback('Checking logged in status...');
@@ -196,15 +196,18 @@ function handleConfig(projectType) {
                 return login();
             }).then((userName) => {
                 // if returns an api key it is a trial user
-                getApiKey(userName, function (data) {
+                getApiKey(userName, (data) => {
                     var useTrial = !data.HasLicense || isTrial;
 
                     jsFileName = `@mobiscroll/angular${useTrial ? '-trial' : ''}`;
                     cssFileName = `../node_modules/@mobiscroll/angular${useTrial ? '-trial' : ''}/dist/css/mobiscroll.min.css`;
 
-                    // Install mobiscroll npm package
-                    utils.installMobiscroll(projectType, userName, useTrial, function () {
-                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
+
+                    utils.removeUnusedaPackages(projectType, path.resolve(process.cwd(), 'package.json'), useTrial, false, () => {
+                        // Install mobiscroll npm package
+                        utils.installMobiscroll(projectType, userName, useTrial, () => {
+                            config(projectType, currDir, require(packageJsonLocation), jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
+                        });
                     });
                 });
             });
@@ -243,7 +246,7 @@ function handleConfig(projectType) {
             jsFileName = '../lib/mobiscroll/js/' + jsFileName[0];
             cssFileName = 'lib/mobiscroll/css/' + cssFileName[0];
 
-            config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
+            config(projectType, currDir, packageJson, jsFileName, cssFileName, isNpmSource);
         }
     })
 }

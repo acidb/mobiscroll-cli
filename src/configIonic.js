@@ -46,10 +46,8 @@ function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
     });
 }
 module.exports = {
-    configIonic: function (currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite) {
+    configIonic: function (currDir, ionicPackage, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite) {
         utils.printFeedback('Configuring Ionic app...');
-
-        var ionicPackage = require(packageJsonLocation);
 
         // if it is an ionic project(has ionic-angular package between dependecies)
         if (ionicPackage && ionicPackage.dependencies['ionic-angular']) {
@@ -59,20 +57,10 @@ module.exports = {
             // Add ionic_copy script to package.json and copy the scrips folder
             ionicPackage.config = ionicPackage.config || {};
 
-            if (!apiKey && ionicPackage.dependencies['@mobiscroll/angular-trial']) {
-                // Remove mobiscroll-trial package form package.json if the licenced version is installed
-                delete ionicPackage.dependencies['@mobiscroll/angular-trial'];
-                delete ionicPackage.dependencies['mobiscroll-angular'];
-            } else if (apiKey && ionicPackage.dependencies['@mobiscroll/angular']) {
-                // Remove mobiscroll package form package.json if the trial version is installed
-                delete ionicPackage.dependencies['@mobiscroll/angular'];
-                delete ionicPackage.dependencies['mobiscroll-angular'];
-            }
-
             console.log(`  Copying scripts`);
 
             ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css' + (isNpmSource || isLite ? '-npm' : '') + (apiKey ? '-trial' : '') + '.js';
-            utils.writeToFile(packageJsonLocation, JSON.stringify(ionicPackage, null, 4));
+            utils.writeToFile(path.resolve(process.cwd(), 'package.json'), JSON.stringify(ionicPackage, null, 4));
 
             ncp(__dirname + '/../resources/ionic/scripts', currDir + '/scripts', function (err) {
                 if (err) {
