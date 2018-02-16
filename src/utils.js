@@ -67,11 +67,11 @@ module.exports = {
     },
     removeUnusedaPackages: function (framework, packageJsonLocaltion, isTrial, isLite, callback) {
         framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
-        var packageName = `'@mobiscroll/${framework}`,
+        var packageName = `@mobiscroll/${framework}`,
             trialPackageName = packageName + '-trial',
             litePackageName = `mobiscroll-${framework}`,
             packageJson = require(packageJsonLocaltion);
-        //console.log(packageJson);
+
         if (!isTrial && packageJson.dependencies[trialPackageName]) {
             // Remove mobiscroll-trial package form package.json if the licenced version is installed
             delete packageJson.dependencies[trialPackageName];
