@@ -3,7 +3,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 
 module.exports = {
-    configAngular: function (currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLite) {
+    configAngular: function (currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey) {
         utils.printFeedback('Configuring Angular app...');
 
         // Modify app.module.ts add necesarry modules

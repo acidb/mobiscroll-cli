@@ -119,7 +119,7 @@ module.exports = {
             }
         });
     },
-    importModules: function (currDir, jsFileName, apiKey) {
+    importModules: function (currDir, jsFileName) {
         console.log(`  Adding module loading scripts to ${chalk.grey('src/app/app.module.ts')}`);
         // Modify app.module.ts add necesarry modules
         fs.readFile(currDir + '/src/app/app.module.ts', 'utf8', function (err, data) {

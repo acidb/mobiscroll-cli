@@ -12,7 +12,7 @@ function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
 
     console.log(`\n${chalk.green('>')} changed current directory to node_modules/@mobiscroll/angular \n`);
 
-    utils.run('npm pack').then((arg) => { // run npm pack which will generate the mobiscroll package
+    utils.run('npm pack').then(() => { // run npm pack which will generate the mobiscroll package
         fs.readdir(mobisrollNpmFolder, function (err, files) {
             var mbscPackage = files.filter((f) => {
                 // return the full name of the generated package
@@ -99,7 +99,7 @@ module.exports = {
             }
 
             if (ionicPro) {
-                configIonicPro(currDir, ionicPackage, packageJsonLocation, apiKey);
+                configIonicPro(currDir, ionicPackage, path.resolve(process.cwd(), 'package.json'), apiKey);
             } else {
                 utils.printFeedback('Mobiscroll configuration ready!');
             }
