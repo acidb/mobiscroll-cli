@@ -80,8 +80,6 @@ module.exports = {
                     command = `npm install @mobiscroll/${pkgName}@latest --save`;
                 }
 
-                console.log('install command', command);
-
                 // Skip node warnings
                 printFeedback(`Installing packages via npm...`);
                 runCommand(command, true).then(() => {

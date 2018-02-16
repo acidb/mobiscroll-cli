@@ -24,33 +24,37 @@ var localCliVersion = require('./package.json').version;
 
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
 
-var chekUpdate = new Promise((resolve, reject) => {
-    run('npm show @mobiscroll/cli version', false, false, true).then((npmCliVersion) => { // get the version cli version from npm
-        npmCliVersion = npmCliVersion.trim();
 
-        if (localCliVersion != npmCliVersion) {
-            // if the two versions are not equal ask for update
-            inquirer.prompt({
-                type: 'input',
-                name: 'update',
-                message: `The Mobiscroll CLI has an update available (${localCliVersion} => ${npmCliVersion})! Would you like to install it? (Y/n)`
-            }).then(answer => {
-                if (answer.update.toLowerCase() == 'y') {
-                    run('npm install -g @mobiscroll/cli@latest').then(() => {
-                        printFeedback(`Updated Mobscirll CLI to ${npmCliVersion}! \n\n Please re-run your command`);
-                        process.exit();
-                    });
-                } else {
-                    console.log(`Skipping installation of the latest Mobiscroll CLI version.`);
-                    resolve();
-                }
-            })
-        } else {
-            // No CLI update found continuing the installation...
-            resolve();
-        }
-    })
-});
+function checkUpdate() {
+    return new Promise((resolve, reject) => {
+        run('npm show @mobiscroll/cli version', false, false, true).then((npmCliVersion) => { // get the mobiscroll cli version from npm
+            npmCliVersion = npmCliVersion.trim();
+
+            if (localCliVersion != npmCliVersion) {
+                // if the two versions are not equal ask for update
+                inquirer.prompt({
+                    type: 'input',
+                    name: 'update',
+                    message: `The Mobiscroll CLI has an update available (${localCliVersion} => ${npmCliVersion})! Would you like to install it? (Y/n)`
+                }).then(answer => {
+                    if (answer.update.toLowerCase() == 'y') {
+                        run('npm install -g @mobiscroll/cli@latest').then(() => {
+                            printFeedback(`Updated Mobscirll CLI to ${npmCliVersion}! \n\nPlease re-run your command!\n`);
+                            process.exit();
+                        });
+                    } else {
+                        console.log(`Skipping the installation of the latest Mobiscroll CLI version.`);
+                        resolve();
+                    }
+                })
+            } else {
+                // No CLI update found continuing the installation...
+                resolve();
+            }
+        })
+    });
+}
+
 
 function handleTrial() {
     isTrial = true;
@@ -158,8 +162,7 @@ function handleConfig(projectType) {
         return;
     }
 
-    chekUpdate.then(() => {
-
+    checkUpdate().then(() => {
         var cssFileName,
             jsFileName,
             currDir = process.cwd(), // get the directory where the mobiscroll command was executed
