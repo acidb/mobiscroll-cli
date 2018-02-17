@@ -47,9 +47,9 @@ function writeToFile(location, data, callback) {
     });
 }
 
-function importModule(moduleName, location, data) {
+function importModule(moduleName, location, data, mobiscrollGlobal) {
     if (data.indexOf(moduleName) == -1) { // check if module is not loaded
-        data = "import { " + moduleName + " } from '" + location + "';\n" + data;
+        data = "import { " + moduleName + (mobiscrollGlobal ? ", mobiscroll" : '') + " } from '" + location + "';\n" + data;
         data = data.replace('imports: [', 'imports: [ \n' + '    ' + moduleName + ',');
     }
     return data;
@@ -133,7 +133,7 @@ module.exports = {
             data = data.replace(/[ \t]*MbscModule,[ \t\r]*\n/, '');
 
             // Add angular module imports which are needed for mobscroll
-            data = importModule('MbscModule', jsFileName, data);
+            data = importModule('MbscModule', jsFileName, data, apiKey);
             data = importModule('FormsModule', '@angular/forms', data);
 
             // Remove previous api key if present
