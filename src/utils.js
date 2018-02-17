@@ -99,11 +99,11 @@ module.exports = {
             if (!error && response.statusCode === 200) {
                 body = JSON.parse(body);
 
-                if (isTrial) {
-                    command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --save --registry=${mbscNpmUrl}`;
-                } else {
-                    command = `npm install @mobiscroll/${pkgName}@latest --save`;
-                }
+                // if (isTrial) {
+                //     command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --save --registry=${mbscNpmUrl}`;
+                // } else {
+                command = `npm install @mobiscroll/${pkgName}@latest --save`;
+                // }
 
                 // Skip node warnings
                 printFeedback(`Installing packages via npm...`);
@@ -119,7 +119,7 @@ module.exports = {
             }
         });
     },
-    importModules: function (currDir, jsFileName) {
+    importModules: function (currDir, jsFileName, apiKey) {
         console.log(`  Adding module loading scripts to ${chalk.grey('src/app/app.module.ts')}`);
         // Modify app.module.ts add necesarry modules
         fs.readFile(currDir + '/src/app/app.module.ts', 'utf8', function (err, data) {
@@ -136,6 +136,13 @@ module.exports = {
             data = importModule('MbscModule', jsFileName, data);
             data = importModule('FormsModule', '@angular/forms', data);
 
+            // Remove previous api key if present
+            data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
+
+            // Inject api key if trial
+            if (apiKey) {
+                data = data.replace('@NgModule', 'mobiscroll.apiKey = \'' + apiKey + '\';\n\n@NgModule');
+            }
             writeToFile(currDir + '/src/app/app.module.ts', data);
         });
     },

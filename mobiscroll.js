@@ -26,7 +26,7 @@ process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on window
 
 
 function checkUpdate() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         run('npm show @mobiscroll/cli version', false, false, true).then((npmCliVersion) => { // get the mobiscroll cli version from npm
             npmCliVersion = npmCliVersion.trim();
 
@@ -88,8 +88,6 @@ function getApiKey(userName, callback) {
 }
 
 function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
-    var framework;
-
     if (packageJson.dependencies.vue) {
         helperMessages.vueHelp(projectType, apiKey, isLite);
         return 'vue';
@@ -109,19 +107,19 @@ function config(projectType, currDir, packageJson, jsFileName, cssFileName, isNp
         case 'angular':
             configAngular(currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLite);
             break;
-        case 'angularjs':
-            break;
+            // case 'angularjs':
+            //     break;
         case 'ionic':
         case 'ionic-pro':
             configIonic(currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro', isLite);
             break;
-        case 'react':
-            helperMessages.reactHelp(apiKey, isLite);
-            break;
-        case 'jquery':
-        case 'javascript':
-            detectProjectFramework(packageJson, apiKey, isLite, projectType);
-            break;
+            // case 'react':
+            //     helperMessages.reactHelp(apiKey, isLite);
+            //     break;
+            // case 'jquery':
+            // case 'javascript':
+            //     detectProjectFramework(packageJson, apiKey, isLite, projectType);
+            //     break;
     }
 
 }
