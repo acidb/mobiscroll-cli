@@ -46,9 +46,9 @@ function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
     });
 }
 module.exports = {
-    configIonic: function (currDir, ionicPackageLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite) {
+    configIonic: function (currDir, ionicPackage, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite) {
         utils.printFeedback('Configuring Ionic app...');
-        var ionicPackage = require(ionicPackageLocation);
+
         // if it is an ionic project(has ionic-angular package between dependecies)
         if (ionicPackage && ionicPackage.dependencies['ionic-angular']) {
 
@@ -60,7 +60,7 @@ module.exports = {
             console.log(`  Copying scripts`);
 
             ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css' + (isNpmSource || isLite ? '-npm' : '') + (apiKey ? '-trial' : '') + '.js';
-            utils.writeToFile(ionicPackageLocation, JSON.stringify(ionicPackage, null, 4));
+            utils.writeToFile(path.resolve(process.cwd(), 'package.json'), JSON.stringify(ionicPackage, null, 4));
 
             ncp(__dirname + '/../resources/ionic/scripts', currDir + '/scripts', function (err) {
                 if (err) {
