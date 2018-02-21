@@ -65,27 +65,44 @@ module.exports = {
             callback();
         });
     },
-    removeUnusedaPackages: function (framework, packageJsonLocaltion, isTrial, isLite, callback) {
+    removeUnusedaPackages: function (framework, packageJsonLocaltion, isTrial, isLite, callback, noNpm) {
         framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
-        var packageName = `@mobiscroll/${framework}`,
+
+        var changed,
+            packageName = `@mobiscroll/${framework}`,
             trialPackageName = packageName + '-trial',
             litePackageName = `mobiscroll-${framework}`,
-            packageJson = require(packageJsonLocaltion);
+            packageJson = JSON.parse(fs.readFileSync(packageJsonLocaltion, 'utf8'));
 
-        if (!isTrial && packageJson.dependencies[trialPackageName]) {
-            // Remove mobiscroll-trial package form package.json if the licenced version is installed
+        if (noNpm) {
+            // delete the mobiscroll references if it was installed from a local file system
             delete packageJson.dependencies[trialPackageName];
-        } else if (isTrial && packageJson.dependencies[packageName]) {
-            // Remove mobiscroll package form package.json if the trial version is installed
             delete packageJson.dependencies[packageName];
-        }
-
-        if (!isLite && packageJson.dependencies[litePackageName]) {
-            // delete lite package
             delete packageJson.dependencies[litePackageName];
+            changed = true;
+        } else {
+            if (!isTrial && packageJson.dependencies[trialPackageName]) {
+                changed = true;
+                // Remove mobiscroll-trial package form package.json if the licenced version is installed
+                delete packageJson.dependencies[trialPackageName];
+            } else if (isTrial && packageJson.dependencies[packageName]) {
+                changed = true;
+                // Remove mobiscroll package form package.json if the trial version is installed
+                delete packageJson.dependencies[packageName];
+            }
+
+            if (!isLite && packageJson.dependencies[litePackageName]) {
+                changed = true;
+                // delete lite package
+                delete packageJson.dependencies[litePackageName];
+            }
         }
 
-        writeToFile(packageJsonLocaltion, JSON.stringify(packageJson, null, 4), callback);
+        if (changed) {
+            writeToFile(packageJsonLocaltion, JSON.stringify(packageJson, null, 4), callback);
+        } else {
+            callback();
+        }
     },
     installMobiscroll: function (framework, userName, isTrial, callback) {
         var pkgName = (framework.indexOf('ionic') > -1 ? 'angular' : framework) + (isTrial ? '-trial' : ''),
