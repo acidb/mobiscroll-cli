@@ -71,7 +71,7 @@ module.exports = {
         var changed,
             packageName = `@mobiscroll/${framework}`,
             trialPackageName = packageName + '-trial',
-            litePackageName = `mobiscroll-${framework}`,
+            litePackageName = `@mobiscroll/${framework}-lite`,
             packageJson = JSON.parse(fs.readFileSync(packageJsonLocaltion, 'utf8'));
 
         if (noNpm) {

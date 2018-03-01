@@ -177,8 +177,8 @@ function handleConfig(projectType) {
 
         if (isLite) {
             utils.installMobiscrollLite(projectType, function () {
-                jsFileName = 'mobiscroll-angular';
-                cssFileName = `../node_modules/mobiscroll-angular/dist/css/mobiscroll.min.css`;
+                jsFileName = '@mobiscroll/angular-lite';
+                cssFileName = `../node_modules/@mobiscroll/angular-lite/dist/css/mobiscroll.min.css`;
 
                 config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, false, false, true);
             })
