@@ -20,7 +20,8 @@ module.exports = {
                 }
 
                 // Remove old configuration
-                data = data.replace(/"\.\.\/node_modules\/@mobiscroll\/angular(?:-trial)?\/dist\/css\/mobiscroll\.min\.css",\s*/, '');
+                data = data.replace(/"\.\.\/node_modules\/@mobiscroll\/angular(?:-trial)?(?:-lite)?\/dist\/css\/mobiscroll\.min\.css",\s*/, '');
+                data = data.replace(/"\.\.\/node_modules\/mobiscroll-angular\/dist\/css\/mobiscroll\.min\.css",\s*/, '');
                 data = data.replace(/"lib\/mobiscroll\/css\/mobiscroll\..*\.css",\s*/, '');
 
                 // add angular module imports which are needed for mobscroll
