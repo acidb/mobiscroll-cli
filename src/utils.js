@@ -60,7 +60,7 @@ module.exports = {
     writeToFile: writeToFile,
     installMobiscrollLite: function (framework, callback) {
         framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
-        runCommand(`npm install mobiscroll-${framework}@latest --save`, true).then(() => {
+        runCommand(`npm install @mobiscroll/${framework}-lite@latest --save`, true).then(() => {
             printFeedback(`The lite version of Mobiscroll for ${framework} installed.`);
             callback();
         });
