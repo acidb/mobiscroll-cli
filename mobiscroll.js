@@ -22,6 +22,7 @@ var printError = utils.printError;
 var printWarning = utils.printWarning;
 var localCliVersion = require('./package.json').version;
 
+
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
 
 
