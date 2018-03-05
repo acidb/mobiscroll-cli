@@ -1,6 +1,6 @@
 {
   "name": "@mobiscroll/cli",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "Mobiscroll command line configuration tool",
   "homepage": "https://mobiscroll.com/",
   "license": "Apache-2.0",
@@ -17,7 +17,8 @@
     "url": "https://github.com/acidb/mobiscroll-cli/issues"
   },
   "scripts": {
-    "test": "mobiscroll"
+    "test": "mobiscroll",
+    "prepublish": "crlf --set=LF mobiscroll.js"
   },
   "bin": {
     "mobiscroll": "./mobiscroll.js"
@@ -28,5 +29,8 @@
     "inquirer": "^3.3.0",
     "ncp": "^2.0.0",
     "npm-registry-client": "7.0.9"
+  },
+  "devDependencies": {
+    "crlf": "^1.1.1"
   }
 }
