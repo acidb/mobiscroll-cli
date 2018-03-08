@@ -203,9 +203,7 @@ function handleConfig(projectType) {
                     utils.removeUnusedaPackages(projectType, packageJsonLocation, useTrial, false, () => {
                         // Install mobiscroll npm package
                         utils.installMobiscroll(projectType, userName, useTrial, () => {
-                            //     setTimeout(() => {
                             config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
-                            //     }, 2000)
                         });
                     });
                 });
