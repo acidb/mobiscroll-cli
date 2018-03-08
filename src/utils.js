@@ -2,7 +2,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
 const request = require('request');
-const mbscNpmUrl = 'https://npm.mobiscroll.com';
+const mbscNpmUrl = 'https://npmdev.mobiscroll.com';
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -47,9 +47,9 @@ function writeToFile(location, data, callback) {
     });
 }
 
-function importModule(moduleName, location, data, mobiscrollGlobal) {
+function importModule(moduleName, location, data) {
     if (data.indexOf(moduleName) == -1) { // check if module is not loaded
-        data = "import { " + moduleName + (mobiscrollGlobal ? ", mobiscroll" : '') + " } from '" + location + "';\n" + data;
+        data = "import { " + moduleName + " } from '" + location + "';\n" + data;
         data = data.replace('imports: [', 'imports: [ \n' + '    ' + moduleName + ',');
     }
     return data;
@@ -116,11 +116,11 @@ module.exports = {
             if (!error && response.statusCode === 200) {
                 body = JSON.parse(body);
 
-                // if (isTrial) {
-                //     command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --save --registry=${mbscNpmUrl}`;
-                // } else {
-                command = `npm install @mobiscroll/${pkgName}@latest --save`;
-                // }
+                if (isTrial) {
+                    command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --save --registry=${mbscNpmUrl}`;
+                } else {
+                    command = `npm install @mobiscroll/${pkgName}@latest --save`;
+                }
 
                 // Skip node warnings
                 printFeedback(`Installing packages via npm...`);
@@ -136,7 +136,7 @@ module.exports = {
             }
         });
     },
-    importModules: function (currDir, jsFileName, apiKey) {
+    importModules: function (currDir, jsFileName) {
         console.log(`  Adding module loading scripts to ${chalk.grey('src/app/app.module.ts')}`);
         // Modify app.module.ts add necesarry modules
         fs.readFile(currDir + '/src/app/app.module.ts', 'utf8', function (err, data) {
@@ -150,16 +150,12 @@ module.exports = {
             data = data.replace(/[ \t]*MbscModule,[ \t\r]*\n/, '');
 
             // Add angular module imports which are needed for mobscroll
-            data = importModule('MbscModule', jsFileName, data, apiKey);
+            data = importModule('MbscModule', jsFileName, data);
             data = importModule('FormsModule', '@angular/forms', data);
 
             // Remove previous api key if present
             data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
 
-            // Inject api key if trial
-            if (apiKey) {
-                data = data.replace('@NgModule', 'mobiscroll.apiKey = \'' + apiKey + '\';\n\n@NgModule');
-            }
             writeToFile(currDir + '/src/app/app.module.ts', data);
         });
     },

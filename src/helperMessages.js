@@ -1,11 +1,7 @@
 module.exports = {
     ionicLazy: (isTrial, isLite) => {
         console.log(`\nIf you are using ionic lazy loading you'll have to manually include the MbscModule and FormsModule into the page's module.ts file where you'll be using Mobiscroll.\n\nExample:\n`);
-        if (isLite) {
-            console.log("    import { MbscModule } from '@mobiscroll/angular-lite';");
-        } else {
-            console.log("    import { MbscModule } from '@mobiscroll/angular" + (isTrial ? '-trial' : '') + "';");
-        }
+        console.log("    import { MbscModule } from '@mobiscroll/angular" + (isTrial ? '-trial' : (isLite ? '-lite' : '')) + "';");
         console.log("    import { FormsModule } from '@angular/forms';\n");
         console.log("    @NgModule({");
         console.log("        imports: [");
@@ -19,27 +15,27 @@ module.exports = {
     configHelp: () => {
         console.log('\n  Types:\n');
         console.log('    angular         Use it for configuring Angular 2+ applications.\n');
-        //console.log('    angularjs       Use it for configuring Angularjs(1.x) applications.\n');
+        console.log('    angularjs       Use it for configuring Angularjs(1.x) applications.\n');
         console.log('    ionic           Use it for configuring Ionic 2+ applications.\n');
         console.log('    ionic-pro       Use it for configuring Ionic 2+ applications. Use this command if you are using Ionic pro. \n');
-        // console.log('    javascript      Use it for configuring JavaScript applications. Use it with frameworks like: Vue, Knockout, Ember.js...\n');
-        // console.log('    jquery          Use it for configuring jQuery based applications.\n');
-        //  console.log('    react           Use it for configuring React applications.\n');
+        console.log('    javascript      Use it for configuring JavaScript applications. Use it with frameworks like: Vue, Knockout, Ember.js...\n');
+        console.log('    jquery          Use it for configuring jQuery based applications.\n');
+        console.log('    react           Use it for configuring React applications.\n');
     },
     vueHelp: (framework, isTrial, isLite) => {
         console.log(`
 A vue.js application detected. Here is how to import Mobiscroll into your app:
 
-import mobiscroll from ` + (isLite ? `'@mobiscroll/${framework}-lite` : `'@mobiscroll/${framework}` + (isTrial ? '-trial' : '')) + `';
-import '` + (isLite ? `@mobiscroll/${framework}-lite` : `@mobiscroll/${framework}` + (isTrial ? '-trial' : '')) + `/dist/css/mobiscroll.min.css';
+import mobiscroll from ` + `'@mobiscroll/${framework}` + (isTrial ? '-trial' : (isLite ? '-lite' : '')) + `';
+import '` + `@mobiscroll/${framework}` + (isTrial ? '-trial' : (isLite ? '-lite' : '')) + `/dist/css/mobiscroll.min.css';
         `);
     },
     reactHelp: (isTrial, isLite) => {
         console.log(`
 You can import Mobiscroll to your react component like:
 
-import mobiscroll from ` + (isLite ? `'@mobiscroll/react-lite` : `'@mobiscroll/react` + (isTrial ? '-trial' : '')) + `';
-import '` + (isLite ? `@mobiscroll/react-lite` : `@mobiscroll/react` + (isTrial ? '-trial' : '')) + `/dist/css/mobiscroll.min.css';
+import mobiscroll from ` + `'@mobiscroll/react` + (isTrial ? '-trial' : (isLite ? '-lite' : '')) + `';
+import '` + `@mobiscroll/react` + (isTrial ? '-trial' : (isLite ? '-lite' : '')) + `/dist/css/mobiscroll.min.css';
         `);
 
     }

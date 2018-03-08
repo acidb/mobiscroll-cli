@@ -22,9 +22,7 @@ var printError = utils.printError;
 var printWarning = utils.printWarning;
 var localCliVersion = require('./package.json').version;
 
-
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
-
 
 function checkUpdate() {
     return new Promise((resolve) => {
@@ -88,19 +86,19 @@ function getApiKey(userName, callback) {
     });
 }
 
-// function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
-//     if (packageJson.dependencies.vue) {
-//         helperMessages.vueHelp(projectType, apiKey, isLite);
-//         return 'vue';
-//     }
+function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
+    if (packageJson.dependencies.vue) {
+        helperMessages.vueHelp(projectType, apiKey, isLite);
+        return 'vue';
+    }
 
-//     if (packageJson.dependencies.react) {
-//         helperMessages.reactHelp(apiKey, isLite);
-//         return "react";
-//     }
+    if (packageJson.dependencies.react) {
+        helperMessages.reactHelp(apiKey, isLite);
+        return "react";
+    }
 
-//     return;
-// }
+    return;
+}
 
 function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite) {
     var packageJson = require(packageJsonLocation);
@@ -109,19 +107,19 @@ function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileNa
         case 'angular':
             configAngular(currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLite);
             break;
-            // case 'angularjs':
-            //     break;
+        case 'angularjs':
+            break;
         case 'ionic':
         case 'ionic-pro':
             configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro', isLite);
             break;
-            // case 'react':
-            //     helperMessages.reactHelp(apiKey, isLite);
-            //     break;
-            // case 'jquery':
-            // case 'javascript':
-            //     detectProjectFramework(packageJson, apiKey, isLite, projectType);
-            //     break;
+        case 'react':
+            helperMessages.reactHelp(apiKey, isLite);
+            break;
+        case 'jquery':
+        case 'javascript':
+            detectProjectFramework(packageJson, apiKey, isLite, projectType);
+            break;
     }
 
 }

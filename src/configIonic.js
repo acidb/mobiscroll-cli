@@ -95,7 +95,7 @@ module.exports = {
                 utils.printFeedback(`Lazy mode: skipping MbscModule injection from app.module.ts`);
             } else {
                 // Modify app.module.ts add necesarry modules
-                utils.importModules(currDir, jsFileName, apiKey);
+                utils.importModules(currDir, jsFileName);
             }
 
             if (ionicPro) {

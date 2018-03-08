@@ -3,11 +3,11 @@ const fs = require('fs');
 const chalk = require('chalk');
 
 module.exports = {
-    configAngular: function (currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey) {
+    configAngular: function (currDir, packageJson, jsFileName, cssFileName) {
         utils.printFeedback('Configuring Angular app...');
 
         // Modify app.module.ts add necesarry modules
-        utils.importModules(currDir, jsFileName, apiKey);
+        utils.importModules(currDir, jsFileName);
 
         console.log(`  Adding stylesheet to ${chalk.grey('angular-cli.json')}`);
 
