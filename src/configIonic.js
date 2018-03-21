@@ -47,6 +47,11 @@ module.exports = {
     configIonic: function (currDir, ionicPackageLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite) {
         utils.printFeedback('Configuring Ionic app...');
         var ionicPackage = require(ionicPackageLocation);
+
+        if (!utils.checkTypescriptVersion(ionicPackage.devDependencies.typescript)) {
+            return;
+        }
+
         // if it is an ionic project(has ionic-angular package between dependecies)
         if (ionicPackage && ionicPackage.dependencies['ionic-angular']) {
 

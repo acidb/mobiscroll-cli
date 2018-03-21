@@ -73,6 +73,18 @@ function importModule(moduleName, location, data) {
 module.exports = {
     run: runCommand,
     writeToFile: writeToFile,
+    checkTypescriptVersion: (version) => {
+        var v = version.split('.').map((x) => {
+            return +x.replace(/[^\d]/, '')
+        });
+
+        if (v[0] < 2 || v[0] == 2 && v[1] < 2) {
+            printWarning(`Your app's TypeScript version is older then the minimum required version for Mobiscroll. (${version} < 2.2.0) Please upgrade your projects Typescript version. ($ npm install typescript@latest)`)
+            return false;
+        }
+
+        return true;
+    },
     installMobiscrollLite: function (framework, callback) {
         framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
         runCommand(`npm install @mobiscroll/${framework}-lite@latest --save`, true).then(() => {

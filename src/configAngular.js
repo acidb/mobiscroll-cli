@@ -6,6 +6,10 @@ module.exports = {
     configAngular: function (currDir, packageJson, jsFileName, cssFileName) {
         utils.printFeedback('Configuring Angular app...');
 
+        if (!utils.checkTypescriptVersion(packageJson.devDependencies.typescript)) {
+            return;
+        }
+
         // Modify app.module.ts add necesarry modules
         utils.importModules(currDir, jsFileName);
 
