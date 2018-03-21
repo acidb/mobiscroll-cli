@@ -3,6 +3,7 @@ const chalk = require('chalk');
 const exec = require('child_process').exec;
 const request = require('request');
 const mbscNpmUrl = 'https://npm.mobiscroll.com';
+const path = require('path');
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -34,6 +35,20 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
             }
         });
     });
+}
+
+function deleteFolderRecursive(path) {
+    if (fs.existsSync(path)) {
+        fs.readdirSync(path).forEach(function (file, index) {
+            var curPath = path + "/" + file;
+            if (fs.lstatSync(curPath).isDirectory()) { // recurse
+                deleteFolderRecursive(curPath);
+            } else { // delete file
+                fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(path);
+    }
 }
 
 function writeToFile(location, data, callback) {
@@ -104,7 +119,7 @@ module.exports = {
             callback();
         }
     },
-    installMobiscroll: function (framework, userName, isTrial, callback) {
+    installMobiscroll: function (framework, currDir, userName, isTrial, callback) {
         var pkgName = (framework.indexOf('ionic') > -1 ? 'angular' : framework) + (isTrial ? '-trial' : ''),
             command;
 
@@ -126,6 +141,15 @@ module.exports = {
                 printFeedback(`Installing packages via npm...`);
                 runCommand(command, true).then(() => {
                     printFeedback(`Mobiscroll for ${framework} installed.`);
+                    if (isTrial) {
+                        var nodePackageLocation = path.resolve(currDir, 'node_modules', '@mobiscroll');
+                        // delete the mobiscroll-angular directory to don't prevent collision
+                        deleteFolderRecursive(path.resolve(nodePackageLocation, 'angular'));
+                        // rename angular-trial folder to angular
+                        fs.renameSync(path.resolve(nodePackageLocation, 'angular-trial'), path.resolve(nodePackageLocation, 'angular'));
+                        // create an empty angular-trial
+                        fs.mkdirSync(path.resolve(nodePackageLocation, 'angular-trial'));
+                    }
                     callback();
                 }).catch((reason) => {
                     if (/403 Forbidden/.test(reason)) {

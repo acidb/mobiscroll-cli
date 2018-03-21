@@ -5,8 +5,8 @@ const chalk = require('chalk');
 const path = require('path');
 const helperMessages = require('./helperMessages.js');
 
-function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
-    var mobisrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular' + (trial ? '-trial' : ''));
+function configIonicPro(currDir, packageJson, packageJsonLocation /*, trial*/ ) {
+    var mobisrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular'); // + (trial ? '-trial' : '')
 
     process.chdir(mobisrollNpmFolder); // change directory to node modules folder
 
@@ -28,7 +28,7 @@ function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
                     }
 
                     console.log('\n' + chalk.green('>') + ' ' + mbscPackage[0] + ' copied to the root folder.\n');
-                    packageJson.dependencies['@mobiscroll/angular' + (trial ? '-trial' : '')] = "file:./" + mbscPackage[0];
+                    packageJson.dependencies['@mobiscroll/angular'] = "file:./" + mbscPackage[0]; // + (trial ? '-trial' : '')
                     utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4));
                     console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll form the generated tzg file. \n`);
 
@@ -38,10 +38,8 @@ function configIonicPro(currDir, packageJson, packageJsonLocation, trial) {
                     utils.run('npm install').then(() => {
                         utils.printFeedback(`Mobiscroll ionic-pro configuration ready!`);
                     });
-
                 });
             }
-
         });
     });
 }
@@ -59,7 +57,7 @@ module.exports = {
 
             console.log(`  Copying scripts`);
 
-            ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css' + (isNpmSource || isLite ? '-npm' : '') + (apiKey ? '-trial' : '') + '.js';
+            ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css' + (isNpmSource || isLite ? '-npm' : '') + '.js';
             utils.writeToFile(ionicPackageLocation, JSON.stringify(ionicPackage, null, 4));
 
             ncp(__dirname + '/../resources/ionic/scripts', currDir + '/scripts', function (err) {

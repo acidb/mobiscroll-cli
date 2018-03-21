@@ -197,12 +197,12 @@ function handleConfig(projectType) {
                 getApiKey(userName, (data) => {
                     var useTrial = !data.HasLicense || isTrial;
 
-                    jsFileName = `@mobiscroll/angular${useTrial ? '-trial' : ''}`;
-                    cssFileName = `../node_modules/@mobiscroll/angular${useTrial ? '-trial' : ''}/dist/css/mobiscroll.min.css`;
+                    jsFileName = '@mobiscroll/angular'; //`@mobiscroll/angular${useTrial ? '-trial' : ''}`;
+                    cssFileName = `../node_modules/@mobiscroll/angular/dist/css/mobiscroll.min.css`; //`../node_modules/@mobiscroll/angular${useTrial ? '-trial' : ''}/dist/css/mobiscroll.min.css`;
 
                     utils.removeUnusedaPackages(projectType, packageJsonLocation, useTrial, false, () => {
                         // Install mobiscroll npm package
-                        utils.installMobiscroll(projectType, userName, useTrial, () => {
+                        utils.installMobiscroll(projectType, currDir, userName, useTrial, () => {
                             config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
                         });
                     });
