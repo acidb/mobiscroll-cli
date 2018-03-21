@@ -39,7 +39,7 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
 
 function deleteFolderRecursive(path) {
     if (fs.existsSync(path)) {
-        fs.readdirSync(path).forEach(function (file, index) {
+        fs.readdirSync(path).forEach(function (file) {
             var curPath = path + "/" + file;
             if (fs.lstatSync(curPath).isDirectory()) { // recurse
                 deleteFolderRecursive(curPath);
@@ -120,7 +120,8 @@ module.exports = {
         }
     },
     installMobiscroll: function (framework, currDir, userName, isTrial, callback) {
-        var pkgName = (framework.indexOf('ionic') > -1 ? 'angular' : framework) + (isTrial ? '-trial' : ''),
+        var frameworkName = (framework.indexOf('ionic') > -1 ? 'angular' : framework),
+            pkgName = frameworkName + (isTrial ? '-trial' : ''),
             command;
 
         request('http://api.mobiscroll.com/api/getmobiscrollversion', function (error, response, body) {
@@ -144,11 +145,11 @@ module.exports = {
                     if (isTrial) {
                         var nodePackageLocation = path.resolve(currDir, 'node_modules', '@mobiscroll');
                         // delete the mobiscroll-angular directory to don't prevent collision
-                        deleteFolderRecursive(path.resolve(nodePackageLocation, 'angular'));
+                        deleteFolderRecursive(path.resolve(nodePackageLocation, frameworkName));
                         // rename angular-trial folder to angular
-                        fs.renameSync(path.resolve(nodePackageLocation, 'angular-trial'), path.resolve(nodePackageLocation, 'angular'));
+                        fs.renameSync(path.resolve(nodePackageLocation, `${frameworkName}-trial`), path.resolve(nodePackageLocation, frameworkName));
                         // create an empty angular-trial
-                        fs.mkdirSync(path.resolve(nodePackageLocation, 'angular-trial'));
+                        fs.mkdirSync(path.resolve(nodePackageLocation, `${frameworkName}-trial`));
                     }
                     callback();
                 }).catch((reason) => {
