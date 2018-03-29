@@ -5,44 +5,32 @@ const chalk = require('chalk');
 const path = require('path');
 const helperMessages = require('./helperMessages.js');
 
-function configIonicPro(currDir, packageJson, packageJsonLocation /*, trial*/ ) {
-    var mobisrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular'); // + (trial ? '-trial' : '')
+function configIonicPro(currDir, packageJson, packageJsonLocation) {
+    var mobisrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular');
 
-    process.chdir(mobisrollNpmFolder); // change directory to node modules folder
-
-    console.log(`\n${chalk.green('>')} changed current directory to node_modules/@mobiscroll/angular \n`);
-
-    utils.run('npm pack').then(() => { // run npm pack which will generate the mobiscroll package
-        fs.readdir(mobisrollNpmFolder, function (err, files) {
-            var mbscPackage = files.filter((f) => {
-                // return the full name of the generated package
-                return f.includes('mobiscroll-angular');
-            });
-
-            if (mbscPackage.length) {
-                // copy the generated package to the rootfolder
-                ncp(path.join(mobisrollNpmFolder, mbscPackage[0]), path.join(currDir, mbscPackage[0]), function (err) {
-                    if (err) {
-                        utils.printError('Could not copy generated mobiscroll package.\n\n' + err);
-                        return;
-                    }
-
-                    console.log('\n' + chalk.green('>') + ' ' + mbscPackage[0] + ' copied to the root folder.\n');
-                    packageJson.dependencies['@mobiscroll/angular'] = "file:./" + mbscPackage[0]; // + (trial ? '-trial' : '')
-                    utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4));
-                    console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll form the generated tzg file. \n`);
-
-                    // set the current durectory back to the default
-                    process.chdir(currDir);
-                    // run npm install
-                    utils.run('npm install').then(() => {
-                        utils.printFeedback(`Mobiscroll ionic-pro configuration ready!`);
-                    });
-                });
+    utils.packMobiscroll(mobisrollNpmFolder, currDir, (packageFileName) => {
+        ncp(path.join(mobisrollNpmFolder, packageFileName), path.join(currDir, packageFileName), function (err) {
+            if (err) {
+                utils.printError('Could not copy generated mobiscroll package.\n\n' + err);
+                return;
             }
+
+            console.log('\n' + chalk.green('>') + ' ' + packageFileName + ' copied to the root folder.\n');
+
+            packageJson.dependencies['@mobiscroll/angular'] = "file:./" + packageFileName;
+
+            utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
+                console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll form the generated tzg file. \n`);
+
+                // run npm install
+                utils.run('npm install', true).then(() => {
+                    utils.printFeedback(`Mobiscroll ionic-pro configuration ready!`);
+                });
+            });
         });
     });
 }
+
 module.exports = {
     configIonic: function (currDir, ionicPackageLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite) {
         utils.printFeedback('Configuring Ionic app...');
@@ -62,7 +50,7 @@ module.exports = {
 
             console.log(`  Copying scripts`);
 
-            ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css' + (isNpmSource || isLite ? '-npm' : '') + '.js';
+            ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css.js';
             utils.writeToFile(ionicPackageLocation, JSON.stringify(ionicPackage, null, 4));
 
             ncp(__dirname + '/../resources/ionic/scripts', currDir + '/scripts', function (err) {
@@ -84,6 +72,9 @@ module.exports = {
                 if (isNpmSource || isLite) {
                     cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
                 }
+
+                // replace previously added links
+                data = data.replace(/<link rel="stylesheet" href=".*mobiscroll.*">\s+/, '');
 
                 if (data.indexOf(cssFileName) == -1) {
                     data = data.replace(/<link ([^>]+) rel="stylesheet">/, function (match) {

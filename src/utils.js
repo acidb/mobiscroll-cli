@@ -2,8 +2,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
 const request = require('request');
-const mbscNpmUrl = 'https://npm.mobiscroll.com';
-const path = require('path');
+const mbscNpmUrl = 'http://npm.mobiscrollprod.com';
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -37,20 +36,6 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
     });
 }
 
-function deleteFolderRecursive(path) {
-    if (fs.existsSync(path)) {
-        fs.readdirSync(path).forEach(function (file) {
-            var curPath = path + "/" + file;
-            if (fs.lstatSync(curPath).isDirectory()) { // recurse
-                deleteFolderRecursive(curPath);
-            } else { // delete file
-                fs.unlinkSync(curPath);
-            }
-        });
-        fs.rmdirSync(path);
-    }
-}
-
 function writeToFile(location, data, callback) {
     fs.writeFile(location, data, function (err) {
         if (err) {
@@ -70,16 +55,30 @@ function importModule(moduleName, location, data) {
     return data;
 }
 
+function getMobiscrollVersion(callback) {
+    request('http://api.mobiscroll.com/api/getmobiscrollversion', function (error, response, body) {
+        if (error) {
+            printError('Could not get mobiscroll version.' + error);
+        }
+
+        if (!error && response.statusCode === 200) {
+            body = JSON.parse(body);
+            callback(body.Version);
+        }
+    });
+}
+
 module.exports = {
     run: runCommand,
     writeToFile: writeToFile,
+    getMobiscrollVersion: getMobiscrollVersion,
     checkTypescriptVersion: (version) => {
         var v = version.split('.').map((x) => {
             return +x.replace(/[^\d]/, '')
         });
 
         if (v[0] < 2 || v[0] == 2 && v[1] < 2) {
-            printWarning(`Your app's TypeScript version is older then the minimum required version for Mobiscroll. (${version} < 2.2.0) Please upgrade your projects Typescript version. ($ npm install typescript@latest)`)
+            printWarning(`Your app's TypeScript version is older then the minimum required version for Mobiscroll. (${version} < 2.2.0) Please update your project's Typescript version. (You can update the following way: $ npm install typescript@latest)`)
             return false;
         }
 
@@ -136,41 +135,52 @@ module.exports = {
             pkgName = frameworkName + (isTrial ? '-trial' : ''),
             command;
 
-        request('http://api.mobiscroll.com/api/getmobiscrollversion', function (error, response, body) {
-            if (error) {
-                printError(error);
+        getMobiscrollVersion(function (version) {
+            if (isTrial) {
+                command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${version}.tgz --save --registry=${mbscNpmUrl}`;
+            } else {
+                command = `npm install @mobiscroll/${pkgName}@latest --save`;
             }
 
-            if (!error && response.statusCode === 200) {
-                body = JSON.parse(body);
+            // Skip node warnings
+            printFeedback(`Installing packages via npm...`);
+            runCommand(command, true).then(() => {
+                printFeedback(`Mobiscroll for ${framework} installed.`);
+                callback();
+            }).catch((reason) => {
+                if (/403 Forbidden/.test(reason)) {
+                    reason = `User ${userName} has no access to package @mobiscroll/${pkgName}.`;
+                }
+                printError('Could not install Mobiscroll.\n\n' + reason);
+            });
+        })
+    },
+    packMobiscroll: (packLocation, currDir, callback) => {
+        process.chdir(packLocation); // change directory to node modules folder
 
-                if (isTrial) {
-                    command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --save --registry=${mbscNpmUrl}`;
-                } else {
-                    command = `npm install @mobiscroll/${pkgName}@latest --save`;
+        console.log(`\n${chalk.green('>')} changed current directory to ${packLocation}. \n`);
+
+        runCommand('npm pack').then(() => { // run npm pack which will generate the mobiscroll package
+            fs.readdir(packLocation, function (err, files) {
+                if (err) {
+                    printError('Could not access to the directory filse.\n\n' + err);
+                    return;
                 }
 
-                // Skip node warnings
-                printFeedback(`Installing packages via npm...`);
-                runCommand(command, true).then(() => {
-                    printFeedback(`Mobiscroll for ${framework} installed.`);
-                    if (isTrial) {
-                        var nodePackageLocation = path.resolve(currDir, 'node_modules', '@mobiscroll');
-                        // delete the mobiscroll-angular directory to don't prevent collision
-                        deleteFolderRecursive(path.resolve(nodePackageLocation, frameworkName));
-                        // rename angular-trial folder to angular
-                        fs.renameSync(path.resolve(nodePackageLocation, `${frameworkName}-trial`), path.resolve(nodePackageLocation, frameworkName));
-                        // create an empty angular-trial
-                        fs.mkdirSync(path.resolve(nodePackageLocation, `${frameworkName}-trial`));
-                    }
-                    callback();
-                }).catch((reason) => {
-                    if (/403 Forbidden/.test(reason)) {
-                        reason = `User ${userName} has no access to package @mobiscroll/${pkgName}.`;
-                    }
-                    printError('Could not install Mobiscroll.\n\n' + reason);
+                let mbscPackage = files.filter((f) => {
+                    // return the full name of the generated package
+                    return f.includes('mobiscroll-angular');
                 });
-            }
+
+                if (mbscPackage.length) {
+                    // set the current durectory back to the default
+                    process.chdir(currDir);
+                    //console.log(`\n${chalk.green('>')} Changed back current directory to the default one. \n`);
+
+                    callback(mbscPackage[0]);
+                }
+            })
+
         });
     },
     importModules: function (currDir, jsFileName) {
