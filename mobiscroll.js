@@ -248,7 +248,7 @@ function handleConfig(projectType) {
                             return;
                         }
 
-                        let noNpmPackageJson = require(path.resolve(__dirname, 'resources', 'angular', 'package.json'));
+                        let noNpmPackageJson = require(path.resolve(__dirname, 'resources', 'angular', 'pckg.json'));
 
                         console.log(`\n${chalk.green('>')} Mobiscroll resources was copied successfully.`);
 
