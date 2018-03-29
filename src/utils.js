@@ -2,7 +2,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
 const request = require('request');
-const mbscNpmUrl = 'http://npm.mobiscrollprod.com';
+const mbscNpmUrl = 'http://npm.mobiscroll.com';
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
