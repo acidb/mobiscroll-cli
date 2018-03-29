@@ -1,7 +1,7 @@
 module.exports = {
     ionicLazy: (isTrial, isLite) => {
         console.log(`\nIf you are using ionic lazy loading you'll have to manually include the MbscModule and FormsModule into the page's module.ts file where you'll be using Mobiscroll.\n\nExample:\n`);
-        console.log("    import { MbscModule } from '@mobiscroll/angular" + (isTrial ? '-trial' : (isLite ? '-lite' : '')) + "';");
+        console.log("    import { MbscModule } from '@mobiscroll/angular" + (isLite ? '-lite' : '') + "';");
         console.log("    import { FormsModule } from '@angular/forms';\n");
         console.log("    @NgModule({");
         console.log("        imports: [");
@@ -26,16 +26,16 @@ module.exports = {
         console.log(`
 A vue.js application detected. Here is how to import Mobiscroll into your app:
 
-import mobiscroll from ` + `'@mobiscroll/${framework}` + (isTrial ? '-trial' : (isLite ? '-lite' : '')) + `';
-import '` + `@mobiscroll/${framework}` + (isTrial ? '-trial' : (isLite ? '-lite' : '')) + `/dist/css/mobiscroll.min.css';
+import mobiscroll from ` + `'@mobiscroll/${framework}` + (isLite ? '-lite' : '') + `';
+import '` + `@mobiscroll/${framework}` + (isLite ? '-lite' : '') + `/dist/css/mobiscroll.min.css';
         `);
     },
     reactHelp: (isTrial, isLite) => {
         console.log(`
 You can import Mobiscroll to your react component like:
 
-import mobiscroll from ` + `'@mobiscroll/react` + (isTrial ? '-trial' : (isLite ? '-lite' : '')) + `';
-import '` + `@mobiscroll/react` + (isTrial ? '-trial' : (isLite ? '-lite' : '')) + `/dist/css/mobiscroll.min.css';
+import mobiscroll from ` + `'@mobiscroll/react` + (isLite ? '-lite' : '') + `';
+import '` + `@mobiscroll/react` + (isLite ? '-lite' : '') + `/dist/css/mobiscroll.min.css';
         `);
 
     }

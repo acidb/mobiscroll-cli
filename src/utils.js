@@ -2,7 +2,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
 const request = require('request');
-const mbscNpmUrl = 'https://npm.mobiscroll.com';
+const mbscNpmUrl = 'http://npm.mobiscrollprod.com';
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -55,9 +55,35 @@ function importModule(moduleName, location, data) {
     return data;
 }
 
+function getMobiscrollVersion(callback) {
+    request('http://api.mobiscroll.com/api/getmobiscrollversion', function (error, response, body) {
+        if (error) {
+            printError('Could not get mobiscroll version.' + error);
+        }
+
+        if (!error && response.statusCode === 200) {
+            body = JSON.parse(body);
+            callback(body.Version);
+        }
+    });
+}
+
 module.exports = {
     run: runCommand,
     writeToFile: writeToFile,
+    getMobiscrollVersion: getMobiscrollVersion,
+    checkTypescriptVersion: (version) => {
+        var v = version.split('.').map((x) => {
+            return +x.replace(/[^\d]/, '')
+        });
+
+        if (v[0] < 2 || v[0] == 2 && v[1] < 2) {
+            printWarning(`Your app's TypeScript version is older then the minimum required version for Mobiscroll. (${version} < 2.2.0) Please update your project's Typescript version. (You can update the following way: $ npm install typescript@latest)`)
+            return false;
+        }
+
+        return true;
+    },
     installMobiscrollLite: function (framework, callback) {
         framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
         runCommand(`npm install @mobiscroll/${framework}-lite@latest --save`, true).then(() => {
@@ -104,36 +130,57 @@ module.exports = {
             callback();
         }
     },
-    installMobiscroll: function (framework, userName, isTrial, callback) {
-        var pkgName = (framework.indexOf('ionic') > -1 ? 'angular' : framework) + (isTrial ? '-trial' : ''),
+    installMobiscroll: function (framework, currDir, userName, isTrial, callback) {
+        var frameworkName = (framework.indexOf('ionic') > -1 ? 'angular' : framework),
+            pkgName = frameworkName + (isTrial ? '-trial' : ''),
             command;
 
-        request('http://api.mobiscroll.com/api/getmobiscrollversion', function (error, response, body) {
-            if (error) {
-                printError(error);
+        getMobiscrollVersion(function (version) {
+            if (isTrial) {
+                command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${version}.tgz --save --registry=${mbscNpmUrl}`;
+            } else {
+                command = `npm install @mobiscroll/${pkgName}@latest --save`;
             }
 
-            if (!error && response.statusCode === 200) {
-                body = JSON.parse(body);
+            // Skip node warnings
+            printFeedback(`Installing packages via npm...`);
+            runCommand(command, true).then(() => {
+                printFeedback(`Mobiscroll for ${framework} installed.`);
+                callback();
+            }).catch((reason) => {
+                if (/403 Forbidden/.test(reason)) {
+                    reason = `User ${userName} has no access to package @mobiscroll/${pkgName}.`;
+                }
+                printError('Could not install Mobiscroll.\n\n' + reason);
+            });
+        })
+    },
+    packMobiscroll: (packLocation, currDir, callback) => {
+        process.chdir(packLocation); // change directory to node modules folder
 
-                if (isTrial) {
-                    command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${body.Version}.tgz --save --registry=${mbscNpmUrl}`;
-                } else {
-                    command = `npm install @mobiscroll/${pkgName}@latest --save`;
+        console.log(`\n${chalk.green('>')} changed current directory to ${packLocation}. \n`);
+
+        runCommand('npm pack').then(() => { // run npm pack which will generate the mobiscroll package
+            fs.readdir(packLocation, function (err, files) {
+                if (err) {
+                    printError('Could not access to the directory filse.\n\n' + err);
+                    return;
                 }
 
-                // Skip node warnings
-                printFeedback(`Installing packages via npm...`);
-                runCommand(command, true).then(() => {
-                    printFeedback(`Mobiscroll for ${framework} installed.`);
-                    callback();
-                }).catch((reason) => {
-                    if (/403 Forbidden/.test(reason)) {
-                        reason = `User ${userName} has no access to package @mobiscroll/${pkgName}.`;
-                    }
-                    printError('Could not install Mobiscroll.\n\n' + reason);
+                let mbscPackage = files.filter((f) => {
+                    // return the full name of the generated package
+                    return f.includes('mobiscroll-angular');
                 });
-            }
+
+                if (mbscPackage.length) {
+                    // set the current durectory back to the default
+                    process.chdir(currDir);
+                    //console.log(`\n${chalk.green('>')} Changed back current directory to the default one. \n`);
+
+                    callback(mbscPackage[0]);
+                }
+            })
+
         });
     },
     importModules: function (currDir, jsFileName) {

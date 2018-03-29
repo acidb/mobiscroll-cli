@@ -11,6 +11,7 @@ const chalk = require('chalk');
 const http = require('http');
 const path = require('path');
 const helperMessages = require('./src/helperMessages.js');
+const ncp = require('ncp').ncp;
 
 var isNpmSource = true;
 var isTrial = false;
@@ -53,7 +54,6 @@ function checkUpdate() {
         })
     });
 }
-
 
 function handleTrial() {
     isTrial = true;
@@ -160,25 +160,20 @@ function handleConfig(projectType) {
     }
 
     checkUpdate().then(() => {
-        var cssFileName,
-            jsFileName,
+        var jsFileName = `@mobiscroll/angular${ isLite ? '-lite' : '' }`,
+            cssFileName = `../node_modules/@mobiscroll/angular${ isLite ? '-lite' : '' }/dist/css/mobiscroll.min.css`,
             currDir = process.cwd(), // get the directory where the mobiscroll command was executed
-            packageJsonLocation = path.resolve(process.cwd(), 'package.json');
-        //packageJson = require(packageJsonLocation);
+            packageJsonLocation = path.resolve(currDir, 'package.json');
 
         // check if package.json is in the current directory
-        // if (!fs.existsSync(packageJsonLocation)) {
-        //     printWarning('There is no package.json in this directorty.\nPlease run this command in the project\'s root directory!');
-        //     return;
-        // }
+        if (!fs.existsSync(packageJsonLocation)) {
+            printWarning('There is no package.json in this directorty.\nPlease run this command in the project\'s root directory!');
+        }
 
         printFeedback('Mobiscroll configuration started.');
 
         if (isLite) {
             utils.installMobiscrollLite(projectType, function () {
-                jsFileName = '@mobiscroll/angular-lite';
-                cssFileName = `../node_modules/@mobiscroll/angular-lite/dist/css/mobiscroll.min.css`;
-
                 config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, false, false, true);
             })
         } else if (isNpmSource) {
@@ -197,12 +192,9 @@ function handleConfig(projectType) {
                 getApiKey(userName, (data) => {
                     var useTrial = !data.HasLicense || isTrial;
 
-                    jsFileName = `@mobiscroll/angular${useTrial ? '-trial' : ''}`;
-                    cssFileName = `../node_modules/@mobiscroll/angular${useTrial ? '-trial' : ''}/dist/css/mobiscroll.min.css`;
-
                     utils.removeUnusedaPackages(projectType, packageJsonLocation, useTrial, false, () => {
                         // Install mobiscroll npm package
-                        utils.installMobiscroll(projectType, userName, useTrial, () => {
+                        utils.installMobiscroll(projectType, currDir, userName, useTrial, () => {
                             config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
                         });
                     });
@@ -211,36 +203,85 @@ function handleConfig(projectType) {
         } else {
             // if no-npm flag is set
             var files,
-                jsFileLocation = currDir + '/src/lib/mobiscroll/js',
-                cssFileLocation = currDir + '/src/lib/mobiscroll/css';
+                localCssFileName,
+                localJsFileName,
+                mbscFolderLocation = path.resolve(currDir, 'src', 'lib', 'mobiscroll'),
+                jsFileLocation = path.resolve(mbscFolderLocation, 'js'),
+                cssFileLocation = path.resolve(mbscFolderLocation, 'css');
 
             utils.removeUnusedaPackages(projectType, packageJsonLocation, false, false, () => {
 
                 // check if moibscroll js files are copied to the specific location and get the js file name
                 if (fs.existsSync(jsFileLocation)) {
-                    files = fs.readdirSync(currDir + '/src/lib/mobiscroll/js');
-                    jsFileName = files.filter(function (item) {
+                    files = fs.readdirSync(jsFileLocation);
+                    localJsFileName = files.filter(function (item) {
                         return item.match(/^mobiscroll\..*\.js$/);
                     });
                 }
 
                 // check if css files are copied to the specific location and get the css file name
                 if (fs.existsSync(cssFileLocation)) {
-                    files = fs.readdirSync(currDir + '/src/lib/mobiscroll/css');
-                    cssFileName = files.filter(function (item) {
+                    files = fs.readdirSync(cssFileLocation);
+                    localCssFileName = files.filter(function (item) {
                         return item.match(/^mobiscroll\..*\.css$/);
                     });
                 }
 
-                if (!jsFileName || !cssFileName) {
+                if (!localJsFileName || !localCssFileName) {
                     printWarning('No mobiscroll js/css files were found in your current project. \n\nPlease make sure to unpack the downloaded mobiscroll package and copy the lib folder to the src folder of your app!');
                     return;
                 }
 
-                jsFileName = '../lib/mobiscroll/js/' + jsFileName[0];
-                cssFileName = 'lib/mobiscroll/css/' + cssFileName[0];
+                utils.getMobiscrollVersion((version) => {
+                    let packageFolder = path.resolve(currDir, 'src', 'lib', 'mobiscroll-package');
 
-                config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
+                    // create new folders
+                    if (!fs.existsSync(packageFolder)) {
+                        fs.mkdirSync(packageFolder, 0o777);
+                        fs.mkdirSync(path.resolve(packageFolder, 'dist'), 0o777);
+                    }
+
+                    // copy the mobiscroll resources to another folder for packing
+                    ncp(mbscFolderLocation, path.resolve(path.resolve(packageFolder, 'dist')), (err) => {
+                        if (err) {
+                            utils.printError('Could not copy Mobiscroll resources.\n\n' + err);
+                            return;
+                        }
+
+                        let noNpmPackageJson = require(path.resolve(__dirname, 'resources', 'angular', 'package.json'));
+
+                        console.log(`\n${chalk.green('>')} Mobiscroll resources was copied successfully.`);
+
+                        // create the package.json file for the
+                        noNpmPackageJson.version = version;
+                        noNpmPackageJson.main = noNpmPackageJson.main + localJsFileName[0];
+                        noNpmPackageJson.module = noNpmPackageJson.module + localJsFileName[0];
+                        noNpmPackageJson.types = noNpmPackageJson.types + localJsFileName[0].replace('js', 'ts');
+                        noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
+
+                        // write the new package.json
+                        utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
+
+                            // pack with npm pack
+                            utils.packMobiscroll(packageFolder, currDir, (packageName) => {
+                                let packageJson = require(packageJsonLocation);
+
+                                packageJson.dependencies['@mobiscroll/angular'] = 'file:./src/lib/mobiscroll-package/' + packageName;
+
+                                utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
+                                    console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll form the generated tzg file. \n`);
+
+                                    // run npm install
+                                    utils.run('npm install', true).then(() => {
+                                        cssFileName = (projectType == 'ionic' ? 'lib/mobiscroll/css/' : '../node_modules/@mobiscroll/angular/dist/css/') + localCssFileName;
+                                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
+                                    });
+                                });
+                            });
+                        });
+                    });
+
+                });
             }, true);
         }
     })
