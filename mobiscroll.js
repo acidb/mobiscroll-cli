@@ -8,7 +8,7 @@ const utils = require('./src/utils.js');
 const configIonic = require('./src/configIonic.js').configIonic;
 const configAngular = require('./src/configAngular.js').configAngular;
 const chalk = require('chalk');
-const http = require('http');
+const request = require('request');
 const path = require('path');
 const helperMessages = require('./src/helperMessages.js');
 const ncp = require('ncp').ncp;
@@ -72,17 +72,20 @@ function handleLazy() {
 }
 
 function getApiKey(userName, callback) {
-    http.get('http://api.mobiscroll.com/api/userdata/' + userName, function (res) {
-        var data = '';
-        res.on('data', function (chunk) {
-            data += chunk;
-        });
-
-        res.on('end', function () {
-            callback(data ? JSON.parse(data) : {});
-        });
-    }).on('error', function (err) {
-        printError('There was an error during getting the user\'s trial code. Please see the error message for more information: ' + err);
+    request.get({
+        url: 'http://api.mobiscroll.com/api/userdata/' + userName,
+        json: true,
+        headers: {
+            'User-Agent': 'request'
+        }
+    }, (err, res, data) => {
+        if (err) {
+            printError('There was an error during getting the user\'s trial code. Please see the error message for more information: ' + err);
+        } else if (res.statusCode !== 200) {
+            printError('There was a problem during getting the user\'s trial code. Status: ' + res.statusCode + ' , User: ' + userName);
+        } else {
+            callback(data);
+        }
     });
 }
 
