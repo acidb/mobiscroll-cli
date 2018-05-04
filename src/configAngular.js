@@ -36,6 +36,19 @@ module.exports = {
 
                 utils.printFeedback('Mobiscroll configuration ready.');
             });
+        } else if (fs.existsSync(currDir + '/angular.json')) {
+            // starting from cli v6.0 the configuration file name and structure changed 
+            var ngConfig = require(currDir + '/angular.json');
+            var projectName = Object.keys(ngConfig.projects)[0],
+                stylesArray = ngConfig.projects[projectName].architect.build.options.styles;
+
+            if (stylesArray) {
+                stylesArray = stylesArray.filter(x => x.indexOf('mobiscroll') == -1); // remove previosly installed mobiscroll styles
+                stylesArray.push(cssFileName.replace('../', './'));
+                ngConfig.projects[projectName].architect.build.options.styles = stylesArray;
+            }
+
+            utils.writeToFile(currDir + '/angular.json', JSON.stringify(ngConfig, null, 2));
         } else {
             utils.printWarning(`The file ${chalk.grey('angular-cli.json')} could not be found. If this is not an Angular CLI app, make sure to load ${chalk.grey(cssFileName)} into your app.`)
             utils.printFeedback('Mobiscroll configuration ready.');

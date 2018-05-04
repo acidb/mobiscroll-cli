@@ -1,0 +1,36 @@
+{
+    "name": "@mobiscroll/javascript",
+    "version": "",
+    "description": "Framework agnostic UI library for progressive web and hybrid apps",
+    "homepage": "https://mobiscroll.com/",
+    "license": "Apache-2.0",
+    "keywords": [
+        "mobile web",
+        "hybrid apps",
+        "javascript",
+        "mobiscroll",
+        "javascript library",
+        "component library",
+        "ui components",
+        "ui kit"
+    ],
+    "author": {
+        "name": "Mobiscroll",
+        "url": "https://mobiscroll.com/"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/acidb/mobiscroll.git"
+    },
+    "bugs": {
+        "url": "https://github.com/acidb/mobiscroll/issues"
+    },
+    "typings": "dist/src/js/frameworks/javascript.d.ts",
+    "main": "dist/js/",
+    "style": "dist/css/",
+    "files": [
+        "dist/js/**",
+        "dist/css/**",
+        "dist/src/**"
+    ]
+}

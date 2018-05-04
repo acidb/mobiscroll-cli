@@ -35,11 +35,12 @@ function checkUpdate() {
                 inquirer.prompt({
                     type: 'input',
                     name: 'update',
-                    message: `The Mobiscroll CLI has an update available (${localCliVersion} => ${npmCliVersion})! Would you like to install it? (Y/n)`
+                    message: `The Mobiscroll CLI has an update available (${localCliVersion} => ${npmCliVersion})! Would you like to install it? (Y/n)`,
+                    default: 'y'
                 }).then(answer => {
                     if (answer.update.toLowerCase() == 'y') {
                         run('npm install -g @mobiscroll/cli@latest').then(() => {
-                            printFeedback(`Updated Mobscirll CLI to ${npmCliVersion}! \n\nPlease re-run your command!\n`);
+                            printFeedback(`Updated Mobiscroll CLI to ${npmCliVersion}! \n\nPlease re-run your command!\n`);
                             process.exit();
                         });
                     } else {
@@ -210,7 +211,8 @@ function handleConfig(projectType) {
                 localJsFileName,
                 mbscFolderLocation = path.resolve(currDir, 'src', 'lib', 'mobiscroll'),
                 jsFileLocation = path.resolve(mbscFolderLocation, 'js'),
-                cssFileLocation = path.resolve(mbscFolderLocation, 'css');
+                cssFileLocation = path.resolve(mbscFolderLocation, 'css'),
+                framework = projectType == 'ionic' ? 'angular' : projectType;
 
             utils.removeUnusedaPackages(projectType, packageJsonLocation, false, false, () => {
 
@@ -251,7 +253,7 @@ function handleConfig(projectType) {
                             return;
                         }
 
-                        let noNpmPackageJson = require(path.resolve(__dirname, 'resources', 'angular', 'pckg.json'));
+                        let noNpmPackageJson = require(path.resolve(__dirname, 'resources', framework, 'pckg.json'));
 
                         console.log(`\n${chalk.green('>')} Mobiscroll resources was copied successfully.`);
 
@@ -262,22 +264,26 @@ function handleConfig(projectType) {
                         noNpmPackageJson.types = noNpmPackageJson.types + localJsFileName[0].replace('js', 'ts');
                         noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
 
-                        // write the new package.json
-                        utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
+                        // console.log(`\n${chalk.green('>')} Remove previously installed mobiscroll package.`);
+                        // remove previously installed mobiscroll package (fix npm caching the local package)
+                        utils.run(`npm uninstall @mobiscroll/${framework} --save`, true).then(() => {
 
-                            // pack with npm pack
-                            utils.packMobiscroll(packageFolder, currDir, (packageName) => {
-                                let packageJson = require(packageJsonLocation);
+                            // write the new package.json
+                            utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
+                                // pack with npm pack
+                                utils.packMobiscroll(packageFolder, currDir, framework, (packageName) => {
+                                    let packageJson = require(packageJsonLocation);
 
-                                packageJson.dependencies['@mobiscroll/angular'] = 'file:./src/lib/mobiscroll-package/' + packageName;
+                                    packageJson.dependencies[`@mobiscroll/${framework}`] = 'file:./src/lib/mobiscroll-package/' + packageName;
 
-                                utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
-                                    console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll form the generated tzg file. \n`);
+                                    utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
+                                        console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll form the generated tzg file. \n`);
 
-                                    // run npm install
-                                    utils.run('npm install', true).then(() => {
-                                        cssFileName = (projectType == 'ionic' ? 'lib/mobiscroll/css/' : '../node_modules/@mobiscroll/angular/dist/css/') + localCssFileName;
-                                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
+                                        // run npm install
+                                        utils.run('npm install', true).then(() => {
+                                            cssFileName = (projectType == 'ionic' ? 'lib/mobiscroll/css/' : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
+                                            config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
+                                        });
                                     });
                                 });
                             });

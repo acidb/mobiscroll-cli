@@ -155,7 +155,7 @@ module.exports = {
             });
         })
     },
-    packMobiscroll: (packLocation, currDir, callback) => {
+    packMobiscroll: (packLocation, currDir, framework, callback) => {
         process.chdir(packLocation); // change directory to node modules folder
 
         console.log(`\n${chalk.green('>')} changed current directory to ${packLocation}. \n`);
@@ -169,7 +169,7 @@ module.exports = {
 
                 let mbscPackage = files.filter((f) => {
                     // return the full name of the generated package
-                    return f.includes('mobiscroll-angular');
+                    return f.includes(`mobiscroll-${framework}`);
                 });
 
                 if (mbscPackage.length) {

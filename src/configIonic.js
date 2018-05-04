@@ -8,7 +8,7 @@ const helperMessages = require('./helperMessages.js');
 function configIonicPro(currDir, packageJson, packageJsonLocation) {
     var mobisrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular');
 
-    utils.packMobiscroll(mobisrollNpmFolder, currDir, (packageFileName) => {
+    utils.packMobiscroll(mobisrollNpmFolder, currDir, 'angular', (packageFileName) => {
         ncp(path.join(mobisrollNpmFolder, packageFileName), path.join(currDir, packageFileName), function (err) {
             if (err) {
                 utils.printError('Could not copy generated mobiscroll package.\n\n' + err);
