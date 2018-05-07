@@ -13,7 +13,7 @@ module.exports = {
         // Modify app.module.ts add necesarry modules
         utils.importModules(currDir, jsFileName);
 
-        console.log(`  Adding stylesheet to ${chalk.grey('angular-cli.json')}`);
+        console.log(`  Adding stylesheet to ${chalk.grey('angular.json')}`);
 
         if (fs.existsSync(currDir + '/.angular-cli.json')) {
             // Modify .angular-cli.json to load styles
@@ -36,7 +36,7 @@ module.exports = {
 
                 utils.printFeedback('Mobiscroll configuration ready.');
             });
-        } else if (fs.existsSync(currDir + '/angular.json')) {
+        } else if (fs.existsSync(currDir + '/angular.json')) { // angular 6
             // starting from cli v6.0 the configuration file name and structure changed 
             var ngConfig = require(currDir + '/angular.json');
             var projectName = Object.keys(ngConfig.projects)[0],
@@ -49,8 +49,11 @@ module.exports = {
             }
 
             utils.writeToFile(currDir + '/angular.json', JSON.stringify(ngConfig, null, 2));
+
+            // install rxjs-compat package
+            utils.run('npm install rxjs-compat --save', true);
         } else {
-            utils.printWarning(`The file ${chalk.grey('angular-cli.json')} could not be found. If this is not an Angular CLI app, make sure to load ${chalk.grey(cssFileName)} into your app.`)
+            utils.printWarning(`The file ${chalk.grey('angular.json')} could not be found. If this is not an Angular CLI app, make sure to load ${chalk.grey(cssFileName)} into your app.`)
             utils.printFeedback('Mobiscroll configuration ready.');
         }
     }
