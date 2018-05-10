@@ -43,7 +43,7 @@ module.exports = {
                 stylesArray = ngConfig.projects[projectName].architect.build.options.styles;
 
             if (stylesArray) {
-                stylesArray = stylesArray.filter(x => x.indexOf('mobiscroll') == -1); // remove previosly installed mobiscroll styles
+                stylesArray = stylesArray.filter(x => x != null && typeof x == "object" ? x.input && x.input.indexOf('mobiscroll') == -1 : x.indexOf('mobiscroll') == -1); // remove previosly installed mobiscroll styles
                 stylesArray.push(cssFileName.replace('../', './'));
                 ngConfig.projects[projectName].architect.build.options.styles = stylesArray;
             }
