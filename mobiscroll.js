@@ -259,10 +259,18 @@ function handleConfig(projectType) {
 
                         // create the package.json file for the
                         noNpmPackageJson.version = version;
-                        noNpmPackageJson.main = noNpmPackageJson.main + localJsFileName[0];
-                        noNpmPackageJson.module = noNpmPackageJson.module + localJsFileName[0];
-                        noNpmPackageJson.types = noNpmPackageJson.types + localJsFileName[0].replace('js', 'ts');
-                        noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
+                        if (noNpmPackageJson.main) {
+                            noNpmPackageJson.main = noNpmPackageJson.main + localJsFileName[0];
+                        }
+                        if (noNpmPackageJson.module) {
+                            noNpmPackageJson.module = noNpmPackageJson.module + localJsFileName[0];
+                        }
+                        if (noNpmPackageJson.types) {
+                            noNpmPackageJson.types = noNpmPackageJson.types + localJsFileName[0].replace('js', 'd.ts');
+                        }
+                        if (noNpmPackageJson.style) {
+                            noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
+                        }
 
                         // console.log(`\n${chalk.green('>')} Remove previously installed mobiscroll package.`);
                         // remove previously installed mobiscroll package (fix npm caching the local package)
