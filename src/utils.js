@@ -68,14 +68,19 @@ function getMobiscrollVersion(callback) {
     });
 }
 
+function shapeVersionToArray(version) {
+    return version.split('.').map((x) => {
+        return +x.replace(/[^\d]/, '')
+    });
+}
+
 module.exports = {
     run: runCommand,
     writeToFile: writeToFile,
+    shapeVersionToArray: shapeVersionToArray,
     getMobiscrollVersion: getMobiscrollVersion,
     checkTypescriptVersion: (version) => {
-        var v = version.split('.').map((x) => {
-            return +x.replace(/[^\d]/, '')
-        });
+        var v = shapeVersionToArray(version);
 
         if (v[0] < 2 || v[0] == 2 && v[1] < 2) {
             printWarning(`Your app's TypeScript version is older then the minimum required version for Mobiscroll. (${version} < 2.2.0) Please update your project's Typescript version. (You can update the following way: $ npm install typescript@latest)`)
@@ -84,14 +89,14 @@ module.exports = {
 
         return true;
     },
-    installMobiscrollLite: function (framework, callback) {
+    installMobiscrollLite: function (framework, version, callback) {
         framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
-        runCommand(`npm install @mobiscroll/${framework}-lite@latest --save`, true).then(() => {
+        runCommand(`npm install @mobiscroll/${framework}-lite@${ version || 'latest' } --save`, true).then(() => {
             printFeedback(`The lite version of Mobiscroll for ${framework} installed.`);
             callback();
         });
     },
-    removeUnusedaPackages: function (framework, packageJsonLocaltion, isTrial, isLite, callback, noNpm) {
+    removeUnusedPackages: function (framework, packageJsonLocaltion, isTrial, isLite, callback, noNpm) {
         framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
 
         var changed,
@@ -106,7 +111,7 @@ module.exports = {
             delete packageJson.dependencies[packageName];
             delete packageJson.dependencies[litePackageName];
             changed = true;
-        } else {
+        } else if (packageJson && packageJson.dependencies) {
             if (!isTrial && packageJson.dependencies[trialPackageName]) {
                 changed = true;
                 // Remove mobiscroll-trial package form package.json if the licenced version is installed
@@ -130,7 +135,7 @@ module.exports = {
             callback();
         }
     },
-    installMobiscroll: function (framework, currDir, userName, isTrial, callback) {
+    installMobiscroll: function (framework, currDir, userName, isTrial, installVersion, callback) {
         var frameworkName = (framework.indexOf('ionic') > -1 ? 'angular' : framework),
             pkgName = frameworkName + (isTrial ? '-trial' : ''),
             command;
@@ -139,7 +144,7 @@ module.exports = {
             if (isTrial) {
                 command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${version}.tgz --save --registry=${mbscNpmUrl}`;
             } else {
-                command = `npm install @mobiscroll/${pkgName}@latest --save`;
+                command = `npm install @mobiscroll/${pkgName}@${ installVersion || 'latest' } --save`;
             }
 
             // Skip node warnings
@@ -160,7 +165,7 @@ module.exports = {
 
         console.log(`\n${chalk.green('>')} changed current directory to ${packLocation}. \n`);
 
-        runCommand('npm pack').then(() => { // run npm pack which will generate the mobiscroll package
+        runCommand('npm pack', true).then(() => { // run npm pack which will generate the mobiscroll package
             fs.readdir(packLocation, function (err, files) {
                 if (err) {
                     printError('Could not access to the directory filse.\n\n' + err);
@@ -180,7 +185,6 @@ module.exports = {
                     callback(mbscPackage[0]);
                 }
             })
-
         });
     },
     importModules: function (currDir, jsFileName) {

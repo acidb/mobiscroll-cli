@@ -12,6 +12,7 @@ const request = require('request');
 const path = require('path');
 const helperMessages = require('./src/helperMessages.js');
 const ncp = require('ncp').ncp;
+const figlet = require('figlet');
 
 var isNpmSource = true;
 var isTrial = false;
@@ -22,6 +23,8 @@ var printFeedback = utils.printFeedback;
 var printError = utils.printError;
 var printWarning = utils.printWarning;
 var localCliVersion = require('./package.json').version;
+var mobiscrollVersion = null;
+var logInGlobally = false;
 
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
 
@@ -70,6 +73,14 @@ function handleNpmInstall() {
 
 function handleLazy() {
     isLazy = true;
+}
+
+function handleMobiscrollVersion(vers) {
+    mobiscrollVersion = vers;
+}
+
+function handleGlobalInstall() {
+    logInGlobally = true;
 }
 
 function getApiKey(userName, callback) {
@@ -143,7 +154,7 @@ function login() {
     return new Promise((resolve, reject) => {
         inquirer.prompt(questions).then((answers) => {
             // Email address is not used by the Mobiscroll NPM registry
-            npmLogin(answers.username, answers.password, 'any@any.com', utils.npmUrl, '@mobiscroll').then(() => {
+            npmLogin(answers.username, answers.password, 'any@any.com', utils.npmUrl, '@mobiscroll', null, (logInGlobally ? undefined : path.resolve(process.cwd(), '.npmrc'))).then(() => {
                 console.log(`  Logged in as ${answers.username}`);
                 printFeedback('Successful login!\n');
                 resolve(answers.username);
@@ -159,7 +170,7 @@ function login() {
 
 function handleConfig(projectType) {
     if (!projectType) {
-        printWarning('No project type specified. Please specify the project type. [ionic, angular] \n\nPlease run ' + chalk.gray('mobiscroll --help') + ' to see which projects are supported.');
+        printWarning('No project type specified. Please specify the project type. [ionic, angular, angularjs, react, javascript, jquery] \n\nFor more information please run the ' + chalk.gray('mobiscroll config --help') + ' command.');
         return;
     }
 
@@ -171,13 +182,13 @@ function handleConfig(projectType) {
 
         // check if package.json is in the current directory
         if (!fs.existsSync(packageJsonLocation)) {
-            printWarning('There is no package.json in this directorty.\nPlease run this command in the project\'s root directory!');
+            printWarning('There is no package.json in this directory.\nPlease run this command in the project\'s root directory!');
         }
 
         printFeedback('Mobiscroll configuration started.');
 
         if (isLite) {
-            utils.installMobiscrollLite(projectType, function () {
+            utils.installMobiscrollLite(projectType, mobiscrollVersion, function () {
                 config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, false, false, true);
             })
         } else if (isNpmSource) {
@@ -196,9 +207,9 @@ function handleConfig(projectType) {
                 getApiKey(userName, (data) => {
                     var useTrial = !data.HasLicense || isTrial;
 
-                    utils.removeUnusedaPackages(projectType, packageJsonLocation, useTrial, false, () => {
+                    utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
                         // Install mobiscroll npm package
-                        utils.installMobiscroll(projectType, currDir, userName, useTrial, () => {
+                        utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, () => {
                             config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
                         });
                     });
@@ -214,9 +225,9 @@ function handleConfig(projectType) {
                 cssFileLocation = path.resolve(mbscFolderLocation, 'css'),
                 framework = projectType == 'ionic' ? 'angular' : projectType;
 
-            utils.removeUnusedaPackages(projectType, packageJsonLocation, false, false, () => {
+            utils.removeUnusedPackages(projectType, packageJsonLocation, false, false, () => {
 
-                // check if moibscroll js files are copied to the specific location and get the js file name
+                // check if mobiscroll js files are copied to the specific location and get the js file name
                 if (fs.existsSync(jsFileLocation)) {
                     files = fs.readdirSync(jsFileLocation);
                     localJsFileName = files.filter(function (item) {
@@ -272,7 +283,6 @@ function handleConfig(projectType) {
                             noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
                         }
 
-                        // console.log(`\n${chalk.green('>')} Remove previously installed mobiscroll package.`);
                         // remove previously installed mobiscroll package (fix npm caching the local package)
                         utils.run(`npm uninstall @mobiscroll/${framework} --save`, true).then(() => {
 
@@ -322,7 +332,8 @@ function handleLogout() {
 
 // options
 program
-    .version(localCliVersion)
+    .version(localCliVersion, '-v')
+    .option('-g, --global', 'The Mobiscroll npm login credentials will be saved globally. Otherwise it is saved in the application\'s directory.\n', handleGlobalInstall)
     .usage('[commands] [options]');
 
 // commands
@@ -330,17 +341,18 @@ program
 // config command
 program
     .command('config [types]')
-    .description('Configures your current project with the Mobiscroll resources and dependecies. Installs Mobiscroll resources from npm and includes the necessary dependencies. (types: angular, angularjs, ionic, ionic-pro, javascript, jquery)\n')
+    .description(`Configures your current project with the Mobiscroll resources and dependencies. For more information run the ${chalk.gray('mobiscroll config --help')} command.\n`)
     .action(handleConfig)
     .on('--help', helperMessages.configHelp)
     .option('-l, --lazy', 'Skipping MbscModule injection from app.module.ts in case of Ionic lazy loading project.\n', handleLazy)
     .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
     .option('-i, --lite', 'The project will be tuned up with lite configuration.\n', handleLite)
-    .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.\n', handleNpmInstall);
+    .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.\n', handleNpmInstall)
+    .option('--version [version]', 'Pass the Mobiscroll version which you want to install.\n', handleMobiscrollVersion);
 
 program
     .command('login')
-    .description('Logs you in to the Mobiscroll npm registry.\n')
+    .description('Logs you in to the Mobiscroll npm registry. \n')
     .action(handleLogin);
 
 program
@@ -352,5 +364,7 @@ program.parse(process.argv);
 
 // print help if no commands or options was passed
 if (!program.args.length) {
+    console.log(figlet.textSync('Mobiscroll CLI'));
+    console.log('  Version: ' + localCliVersion);
     program.help();
 }

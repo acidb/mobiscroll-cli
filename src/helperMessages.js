@@ -13,11 +13,12 @@ module.exports = {
         console.log("        declarations: // ...");
     },
     configHelp: () => {
+        console.log('\n\n  Installs Mobiscroll resources from npm and includes the necessary dependencies.');
         console.log('\n  Types:\n');
         console.log('    angular         Use it for configuring Angular 2+ applications.\n');
         console.log('    angularjs       Use it for configuring Angularjs(1.x) applications.\n');
         console.log('    ionic           Use it for configuring Ionic 2+ applications.\n');
-        console.log('    ionic-pro       Use it for configuring Ionic 2+ applications. Use this command if you are using Ionic pro. \n');
+        //console.log('    ionic-pro       Use it for configuring Ionic 2+ applications. Use this command if you are using Ionic pro. \n');
         console.log('    javascript      Use it for configuring JavaScript applications. Use it with frameworks like: Vue, Knockout, Ember.js...\n');
         console.log('    jquery          Use it for configuring jQuery based applications.\n');
         console.log('    react           Use it for configuring React applications.\n');
