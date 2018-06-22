@@ -13,6 +13,7 @@ const path = require('path');
 const helperMessages = require('./src/helperMessages.js');
 const ncp = require('ncp').ncp;
 const figlet = require('figlet');
+const os = require('os');
 
 var isNpmSource = true;
 var isTrial = false;
@@ -24,7 +25,7 @@ var printError = utils.printError;
 var printWarning = utils.printWarning;
 var localCliVersion = require('./package.json').version;
 var mobiscrollVersion = null;
-var logInGlobally = false;
+var useGlobalNpmrc = false;
 
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
 
@@ -59,6 +60,23 @@ function checkUpdate() {
     });
 }
 
+function removeTokenFromNpmrc(path) {
+    if (fs.existsSync(path)) {
+        let content = (fs.readFileSync(path)).toString();
+        if (content.length > 5) {
+            content = content.replace(/@mobiscroll:registry=https:\/\/npm\.mobiscroll\.com\s+(\S+)$/gmi, '');
+            utils.writeToFile(path, content, () => {
+                printFeedback('Successful logout!\n');
+            });
+        } else {
+            printFeedback('You are not logged in to the Mobiscroll npm registry!\n');
+            if (!useGlobalNpmrc) {
+                console.log(`${chalk.yellow('Please Note:')} If you are logged in globally you will have to use the -g/--global flag with this command.\n\nUsage: ${chalk.gray('mobiscroll logout -g')}`);
+            }
+        }
+    }
+}
+
 function handleTrial() {
     isTrial = true;
 }
@@ -80,7 +98,7 @@ function handleMobiscrollVersion(vers) {
 }
 
 function handleGlobalInstall() {
-    logInGlobally = true;
+    useGlobalNpmrc = true;
 }
 
 function getApiKey(userName, callback) {
@@ -154,7 +172,7 @@ function login() {
     return new Promise((resolve, reject) => {
         inquirer.prompt(questions).then((answers) => {
             // Email address is not used by the Mobiscroll NPM registry
-            npmLogin(answers.username, answers.password, 'any@any.com', utils.npmUrl, '@mobiscroll', null, (logInGlobally ? undefined : path.resolve(process.cwd(), '.npmrc'))).then(() => {
+            npmLogin(answers.username, answers.password, 'any@any.com', utils.npmUrl, '@mobiscroll', null, (useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc'))).then(() => {
                 console.log(`  Logged in as ${answers.username}`);
                 printFeedback('Successful login!\n');
                 resolve(answers.username);
@@ -170,7 +188,7 @@ function login() {
 
 function handleConfig(projectType) {
     if (!projectType) {
-        printWarning('No project type specified. Please specify the project type. [ionic, angular, angularjs, react, javascript, jquery] \n\nFor more information please run the ' + chalk.gray('mobiscroll config --help') + ' command.');
+        printWarning('Please specify the project type. [ionic, angular, angularjs, react, javascript, jquery] \n\nFor more information please run the ' + chalk.gray('mobiscroll config --help') + ' command.');
         return;
     }
 
@@ -319,21 +337,13 @@ function handleLogin() {
 }
 
 function handleLogout() {
-    run('npm whoami --registry=' + utils.npmUrl, false, true).then((userName) => {
-        if (userName) {
-            run(`npm logout --registry=${utils.npmUrl} --scope=@mobiscroll`).then(() => {
-                printFeedback('Successful logout!\n');
-            });
-        } else {
-            printFeedback('You are not logged in to the Mobiscroll npm registry!\n');
-        }
-    });
+    removeTokenFromNpmrc(path.resolve((useGlobalNpmrc ? os.homedir() : process.cwd()), '.npmrc'));
 }
 
 // options
 program
     .version(localCliVersion, '-v')
-    .option('-g, --global', 'The Mobiscroll npm login credentials will be saved globally. Otherwise it is saved in the application\'s directory.\n', handleGlobalInstall)
+    .option('-g, --global', 'Modify the Mobiscroll npm login credentials save/use location to the global .npmrc file. Starting from cli v0.6.0 by default it is saved in the application\'s directory.', handleGlobalInstall)
     .usage('[commands] [options]');
 
 // commands
@@ -352,12 +362,12 @@ program
 
 program
     .command('login')
-    .description('Logs you in to the Mobiscroll npm registry. \n')
+    .description('Logs you in to the Mobiscroll npm registry. (Use the --global flag if you want to login globally). \n')
     .action(handleLogin);
 
 program
     .command('logout')
-    .description('Logs you out from the Mobiscroll npm registry.\n')
+    .description('Logs you out from the Mobiscroll npm registry. (Use the --global flag if you want to log out globally).\n')
     .action(handleLogout);
 
 program.parse(process.argv);
