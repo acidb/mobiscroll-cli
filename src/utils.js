@@ -69,9 +69,27 @@ function getMobiscrollVersion(callback) {
 }
 
 function shapeVersionToArray(version) {
+    if (version === undefined) {
+        return [];
+    }
+
     return version.split('.').map((x) => {
         return +x.replace(/[^\d]/, '')
     });
+}
+
+function deleteFolderRecursive(path) {
+    if (fs.existsSync(path)) {
+        fs.readdirSync(path).forEach(function (file) {
+            var curPath = path + "/" + file;
+            if (fs.lstatSync(curPath).isDirectory()) {
+                deleteFolderRecursive(curPath);
+            } else { // delete file
+                fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(path);
+    }
 }
 
 module.exports = {
@@ -79,12 +97,18 @@ module.exports = {
     writeToFile: writeToFile,
     shapeVersionToArray: shapeVersionToArray,
     getMobiscrollVersion: getMobiscrollVersion,
-    checkTypescriptVersion: (version) => {
+    checkTypescriptVersion: (packageJson) => {
+        var version = packageJson.devDependencies.typescript || packageJson.dependencies.typescript;
+
         var v = shapeVersionToArray(version);
 
         if (v[0] < 2 || v[0] == 2 && v[1] < 2) {
             printWarning(`Your app's TypeScript version is older then the minimum required version for Mobiscroll. (${version} < 2.2.0) Please update your project's Typescript version. (You can update the following way: $ npm install typescript@latest)`)
             return false;
+        }
+
+        if (v.length === 0) {
+            printWarning(`No TypeScript version was found in the package.json. The TypeScript >= 2.2.0 is required for the @mobiscroll/angular package.`);
         }
 
         return true;
@@ -96,14 +120,14 @@ module.exports = {
             callback();
         });
     },
-    removeUnusedPackages: function (framework, packageJsonLocaltion, isTrial, isLite, callback, noNpm) {
+    removeUnusedPackages: function (framework, packageJsonLocation, isTrial, isLite, callback, noNpm) {
         framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
 
         var changed,
             packageName = `@mobiscroll/${framework}`,
             trialPackageName = packageName + '-trial',
             litePackageName = `@mobiscroll/${framework}-lite`,
-            packageJson = JSON.parse(fs.readFileSync(packageJsonLocaltion, 'utf8'));
+            packageJson = JSON.parse(fs.readFileSync(packageJsonLocation, 'utf8'));
 
         if (noNpm) {
             // delete the mobiscroll references if it was installed from a local file system
@@ -130,7 +154,7 @@ module.exports = {
         }
 
         if (changed) {
-            writeToFile(packageJsonLocaltion, JSON.stringify(packageJson, null, 4), callback);
+            writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), callback);
         } else {
             callback();
         }
@@ -168,7 +192,7 @@ module.exports = {
         runCommand('npm pack', true).then(() => { // run npm pack which will generate the mobiscroll package
             fs.readdir(packLocation, function (err, files) {
                 if (err) {
-                    printError('Could not access to the directory filse.\n\n' + err);
+                    printError('Could not access to the directory files.\n\n' + err);
                     return;
                 }
 
@@ -178,7 +202,7 @@ module.exports = {
                 });
 
                 if (mbscPackage.length) {
-                    // set the current durectory back to the default
+                    // set the current directory back to the default
                     process.chdir(currDir);
                     //console.log(`\n${chalk.green('>')} Changed back current directory to the default one. \n`);
 
@@ -189,7 +213,7 @@ module.exports = {
     },
     importModules: function (currDir, jsFileName) {
         console.log(`  Adding module loading scripts to ${chalk.grey('src/app/app.module.ts')}`);
-        // Modify app.module.ts add necesarry modules
+        // Modify app.module.ts add necessary modules
         fs.readFile(currDir + '/src/app/app.module.ts', 'utf8', function (err, data) {
             if (err) {
                 printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
@@ -200,7 +224,7 @@ module.exports = {
             data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
             data = data.replace(/[ \t]*MbscModule,[ \t\r]*\n/, '');
 
-            // Add angular module imports which are needed for mobscroll
+            // Add angular module imports which are needed for mobiscroll
             data = importModule('MbscModule', jsFileName, data);
             data = importModule('FormsModule', '@angular/forms', data);
 
@@ -210,6 +234,7 @@ module.exports = {
             writeToFile(currDir + '/src/app/app.module.ts', data);
         });
     },
+    deleteFolder: deleteFolderRecursive,
     printFeedback: printFeedback,
     printWarning: printWarning,
     printError: printError,

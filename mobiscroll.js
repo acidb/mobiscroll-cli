@@ -268,15 +268,16 @@ function handleConfig(projectType) {
 
                 utils.getMobiscrollVersion((version) => {
                     let packageFolder = path.resolve(currDir, 'src', 'lib', 'mobiscroll-package');
+                    let distFolder = path.resolve(packageFolder, 'dist');
 
                     // create new folders
                     if (!fs.existsSync(packageFolder)) {
                         fs.mkdirSync(packageFolder, 0o777);
-                        fs.mkdirSync(path.resolve(packageFolder, 'dist'), 0o777);
+                        fs.mkdirSync(distFolder, 0o777);
                     }
 
                     // copy the mobiscroll resources to another folder for packing
-                    ncp(mbscFolderLocation, path.resolve(path.resolve(packageFolder, 'dist')), (err) => {
+                    ncp(mbscFolderLocation, path.resolve(distFolder), (err) => {
                         if (err) {
                             utils.printError('Could not copy Mobiscroll resources.\n\n' + err);
                             return;
@@ -320,6 +321,11 @@ function handleConfig(projectType) {
                                             cssFileName = (projectType == 'ionic' ? 'lib/mobiscroll/css/' : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
                                             config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
                                         });
+
+                                        console.log(`\n${chalk.green('>')} Cleanup unused mobiscroll files.`);
+                                        fs.unlinkSync(path.resolve(packageFolder, 'package.json')); // delete the package.json in dist
+                                        utils.deleteFolder(mbscFolderLocation); // delete source folder
+                                        utils.deleteFolder(distFolder); // delete created
                                     });
                                 });
                             });

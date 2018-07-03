@@ -6,12 +6,12 @@ const path = require('path');
 const helperMessages = require('./helperMessages.js');
 
 function configIonicPro(currDir, packageJson, packageJsonLocation) {
-    var mobisrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular');
+    var mobiscrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular');
 
     utils.printFeedback(`The Mobiscroll package will be referenced in the package.json as a tgz file instead of the npm package. \n\nYou will find more info here: ${chalk.grey('http://help.mobiscroll.com/core-concepts-and-using-mobiscroll/using-mobiscroll-with-ionic-pro-and-ionic-view')}`);
 
-    utils.packMobiscroll(mobisrollNpmFolder, currDir, 'angular', (packageFileName) => {
-        ncp(path.join(mobisrollNpmFolder, packageFileName), path.join(currDir, packageFileName), function (err) {
+    utils.packMobiscroll(mobiscrollNpmFolder, currDir, 'angular', (packageFileName) => {
+        ncp(path.join(mobiscrollNpmFolder, packageFileName), path.join(currDir, packageFileName), function (err) {
             if (err) {
                 utils.printError('Could not copy generated mobiscroll package.\n\n' + err);
                 return;
@@ -134,7 +134,7 @@ module.exports = {
             let versionArray = utils.shapeVersionToArray(ionicVersion);
 
             if (versionArray[0] == 2 && versionArray[1] < 2) {
-                utils.printWarning('It looks like your are using an older version of ionic 2. The minimum required ionic 2 version is 2.2.0. Please update your ionic app in order to Mobscroll work correctly.');
+                utils.printWarning('It looks like your are using an older version of ionic 2. The minimum required ionic 2 version is 2.2.0. Please update your ionic app in order to Mobiscroll work correctly.');
 
                 return;
             }
@@ -143,7 +143,7 @@ module.exports = {
             return;
         }
 
-        if (!utils.checkTypescriptVersion(ionicPackage.devDependencies.typescript)) {
+        if (!utils.checkTypescriptVersion(ionicPackage)) {
             return;
         }
 

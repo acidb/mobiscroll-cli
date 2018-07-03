@@ -6,11 +6,11 @@ module.exports = {
     configAngular: function (currDir, packageJson, jsFileName, cssFileName) {
         utils.printFeedback('Configuring Angular app...');
 
-        if (!utils.checkTypescriptVersion(packageJson.devDependencies.typescript)) {
+        if (!utils.checkTypescriptVersion(packageJson)) {
             return;
         }
 
-        // Modify app.module.ts add necesarry modules
+        // Modify app.module.ts add necessary modules
         utils.importModules(currDir, jsFileName);
 
         console.log(`  Adding stylesheet to ${chalk.grey('angular.json')}`);
@@ -29,7 +29,7 @@ module.exports = {
                 data = data.replace(/"\.\.\/node_modules\/@mobiscroll\/angular\/dist\/css\/.+.css",\s*/, '');
                 data = data.replace(/"lib\/mobiscroll\/css\/mobiscroll\..*\.css",\s*/, '');
 
-                // add angular module imports which are needed for mobscroll
+                // add angular module imports which are needed for mobiscroll
                 data = data.replace('"styles": [', `"styles": [\n        "${cssFileName}",`);
 
                 utils.writeToFile(currDir + '/.angular-cli.json', data);
@@ -43,7 +43,7 @@ module.exports = {
                 stylesArray = ngConfig.projects[projectName].architect.build.options.styles;
 
             if (stylesArray) {
-                stylesArray = stylesArray.filter(x => x != null && typeof x == "object" ? x.input && x.input.indexOf('mobiscroll') == -1 : x.indexOf('mobiscroll') == -1); // remove previosly installed mobiscroll styles
+                stylesArray = stylesArray.filter(x => x != null && typeof x == "object" ? x.input && x.input.indexOf('mobiscroll') == -1 : x.indexOf('mobiscroll') == -1); // remove previously installed mobiscroll styles
                 stylesArray.push(cssFileName.replace('../', './'));
                 ngConfig.projects[projectName].architect.build.options.styles = stylesArray;
             }
