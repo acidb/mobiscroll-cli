@@ -56,7 +56,7 @@ function importModule(moduleName, location, data) {
 }
 
 function getMobiscrollVersion(callback) {
-    request('http://api.mobiscroll.com/api/getmobiscrollversion', function (error, response, body) {
+    request('https://api.mobiscroll.com/api/getmobiscrollversion', function (error, response, body) {
         if (error) {
             printError('Could not get mobiscroll version.' + error);
         }

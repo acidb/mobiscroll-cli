@@ -103,7 +103,7 @@ function handleGlobalInstall() {
 
 function getApiKey(userName, callback) {
     request.get({
-        url: 'http://api.mobiscroll.com/api/userdata/' + userName,
+        url: 'https://api.mobiscroll.com/api/userdata/' + userName,
         json: true,
         headers: {
             'User-Agent': 'request'
@@ -322,7 +322,7 @@ function handleConfig(projectType) {
                                             config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
                                         });
 
-                                        console.log(`\n${chalk.green('>')} Cleanup unused mobiscroll files.`);
+                                        console.log(`\n${chalk.green('>')} Removing unused mobiscroll files.`);
                                         fs.unlinkSync(path.resolve(packageFolder, 'package.json')); // delete the package.json in dist
                                         utils.deleteFolder(mbscFolderLocation); // delete source folder
                                         utils.deleteFolder(distFolder); // delete created
