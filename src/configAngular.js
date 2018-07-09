@@ -10,8 +10,18 @@ module.exports = {
             return;
         }
 
+        var angularVersion = utils.shapeVersionToArray(packageJson.dependencies['@angular/common']);
+
+        if (angularVersion[0] >= 6) { // check if angular 6 or newer
+            // install rxjs-compat package
+            utils.run('npm install rxjs-compat --save', true);
+        }
+
         // Modify app.module.ts add necessary modules
-        utils.importModules(currDir, jsFileName);
+        if (!utils.importModules(currDir, jsFileName)) {
+            // if not an angular-cli based app
+            return;
+        }
 
         console.log(`  Adding stylesheet to ${chalk.grey('angular.json')}`);
 
@@ -49,9 +59,6 @@ module.exports = {
             }
 
             utils.writeToFile(currDir + '/angular.json', JSON.stringify(ngConfig, null, 2));
-
-            // install rxjs-compat package
-            utils.run('npm install rxjs-compat --save', true);
         } else {
             utils.printWarning(`The file ${chalk.grey('angular.json')} could not be found. If this is not an Angular CLI app, make sure to load ${chalk.grey(cssFileName)} into your app.`)
             utils.printFeedback('Mobiscroll configuration ready.');

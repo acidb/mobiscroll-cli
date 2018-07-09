@@ -3,6 +3,7 @@ const chalk = require('chalk');
 const exec = require('child_process').exec;
 const request = require('request');
 const mbscNpmUrl = 'https://npm.mobiscroll.com';
+const terminalLink = require('terminal-link');
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -213,26 +214,35 @@ module.exports = {
     },
     importModules: function (currDir, jsFileName) {
         console.log(`  Adding module loading scripts to ${chalk.grey('src/app/app.module.ts')}`);
+        let moduleLocation = currDir + '/src/app/app.module.ts';
         // Modify app.module.ts add necessary modules
-        fs.readFile(currDir + '/src/app/app.module.ts', 'utf8', function (err, data) {
-            if (err) {
-                printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
-                return;
-            }
+        if (fs.existsSync(moduleLocation)) {
+            fs.readFile(moduleLocation, 'utf8', function (err, data) {
+                if (err) {
+                    printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
+                    return;
+                }
 
-            // Remove previous module load
-            data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
-            data = data.replace(/[ \t]*MbscModule,[ \t\r]*\n/, '');
+                // Remove previous module load
+                data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
+                data = data.replace(/[ \t]*MbscModule,[ \t\r]*\n/, '');
 
-            // Add angular module imports which are needed for mobiscroll
-            data = importModule('MbscModule', jsFileName, data);
-            data = importModule('FormsModule', '@angular/forms', data);
+                // Add angular module imports which are needed for mobiscroll
+                data = importModule('MbscModule', jsFileName, data);
+                data = importModule('FormsModule', '@angular/forms', data);
 
-            // Remove previous api key if present
-            data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
+                // Remove previous api key if present
+                data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
 
-            writeToFile(currDir + '/src/app/app.module.ts', data);
-        });
+                writeToFile(moduleLocation, data);
+            });
+        } else {
+            printWarning(`No app.module.ts file found. You are probably running this command in a non Angular-cli based application. Please visit the following page for further instructions:`);
+            console.log(terminalLink('Mobiscroll Angular Docs - Quick install', 'https://docs.mobiscroll.com/angular/quick-install'))
+            return false;
+        }
+
+        return true;
     },
     deleteFolder: deleteFolderRecursive,
     printFeedback: printFeedback,
