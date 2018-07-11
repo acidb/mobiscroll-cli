@@ -31,12 +31,12 @@ import mobiscroll from ` + `'@mobiscroll/${framework}` + (isLite ? '-lite' : '')
 import '` + `@mobiscroll/${framework}` + (isLite ? '-lite' : '') + `/dist/css/mobiscroll.min.css';
         `);
     },
-    reactHelp: (isTrial, isLite) => {
+    reactHelp: (isTrial, isLite, npmSource) => {
         console.log(`
 You can import Mobiscroll to your react component like:
 
 import mobiscroll from ` + `'@mobiscroll/react` + (isLite ? '-lite' : '') + `';
-import '` + `@mobiscroll/react` + (isLite ? '-lite' : '') + `/dist/css/mobiscroll.min.css';
+import '` + `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}min.css';
         `);
 
     }

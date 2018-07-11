@@ -139,11 +139,11 @@ module.exports = {
         } else if (packageJson && packageJson.dependencies) {
             if (!isTrial && packageJson.dependencies[trialPackageName]) {
                 changed = true;
-                // Remove mobiscroll-trial package form package.json if the licenced version is installed
+                // Remove mobiscroll-trial package from package.json if the licenced version is installed
                 delete packageJson.dependencies[trialPackageName];
             } else if (isTrial && packageJson.dependencies[packageName]) {
                 changed = true;
-                // Remove mobiscroll package form package.json if the trial version is installed
+                // Remove mobiscroll package from package.json if the trial version is installed
                 delete packageJson.dependencies[packageName];
             }
 

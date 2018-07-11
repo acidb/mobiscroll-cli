@@ -22,7 +22,7 @@ function configIonicPro(currDir, packageJson, packageJsonLocation) {
             packageJson.dependencies['@mobiscroll/angular'] = "file:./" + packageFileName;
 
             utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
-                console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll form the generated tzg file. \n`);
+                console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll from the generated tzg file. \n`);
 
                 // run npm install
                 utils.run('npm install', true).then(() => {
