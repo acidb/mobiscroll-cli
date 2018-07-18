@@ -4,6 +4,10 @@ const exec = require('child_process').exec;
 const request = require('request');
 const mbscNpmUrl = 'https://npm.mobiscroll.com';
 const terminalLink = require('terminal-link');
+const inquirer = require('inquirer');
+const path = require('path');
+const npmLogin = require('./npm-login/');
+const helperMessages = require('./helperMessages.js');
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -16,6 +20,10 @@ function printError(text) {
 
 function printFeedback(text) {
     console.log('\n' + chalk.bold.cyan(text));
+}
+
+function printLog(text) {
+    console.log(`${chalk.green('>')} ` + text + '\n');
 }
 
 function runCommand(cmd, skipWarning, skipError, skipLog) {
@@ -93,11 +101,80 @@ function deleteFolderRecursive(path) {
     }
 }
 
+function getApiKey(userName, callback) {
+    request.get({
+        url: 'https://api.mobiscroll.com/api/userdata/' + userName,
+        json: true,
+        headers: {
+            'User-Agent': 'request'
+        }
+    }, (err, res, data) => {
+        if (err) {
+            printError('There was an error during getting the user\'s trial code. Please see the error message for more information: ' + err);
+        } else if (res.statusCode !== 200) {
+            printError('There was a problem during getting the user\'s trial code. Status: ' + res.statusCode + ' , User: ' + userName);
+        } else {
+            callback(data);
+        }
+    });
+}
+
+function login(useGlobalNpmrc) {
+    // input questions
+    var questions = [{
+        type: 'input',
+        name: 'username',
+        message: 'Mobiscroll email or user name:'
+    }, {
+        type: 'password',
+        name: 'password',
+        message: 'Mobiscroll password:'
+    }];
+
+    return new Promise((resolve, reject) => {
+        inquirer.prompt(questions).then((answers) => {
+            // Email address is not used by the Mobiscroll NPM registry
+            npmLogin(answers.username, answers.password, 'any@any.com', mbscNpmUrl, '@mobiscroll', null, (useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc'))).then(() => {
+                console.log(`  Logged in as ${answers.username}`);
+                printFeedback('Successful login!\n');
+                resolve(answers.username);
+            }).catch(err => {
+                printError('npm login failed.\n\n' + err);
+                reject(err);
+            });
+        }).catch(err => {
+            reject(err);
+        });
+    });
+}
+
+
+function testInstalledCLI(checkCmd, installCmd, helpCmd, name, type) {
+    runCommand(checkCmd, true, true, true).then((data) => { // check if the specific cli is installed ex: ionic -v
+        if (data) {
+            // if it the specific cli is installed print the next steps section
+            helperMessages.startNextSteps(name, helpCmd);
+        } else {
+            // if not installed ask permission to install
+            inquirer.prompt({
+                type: 'input',
+                name: 'confirm',
+                message: `It looks like the ${type + ' cli'} is not installed and it is required by this starter. Would you like to install it for you? (Y/n)`,
+                default: 'Y',
+            }).then(answer => {
+                if (answer.confirm.toLowerCase() == 'y') {
+                    runCommand(installCmd, true, true).then(() => { // install the specific cli
+                        helperMessages.startNextSteps(name, helpCmd);
+                    })
+                } else {
+                    console.log(`The ${type + ' cli'} have to be installed in order to this starter work. You can install manually with the following command: ${chalk.cyan(installCmd)}`);
+                }
+            })
+        }
+    });
+}
+
 module.exports = {
-    run: runCommand,
-    writeToFile: writeToFile,
-    shapeVersionToArray: shapeVersionToArray,
-    getMobiscrollVersion: getMobiscrollVersion,
     checkTypescriptVersion: (packageJson) => {
         var version = packageJson.devDependencies.typescript || packageJson.dependencies.typescript;
 
@@ -160,9 +237,51 @@ module.exports = {
             callback();
         }
     },
+    checkMbscNpmLogin: function (isTrial, useGlobalNpmrc, callback) {
+        printFeedback('Checking logged in status...');
+        // check if the user is already logged in
+        runCommand('npm whoami --registry=' + mbscNpmUrl, false, true).then((userName) => {
+            if (userName) {
+                userName = userName.trim();
+                console.log(`  Logged in as ${userName}`);
+                return userName;
+            }
+            console.log(`  Logging in to the Mobiscroll NPM registry...`);
+            return login(useGlobalNpmrc);
+        }, (err) => {
+            console.log('Login error' + err);
+        }).then((userName) => {
+            // if returns an api key it is a trial user
+            getApiKey(userName, (data) => {
+                var useTrial = !data.HasLicense || isTrial;
+
+                callback(userName, useTrial, data);
+                // utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
+                //     // Install mobiscroll npm package
+                //     utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, () => {
+                //         config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
+                //     });
+                // });
+            });
+        });
+    },
+
     installMobiscroll: function (framework, currDir, userName, isTrial, installVersion, callback) {
-        var frameworkName = (framework.indexOf('ionic') > -1 ? 'angular' : framework),
-            pkgName = frameworkName + (isTrial ? '-trial' : ''),
+        var frameworkName;
+
+        switch (framework) {
+            case 'ionic':
+                frameworkName = 'angular';
+                break;
+            case 'vue':
+                frameworkName = 'javascript';
+                break;
+            default:
+                frameworkName = framework;
+                break;
+        }
+
+        var pkgName = frameworkName + (isTrial ? '-trial' : ''),
             command;
 
         getMobiscrollVersion(function (version) {
@@ -179,7 +298,7 @@ module.exports = {
                 callback();
             }).catch((reason) => {
                 if (/403 Forbidden/.test(reason)) {
-                    reason = `User ${userName} has no access to package @mobiscroll/${pkgName}.`;
+                    reason = `User ${userName} has no access to package @mobiscroll/${pkgName}.` + reason;
                 }
                 printError('Could not install Mobiscroll.\n\n' + reason);
             });
@@ -245,8 +364,15 @@ module.exports = {
         return true;
     },
     deleteFolder: deleteFolderRecursive,
-    printFeedback: printFeedback,
-    printWarning: printWarning,
-    printError: printError,
-    npmUrl: mbscNpmUrl
+    npmUrl: mbscNpmUrl,
+    run: runCommand,
+    writeToFile: writeToFile,
+    shapeVersionToArray: shapeVersionToArray,
+    getMobiscrollVersion: getMobiscrollVersion,
+    testInstalledCLI,
+    printFeedback,
+    printWarning,
+    printError,
+    printLog,
+    login
 };
