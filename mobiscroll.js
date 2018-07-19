@@ -3,12 +3,10 @@
 const program = require('commander');
 const inquirer = require('inquirer');
 const fs = require('fs');
-// const npmLogin = require('./src/npm-login/');
 const utils = require('./src/utils.js');
 const configIonic = require('./src/configIonic.js').configIonic;
 const configAngular = require('./src/configAngular.js').configAngular;
 const chalk = require('chalk');
-// const request = require('request');
 const path = require('path');
 const helperMessages = require('./src/helperMessages.js');
 const ncp = require('ncp').ncp;
@@ -149,7 +147,7 @@ function cloneProject(url, type, name, newAppLocation, callback) {
         console.log(`Installing dependencies may take several minutes:\n`);
 
         utils.run('npm install', true).then(() => {
-            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial, data) => {
+            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial) => {
                 utils.installMobiscroll(type, newAppLocation, userName, useTrial, mobiscrollVersion, () => {
                     if (callback) {
                         callback();
@@ -417,11 +415,22 @@ program
     .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
     .action(handleStart)
 
+
+program.on('command:*', function () {
+    // warning on unknown commands
+    printWarning(`Invalid command: ${chalk.green(program.args.join(' '))}`)
+    console.error('\nSee --help for a list of available commands.');
+    process.exit(1);
+});
+
 program.parse(process.argv);
 
 // print help if no commands or options was passed
 if (!program.args.length) {
     console.log(figlet.textSync('Mobiscroll CLI'));
     console.log('  Version: ' + localCliVersion);
-    program.help();
+
+    if (program.rawArgs.indexOf('-v') == -1) {
+        program.help();
+    }
 }
