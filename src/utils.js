@@ -124,11 +124,17 @@ function login(useGlobalNpmrc) {
     var questions = [{
         type: 'input',
         name: 'username',
-        message: 'Mobiscroll email or user name:'
+        message: 'Mobiscroll email or user name:',
+        validate: function validateName(name) {
+            return name !== '';
+        }
     }, {
         type: 'password',
         name: 'password',
-        message: 'Mobiscroll password:'
+        message: 'Mobiscroll password:',
+        validate: function validatePassword(passw) {
+            return passw !== '';
+        }
     }];
 
     return new Promise((resolve, reject) => {

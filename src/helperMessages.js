@@ -27,10 +27,10 @@ module.exports = {
     },
     startHelp: () => {
         console.log('\n  Types:\n');
-        console.log('    angular         Creates an angular 6 applications.(Based on Angular CLI application.)\n');
+        //console.log('    angular         Creates an angular 6 applications.(Based on Angular CLI application.)\n');
         console.log('    ionic           Creates an ionic applications. (Ionic 3 based application.)\n');
-        console.log('    react           Creates an react applications.(Based on Create React App application.)\n');
-        console.log('    vue             Creates an Vue.js applications.(Based on Vue CLI application) \n');
+        //console.log('    react           Creates an react applications.(Based on Create React App application.)\n');
+        //console.log('    vue             Creates an Vue.js applications.(Based on Vue CLI application) \n');
     },
     vueHelp: (framework, isTrial, isLite) => {
         console.log(`
@@ -52,8 +52,8 @@ import '` + `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npm
     startNextSteps: (folderName, runCommand) => {
         console.log('\nNEXT STEPS')
         console.log(`
-    - Go to your newly created project: ${chalk.bold.cyan('cd .\\' + folderName)} 
-    - Run the app with the following command: ${chalk.bold.cyan(runCommand)}
+  - Go to your newly created project: ${chalk.bold.cyan('cd .\\' + folderName)} 
+  - Run the app with the following command: ${chalk.bold.cyan(runCommand)}
         `);
 
     }

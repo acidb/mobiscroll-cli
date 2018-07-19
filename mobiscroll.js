@@ -147,7 +147,7 @@ function cloneProject(url, type, name, newAppLocation, callback) {
         .then(function () {
             utils.printLog(`Repository cloned successfully.`);
             process.chdir(newAppLocation); // change directory to node modules folder
-            utils.printLog(`Installing dependencies may take several minutes.`);
+            console.log(`Installing dependencies may take several minutes:\n`);
 
             utils.run('npm install', true).then(() => {
                 utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial, data) => {
@@ -192,37 +192,48 @@ function startProject(url, type, name, callback) {
     }
 }
 
-function handleStart(type, name) {
-
-    if (!name) {
-        console.log('No project name specified Exiting...');
-        return;
-    }
-
+function createProject(type, name) {
     switch (type) {
-        case 'angular':
-            startProject('https://github.com/acidb/mobiscroll', type, name, () => {
-                utils.testInstalledCLI('ng -v', 'npm install -g @angular/cli', 'ng serve -o', name, type);
-            });
-            break;
+        // case 'angular':
+        //     startProject('https://github.com/acidb/mobiscroll', type, name, () => {
+        //         utils.testInstalledCLI('ng -v', 'npm install -g @angular/cli', 'ng serve -o', name, type);
+        //     });
+        //     break;
         case 'ionic':
-            startProject('https://github.com/ionic-team/ionic', type, name, () => {
+            startProject('https://github.com/acidb/ionic-starter', type, name, () => {
                 utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
             });
             break;
-        case 'react':
-            startProject('https://github.com/facebook/react', type, name, () => {
-                utils.testInstalledCLI('create-react-app --version', 'npm install -g create-react-app', 'npm start', name, type);
-            });
-            break;
-        case 'vue':
-            startProject('https://github.com/vuejs/vue', type, name, () => {
-                utils.testInstalledCLI('vue -V', 'npm install -g @vue/cli', 'npm run serve', name, type);
-            });
-            break;
+            // case 'react':
+            //     startProject('https://github.com/facebook/react', type, name, () => {
+            //         utils.testInstalledCLI('create-react-app --version', 'npm install -g create-react-app', 'npm start', name, type);
+            //     });
+            //     break;
+            // case 'vue':
+            //     startProject('https://github.com/vuejs/vue', type, name, () => {
+            //         utils.testInstalledCLI('vue -V', 'npm install -g @vue/cli', 'npm run serve', name, type);
+            //     });
+            //     break;
         default:
-            printWarning('No valid project type was specified. Currently the following project types are supported: [angular, ionic, react, vue]');
+            printWarning('No valid project type was specified. Currently the following project types are supported: [ ionic ]'); // Currently the following project types are supported: [angular, ionic, react, vue]
             break;
+    }
+}
+
+function handleStart(type, name) {
+    if (!name) {
+        inquirer.prompt([{
+            type: 'input',
+            name: 'projectName',
+            message: 'What would you like to name your project:',
+            validate: function validateProjectName(name) {
+                return name !== '';
+            }
+        }]).then((answer) => {
+            createProject(type, answer.projectName);
+        });
+    } else {
+        createProject(type, name);
     }
 }
 
