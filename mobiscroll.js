@@ -14,7 +14,7 @@ const helperMessages = require('./src/helperMessages.js');
 const ncp = require('ncp').ncp;
 const figlet = require('figlet');
 const os = require('os');
-//const clone = require('git-clone');
+const clone = require('git-clone');
 
 var isNpmSource = true;
 var isTrial = false;
@@ -140,98 +140,98 @@ function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileNa
 
 }
 
-// function cloneProject(url, type, name, newAppLocation, callback) {
-//     utils.printLog(`Cloning ${type} starter app from git: ${url}`);
+function cloneProject(url, type, name, newAppLocation, callback) {
+    utils.printLog(`Cloning ${type} starter app from git: ${url}`);
 
-//     clone(url, './' + name, {}, () => {
-//         utils.printLog(`Repository cloned successfully.`);
-//         process.chdir(newAppLocation); // change directory to node modules folder
-//         console.log(`Installing dependencies may take several minutes:\n`);
+    clone(url, './' + name, {}, () => {
+        utils.printLog(`Repository cloned successfully.`);
+        process.chdir(newAppLocation); // change directory to node modules folder
+        console.log(`Installing dependencies may take several minutes:\n`);
 
-//         utils.run('npm install', true).then(() => {
-//             utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial, data) => {
-//                 utils.installMobiscroll(type, newAppLocation, userName, useTrial, mobiscrollVersion, () => {
-//                     if (callback) {
-//                         callback();
-//                     }
-//                 });
-//             })
-//         });
-//     })
-// }
+        utils.run('npm install', true).then(() => {
+            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial, data) => {
+                utils.installMobiscroll(type, newAppLocation, userName, useTrial, mobiscrollVersion, () => {
+                    if (callback) {
+                        callback();
+                    }
+                });
+            })
+        });
+    })
+}
 
-// function startProject(url, type, name, callback) {
+function startProject(url, type, name, callback) {
 
-//     printFeedback('Mobiscroll start command started.');
+    printFeedback('Mobiscroll start command started.');
 
-//     var currDir = process.cwd(), // get the directory where the mobiscroll command was executed
-//         newAppLocation = path.resolve(currDir, name);
+    var currDir = process.cwd(), // get the directory where the mobiscroll command was executed
+        newAppLocation = path.resolve(currDir, name);
 
-//     if (fs.existsSync(newAppLocation)) {
-//         inquirer.prompt({
-//             type: 'input',
-//             name: 'confirm',
-//             message: `The directory .\\${chalk.gray(name)} exists. Would you like to overwrite the directory with this new project?(y/N)`,
-//             default: 'N',
-//         }).then(answer => {
-//             if (answer.confirm.toLowerCase() == 'y') {
-//                 utils.deleteFolder(newAppLocation); // delete the app with the same name
-//                 cloneProject(url, type, name, newAppLocation, callback);
-//             } else {
-//                 console.log(`Not erasing existing project in .\\${name}`);
-//                 return;
-//             }
-//         })
-//         //return;
-//     } else {
-//         cloneProject(url, type, name, newAppLocation, callback);
-//     }
-// }
+    if (fs.existsSync(newAppLocation)) {
+        inquirer.prompt({
+            type: 'input',
+            name: 'confirm',
+            message: `The directory .\\${chalk.gray(name)} exists. Would you like to overwrite the directory with this new project?(y/N)`,
+            default: 'N',
+        }).then(answer => {
+            if (answer.confirm.toLowerCase() == 'y') {
+                utils.deleteFolder(newAppLocation); // delete the app with the same name
+                cloneProject(url, type, name, newAppLocation, callback);
+            } else {
+                console.log(`Not erasing existing project in .\\${name}`);
+                return;
+            }
+        })
+        //return;
+    } else {
+        cloneProject(url, type, name, newAppLocation, callback);
+    }
+}
 
-// function createProject(type, name) {
-//     switch (type) {
-//         // case 'angular':
-//         //     startProject('https://github.com/acidb/mobiscroll', type, name, () => {
-//         //         utils.testInstalledCLI('ng -v', 'npm install -g @angular/cli', 'ng serve -o', name, type);
-//         //     });
-//         //     break;
-//         case 'ionic':
-//             startProject('https://github.com/acidb/ionic-starter', type, name, () => {
-//                 utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
-//             });
-//             break;
-//             // case 'react':
-//             //     startProject('https://github.com/facebook/react', type, name, () => {
-//             //         utils.testInstalledCLI('create-react-app --version', 'npm install -g create-react-app', 'npm start', name, type);
-//             //     });
-//             //     break;
-//             // case 'vue':
-//             //     startProject('https://github.com/vuejs/vue', type, name, () => {
-//             //         utils.testInstalledCLI('vue -V', 'npm install -g @vue/cli', 'npm run serve', name, type);
-//             //     });
-//             //     break;
-//         default:
-//             printWarning('No valid project type was specified. Currently the following project types are supported: [ ionic ]'); // Currently the following project types are supported: [angular, ionic, react, vue]
-//             break;
-//     }
-// }
+function createProject(type, name) {
+    switch (type) {
+        // case 'angular':
+        //     startProject('https://github.com/acidb/mobiscroll', type, name, () => {
+        //         utils.testInstalledCLI('ng -v', 'npm install -g @angular/cli', 'ng serve -o', name, type);
+        //     });
+        //     break;
+        case 'ionic':
+            startProject('https://github.com/acidb/ionic-starter', type, name, () => {
+                utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
+            });
+            break;
+            // case 'react':
+            //     startProject('https://github.com/facebook/react', type, name, () => {
+            //         utils.testInstalledCLI('create-react-app --version', 'npm install -g create-react-app', 'npm start', name, type);
+            //     });
+            //     break;
+            // case 'vue':
+            //     startProject('https://github.com/vuejs/vue', type, name, () => {
+            //         utils.testInstalledCLI('vue -V', 'npm install -g @vue/cli', 'npm run serve', name, type);
+            //     });
+            //     break;
+        default:
+            printWarning('No valid project type was specified. Currently the following project types are supported: [ ionic ]'); // Currently the following project types are supported: [angular, ionic, react, vue]
+            break;
+    }
+}
 
-// function handleStart(type, name) {
-//     if (!name) {
-//         inquirer.prompt([{
-//             type: 'input',
-//             name: 'projectName',
-//             message: 'What would you like to name your project:',
-//             validate: function validateProjectName(name) {
-//                 return name !== '';
-//             }
-//         }]).then((answer) => {
-//             createProject(type, answer.projectName);
-//         });
-//     } else {
-//         createProject(type, name);
-//     }
-// }
+function handleStart(type, name) {
+    if (!name) {
+        inquirer.prompt([{
+            type: 'input',
+            name: 'projectName',
+            message: 'What would you like to name your project:',
+            validate: function validateProjectName(name) {
+                return name !== '';
+            }
+        }]).then((answer) => {
+            createProject(type, answer.projectName);
+        });
+    } else {
+        createProject(type, name);
+    }
+}
 
 function handleConfig(projectType) {
     if (!projectType) {
@@ -410,12 +410,12 @@ program
     .action(handleLogout);
 
 
-// program
-//     .command('start [types] [name]')
-//     .on('--help', helperMessages.startHelp)
-//     .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
-//     .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
-//     .action(handleStart)
+program
+    .command('start [types] [name]')
+    .on('--help', helperMessages.startHelp)
+    .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
+    .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
+    .action(handleStart)
 
 program.parse(process.argv);
 
