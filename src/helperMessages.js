@@ -1,3 +1,5 @@
+const chalk = require('chalk');
+
 module.exports = {
     ionicLazy: (isTrial, isLite) => {
         console.log(`\nIf you are using ionic lazy loading you'll have to manually include the MbscModule and FormsModule into the page's module.ts file where you'll be using Mobiscroll.\n\nExample:\n`);
@@ -23,6 +25,13 @@ module.exports = {
         console.log('    jquery          Use it for configuring jQuery based applications.\n');
         console.log('    react           Use it for configuring React applications.\n');
     },
+    startHelp: () => {
+        console.log('\n  Types:\n');
+        //console.log('    angular         Creates an angular 6 applications.(Based on Angular CLI application.)\n');
+        console.log('    ionic           Creates an ionic applications. (Ionic 3 based application.)\n');
+        //console.log('    react           Creates an react applications.(Based on Create React App application.)\n');
+        //console.log('    vue             Creates an Vue.js applications.(Based on Vue CLI application) \n');
+    },
     vueHelp: (framework, isTrial, isLite) => {
         console.log(`
 A vue.js application detected. Here is how to import Mobiscroll into your app:
@@ -39,5 +48,14 @@ import mobiscroll from ` + `'@mobiscroll/react` + (isLite ? '-lite' : '') + `';
 import '` + `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}min.css';
         `);
 
+    },
+    startNextSteps: (folderName, runCommand) => {
+        console.log('\nNEXT STEPS')
+        console.log(`
+  - Go to your newly created project: ${chalk.bold.cyan('cd .\\' + folderName)} 
+  - Run the app with the following command: ${chalk.bold.cyan(runCommand)}
+        `);
+
     }
+
 };

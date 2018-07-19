@@ -3,17 +3,18 @@
 const program = require('commander');
 const inquirer = require('inquirer');
 const fs = require('fs');
-const npmLogin = require('./src/npm-login/');
+// const npmLogin = require('./src/npm-login/');
 const utils = require('./src/utils.js');
 const configIonic = require('./src/configIonic.js').configIonic;
 const configAngular = require('./src/configAngular.js').configAngular;
 const chalk = require('chalk');
-const request = require('request');
+// const request = require('request');
 const path = require('path');
 const helperMessages = require('./src/helperMessages.js');
 const ncp = require('ncp').ncp;
 const figlet = require('figlet');
 const os = require('os');
+const GitClone = require("nodegit").Clone.clone;
 
 var isNpmSource = true;
 var isTrial = false;
@@ -101,24 +102,6 @@ function handleGlobalInstall() {
     useGlobalNpmrc = true;
 }
 
-function getApiKey(userName, callback) {
-    request.get({
-        url: 'https://api.mobiscroll.com/api/userdata/' + userName,
-        json: true,
-        headers: {
-            'User-Agent': 'request'
-        }
-    }, (err, res, data) => {
-        if (err) {
-            printError('There was an error during getting the user\'s trial code. Please see the error message for more information: ' + err);
-        } else if (res.statusCode !== 200) {
-            printError('There was a problem during getting the user\'s trial code. Status: ' + res.statusCode + ' , User: ' + userName);
-        } else {
-            callback(data);
-        }
-    });
-}
-
 function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
     if (packageJson.dependencies.vue) {
         helperMessages.vueHelp(projectType, apiKey, isLite);
@@ -157,33 +140,101 @@ function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileNa
 
 }
 
-function login() {
-    // input questions
-    var questions = [{
-        type: 'input',
-        name: 'username',
-        message: 'Mobiscroll email or user name:'
-    }, {
-        type: 'password',
-        name: 'password',
-        message: 'Mobiscroll password:'
-    }];
+function cloneProject(url, type, name, newAppLocation, callback) {
+    utils.printLog(`Cloning ${type} starter app from git: ${url}`);
 
-    return new Promise((resolve, reject) => {
-        inquirer.prompt(questions).then((answers) => {
-            // Email address is not used by the Mobiscroll NPM registry
-            npmLogin(answers.username, answers.password, 'any@any.com', utils.npmUrl, '@mobiscroll', null, (useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc'))).then(() => {
-                console.log(`  Logged in as ${answers.username}`);
-                printFeedback('Successful login!\n');
-                resolve(answers.username);
-            }).catch(err => {
-                printError('npm login failed.\n\n' + err);
-                reject(err);
+    GitClone(url, './' + name)
+        .then(function () {
+            utils.printLog(`Repository cloned successfully.`);
+            process.chdir(newAppLocation); // change directory to node modules folder
+            console.log(`Installing dependencies may take several minutes:\n`);
+
+            utils.run('npm install', true).then(() => {
+                utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial, data) => {
+                    utils.installMobiscroll(type, newAppLocation, userName, useTrial, mobiscrollVersion, () => {
+                        if (callback) {
+                            callback();
+                        }
+                    });
+                })
             });
-        }).catch(err => {
-            reject(err);
+        })
+        .catch((err) => {
+            printError('The following error occurred during cloning the repository: ' + err);
         });
-    });
+}
+
+function startProject(url, type, name, callback) {
+
+    printFeedback('Mobiscroll start command started.');
+
+    var currDir = process.cwd(), // get the directory where the mobiscroll command was executed
+        newAppLocation = path.resolve(currDir, name);
+
+    if (fs.existsSync(newAppLocation)) {
+        inquirer.prompt({
+            type: 'input',
+            name: 'confirm',
+            message: `The directory .\\${chalk.gray(name)} exists. Would you like to overwrite the directory with this new project?(y/N)`,
+            default: 'N',
+        }).then(answer => {
+            if (answer.confirm.toLowerCase() == 'y') {
+                utils.deleteFolder(newAppLocation); // delete the app with the same name
+                cloneProject(url, type, name, newAppLocation, callback);
+            } else {
+                console.log(`Not erasing existing project in .\\${name}`);
+                return;
+            }
+        })
+        //return;
+    } else {
+        cloneProject(url, type, name, newAppLocation, callback);
+    }
+}
+
+function createProject(type, name) {
+    switch (type) {
+        // case 'angular':
+        //     startProject('https://github.com/acidb/mobiscroll', type, name, () => {
+        //         utils.testInstalledCLI('ng -v', 'npm install -g @angular/cli', 'ng serve -o', name, type);
+        //     });
+        //     break;
+        case 'ionic':
+            startProject('https://github.com/acidb/ionic-starter', type, name, () => {
+                utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
+            });
+            break;
+            // case 'react':
+            //     startProject('https://github.com/facebook/react', type, name, () => {
+            //         utils.testInstalledCLI('create-react-app --version', 'npm install -g create-react-app', 'npm start', name, type);
+            //     });
+            //     break;
+            // case 'vue':
+            //     startProject('https://github.com/vuejs/vue', type, name, () => {
+            //         utils.testInstalledCLI('vue -V', 'npm install -g @vue/cli', 'npm run serve', name, type);
+            //     });
+            //     break;
+        default:
+            printWarning('No valid project type was specified. Currently the following project types are supported: [ ionic ]'); // Currently the following project types are supported: [angular, ionic, react, vue]
+            break;
+    }
+}
+
+function handleStart(type, name) {
+    if (!name) {
+        inquirer.prompt([{
+            type: 'input',
+            name: 'projectName',
+            message: 'What would you like to name your project:',
+            validate: function validateProjectName(name) {
+                return name !== '';
+            }
+        }]).then((answer) => {
+            createProject(type, answer.projectName);
+        });
+    } else {
+        createProject(type, name);
+    }
 }
 
 function handleConfig(projectType) {
@@ -210,26 +261,11 @@ function handleConfig(projectType) {
                 config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, false, false, true);
             })
         } else if (isNpmSource) {
-            printFeedback('Checking logged in status...');
-            // check if the user is already logged in
-            run('npm whoami --registry=' + utils.npmUrl, false, true).then((userName) => {
-                if (userName) {
-                    userName = userName.trim();
-                    console.log(`  Logged in as ${userName}`);
-                    return userName;
-                }
-                console.log(`  Logging in to the Mobiscroll NPM registry...`);
-                return login();
-            }).then((userName) => {
-                // if returns an api key it is a trial user
-                getApiKey(userName, (data) => {
-                    var useTrial = !data.HasLicense || isTrial;
-
-                    utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
-                        // Install mobiscroll npm package
-                        utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, () => {
-                            config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
-                        });
+            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial, data) => {
+                utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
+                    // Install mobiscroll npm package
+                    utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, () => {
+                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
                     });
                 });
             });
@@ -340,7 +376,7 @@ function handleConfig(projectType) {
 }
 
 function handleLogin() {
-    login();
+    utils.login(useGlobalNpmrc);
 }
 
 function handleLogout() {
@@ -376,6 +412,14 @@ program
     .command('logout')
     .description('Logs you out from the Mobiscroll npm registry. (Use the --global flag if you want to log out globally).\n')
     .action(handleLogout);
+
+
+program
+    .command('start [types] [name]')
+    .on('--help', helperMessages.startHelp)
+    .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
+    .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
+    .action(handleStart)
 
 program.parse(process.argv);
 
