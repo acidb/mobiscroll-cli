@@ -2,7 +2,7 @@ const chalk = require('chalk');
 
 module.exports = {
     ionicLazy: (isTrial, isLite) => {
-        console.log(`\nIf you are using ionic lazy loading you'll have to manually include the MbscModule and FormsModule into the page's module.ts file where you'll be using Mobiscroll.\n\nExample:\n`);
+        console.log(`\nIf you are using lazy loading you'll have to manually include the MbscModule and FormsModule into every angular module's *.module.ts file where you'll be using Mobiscroll.\n\nExample:\n`);
         console.log("    import { MbscModule } from '@mobiscroll/angular" + (isLite ? '-lite' : '') + "';");
         console.log("    import { FormsModule } from '@angular/forms';\n");
         console.log("    @NgModule({");

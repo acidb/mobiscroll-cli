@@ -1,6 +1,7 @@
 const utils = require('./utils.js');
 const fs = require('fs');
 const chalk = require('chalk');
+const path = require('path');
 
 module.exports = {
     configAngular: function (currDir, packageJson, jsFileName, cssFileName) {
@@ -18,7 +19,7 @@ module.exports = {
         }
 
         // Modify app.module.ts add necessary modules
-        if (!utils.importModules(currDir, jsFileName)) {
+        if (!utils.importModules(path.resolve(currDir + '/src/app/app.module.ts'), 'app.module.ts', jsFileName)) {
             // if not an angular-cli based app
             return;
         }

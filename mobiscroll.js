@@ -252,7 +252,7 @@ function handleConfig(projectType) {
 
         if (isLite) {
             utils.installMobiscrollLite(projectType, mobiscrollVersion, function () {
-                config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, false, false, true);
+                config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, true);
             })
         } else if (isNpmSource) {
             utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial, data) => {
@@ -349,7 +349,7 @@ function handleConfig(projectType) {
 
                                     // run npm install
                                     utils.run('npm install', true).then(() => {
-                                        cssFileName = (projectType == 'ionic' ? 'lib/mobiscroll/css/' : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
+                                        cssFileName = (projectType == 'ionic' ? ( packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
                                         config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
 
                                         console.log(`\n${chalk.green('>')} Removing unused mobiscroll files.`);
@@ -357,7 +357,6 @@ function handleConfig(projectType) {
                                         utils.deleteFolder(mbscFolderLocation); // delete source folder
                                         utils.deleteFolder(distFolder); // delete created dist
                                     });
-
                                 });
                             });
                         });

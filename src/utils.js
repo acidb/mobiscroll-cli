@@ -46,14 +46,16 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
 }
 
 function writeToFile(location, data, callback) {
-    fs.writeFile(location, data, function (err) {
-        if (err) {
-            printError('Could not write to file ' + chalk.gray(location) + '. \n\n' + err);
-        }
-        if (callback) {
-            callback();
-        }
-    });
+    if (data) {
+        fs.writeFile(location, data, function (err) {
+            if (err) {
+                printError('Could not write to file ' + chalk.gray(location) + '. \n\n' + err);
+            }
+            if (callback) {
+                callback();
+            }
+        });
+    }
 }
 
 function importModule(moduleName, location, data) {
@@ -211,7 +213,7 @@ module.exports = {
             packageName = `@mobiscroll/${framework}`,
             trialPackageName = packageName + '-trial',
             litePackageName = `@mobiscroll/${framework}-lite`,
-            packageJson = JSON.parse(fs.readFileSync(packageJsonLocation, 'utf8'));
+            packageJson = JSON.parse(fs.readFileSync(packageJsonLocation, 'utf8')); // TODO: check if packageJsonLocation exists, because curently there is an ugly error
 
         if (noNpm) {
             // delete the mobiscroll references if it was installed from a local file system
@@ -337,10 +339,10 @@ module.exports = {
             })
         });
     },
-    importModules: function (currDir, jsFileName) {
-        console.log(`  Adding module loading scripts to ${chalk.grey('src/app/app.module.ts')}`);
-        let moduleLocation = currDir + '/src/app/app.module.ts';
-        // Modify app.module.ts add necessary modules
+    importModules: function (moduleLocation, moduleName, mbscFileName) {
+        console.log(`  Adding module loading scripts to ${chalk.grey(moduleName)}`);  
+        
+        // Modify *.module.ts add necessary modules
         if (fs.existsSync(moduleLocation)) {
             fs.readFile(moduleLocation, 'utf8', function (err, data) {
                 if (err) {
@@ -353,7 +355,7 @@ module.exports = {
                 data = data.replace(/[ \t]*MbscModule,[ \t\r]*\n/, '');
 
                 // Add angular module imports which are needed for mobiscroll
-                data = importModule('MbscModule', jsFileName, data);
+                data = importModule('MbscModule', mbscFileName, data);
                 data = importModule('FormsModule', '@angular/forms', data);
 
                 // Remove previous api key if present
@@ -361,9 +363,12 @@ module.exports = {
 
                 writeToFile(moduleLocation, data);
             });
-        } else {
+        } else if (moduleName == 'app.module.ts') {
             printWarning(`No app.module.ts file found. You are probably running this command in a non Angular-cli based application. Please visit the following page for further instructions:`);
             console.log(terminalLink('Mobiscroll Angular Docs - Quick install', 'https://docs.mobiscroll.com/angular/quick-install'))
+            return false;
+        } else {
+            //console.log(`  Couldn't find ${chalk.grey(moduleName)}`);  
             return false;
         }
 
