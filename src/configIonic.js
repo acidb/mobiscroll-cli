@@ -126,7 +126,7 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
     }
 }
 
-function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion) {
+function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, callback) {
 
     var modulePages = [],
         ngAppPath = path.resolve(currDir, (ionicVersion >= 4 ? 'src/app' : 'src/pages'));
@@ -138,7 +138,7 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion) {
     
     // check for *.module.ts files 
     for (var i = 0; i < ngModulesDir.length; ++i) {
-        let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf('.module.ts') != -1 )
+        let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf('.module.ts') != -1);
         if (checkModule.length) {
             modulePages.push({
                 name: ngModulesDir[i] + ' - ' + checkModule[0]
@@ -147,30 +147,40 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion) {
     }
 
     if (modulePages.length) {
-        console.log(chalk.bold(`\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use the Mobiscroll components:\n`));
+        console.log(chalk.bold(`\n\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`));
+
+        console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
 
         inquirer.prompt([
             {
             type: 'checkbox',
-            message: 'Where to inject MbscModule?',
+            message: 'Please select where else do you want to inject the MbscModule? ',
             name: 'pages',
             choices: modulePages
             }
         ]).then(function (answers) {
             if (answers.pages.length) {
+                console.log('\n');
                 for (let i = 0; i <answers.pages.length; ++i) {
                     let pageInfo = answers.pages[i].split(' - ');
                     utils.importModules(path.resolve(ngAppPath, pageInfo[0], pageInfo[1]), pageInfo[1], jsFileName);
                 }
 
                 utils.printFeedback('MbscModule injected successfully to the selected modules.');
-            } else {
-                // didn't selected any options
-                helperMessages.ionicLazy(apiKey, isLite);
-            }
+
+                if (callback) {
+                    callback();
+                }
+            } 
+
+            helperMessages.ionicLazy(apiKey, isLite);
         });
 
         return true;
+    }
+
+    if (callback) {
+        callback();
     }
 
     return false;
@@ -178,7 +188,7 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion) {
 }
 
 module.exports = {
-    configIonic: function (currDir, ionicPackageLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite) {
+    configIonic: function (currDir, ionicPackageLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite, callback) {
         utils.printFeedback('Configuring Ionic app...');
         var versionArray,
             mainIonicVersion,
@@ -210,6 +220,6 @@ module.exports = {
             configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, mainIonicVersion);
         }
         
-        detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion);
+        detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
     }
 }

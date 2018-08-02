@@ -4,8 +4,10 @@ const chalk = require('chalk');
 const path = require('path');
 
 module.exports = {
-    configAngular: function (currDir, packageJson, jsFileName, cssFileName) {
-        utils.printFeedback('Configuring Angular app...');
+    configAngular: function (currDir, packageJson, jsFileName, cssFileName, isIonicApp, callback) {
+        if (!isIonicApp) {
+            utils.printFeedback('Configuring Angular app...');
+        }
 
         if (!utils.checkTypescriptVersion(packageJson)) {
             return;
@@ -64,5 +66,9 @@ module.exports = {
             utils.printWarning(`The file ${chalk.grey('angular.json')} could not be found. If this is not an Angular CLI app, make sure to load ${chalk.grey(cssFileName)} into your app.`)
             utils.printFeedback('Mobiscroll configuration ready.');
         }
+
+        if (callback) {
+                callback();
+            }
     }
 }
