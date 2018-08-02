@@ -4,6 +4,8 @@ const ncp = require('ncp').ncp;
 const chalk = require('chalk');
 const path = require('path');
 const helperMessages = require('./helperMessages.js');
+const inquirer = require('inquirer');
+const configAngular = require('./configAngular').configAngular;
 
 function configIonicPro(currDir, packageJson, packageJsonLocation) {
     var mobiscrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular');
@@ -99,7 +101,7 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
 
         if (data.indexOf(cssFileName) == -1) {
             data = data.replace(/<link ([^>]+) rel="stylesheet">/, function (match) {
-                return '<link rel="stylesheet" href="' + cssFileName + '">\n  ' + match;
+                return '<link rel="stylesheet" title="' + cssFileName + '">\n  ' + match;
             });
 
             utils.writeToFile(currDir + '/src/index.html', data);
@@ -110,7 +112,7 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
         utils.printFeedback(`Lazy mode: skipping MbscModule injection from app.module.ts`);
     } else {
         // Modify app.module.ts add necessary modules
-        utils.importModules(currDir, jsFileName);
+        utils.importModules(path.resolve(currDir + '/src/app/app.module.ts'), 'app.module.ts', jsFileName);
     }
 
     if (ionicPro) {
@@ -124,16 +126,81 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
     }
 }
 
+function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, callback) {
+
+    var modulePages = [],
+        ngAppPath = path.resolve(currDir, (ionicVersion >= 4 ? 'src/app' : 'src/pages'));
+
+    // look for directories in the app folder
+    var ngModulesDir = fs.readdirSync(ngAppPath).filter((f) => {
+        return fs.lstatSync(path.resolve(ngAppPath, f)).isDirectory();
+    })
+    
+    // check for *.module.ts files 
+    for (var i = 0; i < ngModulesDir.length; ++i) {
+        let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf('.module.ts') != -1);
+        if (checkModule.length) {
+            modulePages.push({
+                name: ngModulesDir[i] + ' - ' + checkModule[0]
+            });
+        }
+    }
+
+    if (modulePages.length) {
+        console.log(chalk.bold(`\n\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`));
+
+        console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
+
+        inquirer.prompt([
+            {
+            type: 'checkbox',
+            message: 'Please select where else do you want to inject the MbscModule? ',
+            name: 'pages',
+            choices: modulePages
+            }
+        ]).then(function (answers) {
+            if (answers.pages.length) {
+                console.log('\n');
+                for (let i = 0; i <answers.pages.length; ++i) {
+                    let pageInfo = answers.pages[i].split(' - ');
+                    utils.importModules(path.resolve(ngAppPath, pageInfo[0], pageInfo[1]), pageInfo[1], jsFileName);
+                }
+
+                utils.printFeedback('MbscModule injected successfully to the selected modules.');
+
+                if (callback) {
+                    callback();
+                }
+            } 
+
+            helperMessages.ionicLazy(apiKey, isLite);
+        });
+
+        return true;
+    }
+
+    if (callback) {
+        callback();
+    }
+
+    return false;
+
+}
+
 module.exports = {
-    configIonic: function (currDir, ionicPackageLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite) {
+    configIonic: function (currDir, ionicPackageLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite, callback) {
         utils.printFeedback('Configuring Ionic app...');
-        var ionicPackage = require(ionicPackageLocation),
-            ionicVersion = ionicPackage.dependencies['ionic-angular'];
+        var versionArray,
+            mainIonicVersion,
+            ionicPackage = require(ionicPackageLocation),
+            ionicVersion = ionicPackage.dependencies['ionic-angular'] || ionicPackage.dependencies['@ionic/angular'];
 
         if (ionicVersion) { // check ionic version
-            let versionArray = utils.shapeVersionToArray(ionicVersion);
+            versionArray = utils.shapeVersionToArray(ionicVersion);
 
-            if (versionArray[0] == 2 && versionArray[1] < 2) {
+            mainIonicVersion = versionArray[0];
+
+            if (mainIonicVersion == 2 && versionArray[1] < 2) {
                 utils.printWarning('It looks like your are using an older version of ionic 2. The minimum required ionic 2 version is 2.2.0. Please update your ionic app in order to Mobiscroll work correctly.');
 
                 return;
@@ -147,6 +214,12 @@ module.exports = {
             return;
         }
 
-        configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro);
+        if (ionicVersion && mainIonicVersion >= 4) {
+            configAngular(currDir, ionicPackage, jsFileName, cssFileName, true);
+        } else {
+            configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, mainIonicVersion);
+        }
+        
+        detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
     }
 }

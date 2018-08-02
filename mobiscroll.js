@@ -20,7 +20,7 @@ var isLite = false;
 var isLazy = false;
 var run = utils.run;
 var printFeedback = utils.printFeedback;
-var printError = utils.printError;
+//var printError = utils.printError;
 var printWarning = utils.printWarning;
 var localCliVersion = require('./package.json').version;
 var mobiscrollVersion = null;
@@ -88,9 +88,9 @@ function handleNpmInstall() {
     isNpmSource = false;
 }
 
-function handleLazy() {
-    isLazy = true;
-}
+// function handleLazy() {
+//     isLazy = true;
+// }
 
 function handleMobiscrollVersion(vers) {
     mobiscrollVersion = vers;
@@ -114,25 +114,31 @@ function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
     return;
 }
 
-function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite) {
+function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite, callback) {
     var packageJson = require(packageJsonLocation);
 
     switch (projectType) {
         case 'angular':
-            configAngular(currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLite);
+            configAngular(currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLite, callback);
             break;
         case 'angularjs':
             break;
         case 'ionic':
         case 'ionic-pro':
-            configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro', isLite);
+            configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro', isLite, callback);
             break;
         case 'react':
             helperMessages.reactHelp(apiKey, isLite, isNpmSource);
+            if (callback) {
+                callback();
+            }
             break;
         case 'jquery':
         case 'javascript':
             detectProjectFramework(packageJson, apiKey, isLite, projectType);
+            if (callback) {
+                callback();
+            }
             break;
     }
 
@@ -252,7 +258,7 @@ function handleConfig(projectType) {
 
         if (isLite) {
             utils.installMobiscrollLite(projectType, mobiscrollVersion, function () {
-                config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, false, false, true);
+                config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, true);
             })
         } else if (isNpmSource) {
             utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial, data) => {
@@ -349,15 +355,14 @@ function handleConfig(projectType) {
 
                                     // run npm install
                                     utils.run('npm install', true).then(() => {
-                                        cssFileName = (projectType == 'ionic' ? 'lib/mobiscroll/css/' : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
-                                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource);
-
-                                        console.log(`\n${chalk.green('>')} Removing unused mobiscroll files.`);
-                                        fs.unlinkSync(path.resolve(packageFolder, 'package.json')); // delete the package.json in dist
-                                        utils.deleteFolder(mbscFolderLocation); // delete source folder
-                                        utils.deleteFolder(distFolder); // delete created dist
+                                        cssFileName = (projectType == 'ionic' ? ( packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
+                                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, false, () => {
+                                            console.log(`\n${chalk.green('>')} Removing unused mobiscroll files.`);
+                                            fs.unlinkSync(path.resolve(packageFolder, 'package.json')); // delete the package.json in dist
+                                            utils.deleteFolder(mbscFolderLocation); // delete source folder
+                                            utils.deleteFolder(distFolder); // delete created dist
+                                        });
                                     });
-
                                 });
                             });
                         });
@@ -391,7 +396,7 @@ program
     .description(`Configures your current project with the Mobiscroll resources and dependencies. For more information run the ${chalk.gray('mobiscroll config --help')} command.\n`)
     .action(handleConfig)
     .on('--help', helperMessages.configHelp)
-    .option('-l, --lazy', 'Skipping MbscModule injection from app.module.ts in case of Ionic lazy loading project.\n', handleLazy)
+    //.option('-l, --lazy', 'Skipping MbscModule injection from app.module.ts in case of Ionic lazy loading project.\n', handleLazy)
     .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
     .option('-i, --lite', 'The project will be tuned up with lite configuration.\n', handleLite)
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.\n', handleNpmInstall)
