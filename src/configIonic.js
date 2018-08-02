@@ -35,7 +35,7 @@ function configIonicPro(currDir, packageJson, packageJsonLocation) {
     });
 }
 
-function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, ionicVersion) {
+function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro) {
     console.log(`\n  Adding stylesheet copy script to ${chalk.grey('package.json')}`);
 
     // Add ionic_copy script to package.json and copy the scrips folder
@@ -128,17 +128,15 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
 
 function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion) {
 
-    var ngAppPath = path.resolve(currDir, (ionicVersion >= 4 ? 'src/app' : 'src/pages'));
+    var modulePages = [],
+        ngAppPath = path.resolve(currDir, (ionicVersion >= 4 ? 'src/app' : 'src/pages'));
 
     // look for directories in the app folder
     var ngModulesDir = fs.readdirSync(ngAppPath).filter((f) => {
         return fs.lstatSync(path.resolve(ngAppPath, f)).isDirectory();
     })
     
-    // check for *.module.ts
-
-    var modulePages = [];
-
+    // check for *.module.ts files 
     for (var i = 0; i < ngModulesDir.length; ++i) {
         let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf('.module.ts') != -1 )
         if (checkModule.length) {
@@ -149,7 +147,7 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion) {
     }
 
     if (modulePages.length) {
-        console.log(chalk.bold(`\nMultiple angular modules detected. The MbscModule should be imported into every module separately where you want to use the Mobiscroll components:\n`));
+        console.log(chalk.bold(`\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use the Mobiscroll components:\n`));
 
         inquirer.prompt([
             {
@@ -165,7 +163,7 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion) {
                     utils.importModules(path.resolve(ngAppPath, pageInfo[0], pageInfo[1]), pageInfo[1], jsFileName);
                 }
 
-                utils.printFeedback('MbscModule injected successfully to the selected pages.');
+                utils.printFeedback('MbscModule injected successfully to the selected modules.');
             } else {
                 // didn't selected any options
                 helperMessages.ionicLazy(apiKey, isLite);
@@ -206,7 +204,6 @@ module.exports = {
             return;
         }
 
-        console.log('ionicVersion ==>', ionicVersion);
         if (ionicVersion && mainIonicVersion >= 4) {
             configAngular(currDir, ionicPackage, jsFileName, cssFileName, true);
         } else {
@@ -214,7 +211,5 @@ module.exports = {
         }
         
         detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion);
-
-        // TODO: check if --no-npm work with ionic 4 !!!!
     }
 }

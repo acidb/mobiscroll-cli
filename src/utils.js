@@ -264,12 +264,6 @@ module.exports = {
                 var useTrial = !data.HasLicense || isTrial;
 
                 callback(userName, useTrial, data);
-                // utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
-                //     // Install mobiscroll npm package
-                //     utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, () => {
-                //         config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
-                //     });
-                // });
             });
         });
     },
@@ -279,6 +273,7 @@ module.exports = {
 
         switch (framework) {
             case 'ionic':
+            case 'ionic-pro':
                 frameworkName = 'angular';
                 break;
             case 'vue':
@@ -368,7 +363,7 @@ module.exports = {
             console.log(terminalLink('Mobiscroll Angular Docs - Quick install', 'https://docs.mobiscroll.com/angular/quick-install'))
             return false;
         } else {
-            //console.log(`  Couldn't find ${chalk.grey(moduleName)}`);  
+            console.log(`  Could not find module in the following location: ${chalk.grey(moduleLocation)}`);  
             return false;
         }
 
