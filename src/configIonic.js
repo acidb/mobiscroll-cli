@@ -101,7 +101,7 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
 
         if (data.indexOf(cssFileName) == -1) {
             data = data.replace(/<link ([^>]+) rel="stylesheet">/, function (match) {
-                return '<link rel="stylesheet" title="' + cssFileName + '">\n  ' + match;
+                return '<link rel="stylesheet" href="' + cssFileName + '">\n  ' + match;
             });
 
             utils.writeToFile(currDir + '/src/index.html', data);
@@ -135,7 +135,7 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
     var ngModulesDir = fs.readdirSync(ngAppPath).filter((f) => {
         return fs.lstatSync(path.resolve(ngAppPath, f)).isDirectory();
     })
-    
+
     // check for *.module.ts files 
     for (var i = 0; i < ngModulesDir.length; ++i) {
         let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf('.module.ts') != -1);
@@ -151,17 +151,15 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
 
         console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
 
-        inquirer.prompt([
-            {
+        inquirer.prompt([{
             type: 'checkbox',
             message: 'Please select where else do you want to inject the MbscModule? ',
             name: 'pages',
             choices: modulePages
-            }
-        ]).then(function (answers) {
+        }]).then(function (answers) {
             if (answers.pages.length) {
                 console.log('\n');
-                for (let i = 0; i <answers.pages.length; ++i) {
+                for (let i = 0; i < answers.pages.length; ++i) {
                     let pageInfo = answers.pages[i].split(' - ');
                     utils.importModules(path.resolve(ngAppPath, pageInfo[0], pageInfo[1]), pageInfo[1], jsFileName);
                 }
@@ -171,7 +169,7 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
                 if (callback) {
                     callback();
                 }
-            } 
+            }
 
             helperMessages.ionicLazy(apiKey, isLite);
         });
@@ -219,7 +217,7 @@ module.exports = {
         } else {
             configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, mainIonicVersion);
         }
-        
+
         detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
     }
 }
