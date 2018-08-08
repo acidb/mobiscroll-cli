@@ -59,6 +59,13 @@ function checkUpdate() {
     });
 }
 
+function notLoggedInFeedback() {
+    printFeedback(`You are not logged in to the Mobiscroll npm registry ${useGlobalNpmrc ? 'globally' : 'locally'}!\n`);
+    if (!useGlobalNpmrc) {
+        console.log(`${chalk.yellow('Please Note:')} If you are logged in globally you will have to use the -g/--global flag with this command.\n\nUsage: ${chalk.gray('mobiscroll logout -g')}`);
+    }
+}
+
 function removeTokenFromNpmrc(path) {
     if (fs.existsSync(path)) {
         let content = (fs.readFileSync(path)).toString();
@@ -68,11 +75,11 @@ function removeTokenFromNpmrc(path) {
                 printFeedback('Successful logout!\n');
             });
         } else {
-            printFeedback('You are not logged in to the Mobiscroll npm registry!\n');
-            if (!useGlobalNpmrc) {
-                console.log(`${chalk.yellow('Please Note:')} If you are logged in globally you will have to use the -g/--global flag with this command.\n\nUsage: ${chalk.gray('mobiscroll logout -g')}`);
-            }
+            notLoggedInFeedback();
         }
+    } else {
+        console.log(`No${useGlobalNpmrc ? ' global' : ' local'} .npmrc file found.`);
+        notLoggedInFeedback();
     }
 }
 
@@ -194,28 +201,28 @@ function startProject(url, type, name, callback) {
 
 function createProject(type, name) {
     switch (type) {
-        // case 'angular':
-        //     startProject('https://github.com/acidb/mobiscroll', type, name, () => {
-        //         utils.testInstalledCLI('ng -v', 'npm install -g @angular/cli', 'ng serve -o', name, type);
-        //     });
-        //     break;
+        case 'angular':
+            startProject('https://github.com/acidb/angular-starter', type, name, () => {
+                utils.testInstalledCLI('ng -v', 'npm install -g @angular/cli', 'ng serve -o', name, type);
+            });
+            break;
         case 'ionic':
             startProject('https://github.com/acidb/ionic-starter', type, name, () => {
                 utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
             });
             break;
-            // case 'react':
-            //     startProject('https://github.com/facebook/react', type, name, () => {
-            //         utils.testInstalledCLI('create-react-app --version', 'npm install -g create-react-app', 'npm start', name, type);
-            //     });
-            //     break;
+        case 'react':
+            startProject('https://github.com/acidb/react-starter', type, name, () => {
+                utils.testInstalledCLI('create-react-app --version', 'npm install -g create-react-app', 'npm start', name, type);
+            });
+            break;
             // case 'vue':
-            //     startProject('https://github.com/vuejs/vue', type, name, () => {
+            //     startProject('', type, name, () => {
             //         utils.testInstalledCLI('vue -V', 'npm install -g @vue/cli', 'npm run serve', name, type);
             //     });
             //     break;
         default:
-            printWarning('No valid project type was specified. Currently the following project types are supported: [ ionic ]'); // Currently the following project types are supported: [angular, ionic, react, vue]
+            printWarning('No valid project type was specified. Currently the following project types are supported: [ angular, ionic, react ]');
             break;
     }
 }
@@ -355,7 +362,7 @@ function handleConfig(projectType) {
 
                                     // run npm install
                                     utils.run('npm install', true).then(() => {
-                                        cssFileName = (projectType == 'ionic' ? ( packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
+                                        cssFileName = (projectType == 'ionic' ? (packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
                                         config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, false, () => {
                                             console.log(`\n${chalk.green('>')} Removing unused mobiscroll files.`);
                                             fs.unlinkSync(path.resolve(packageFolder, 'package.json')); // delete the package.json in dist
