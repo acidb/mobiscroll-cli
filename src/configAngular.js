@@ -4,7 +4,7 @@ const chalk = require('chalk');
 const path = require('path');
 
 module.exports = {
-    configAngular: function (currDir, packageJson, jsFileName, cssFileName, isIonicApp, callback) {
+    configAngular: function (currDir, packageJson, jsFileName, cssFileName, isIonicApp, isLite, callback) {
         if (!isIonicApp) {
             utils.printFeedback('Configuring Angular app...');
         }
@@ -68,7 +68,7 @@ module.exports = {
         }
 
         if (callback) {
-                callback();
-            }
+            callback();
+        }
     }
 }
