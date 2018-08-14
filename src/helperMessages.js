@@ -29,6 +29,7 @@ module.exports = {
         console.log('\n  Types:\n');
         console.log('    angular         Creates an angular 6 applications.(Based on Angular CLI application.)\n');
         console.log('    ionic           Creates an ionic application. (Based on Ionic 3 application.)\n');
+        console.log('    ionic-angular   Creates an ionic-angular application. (Based on Ionic 4 angular application.)\n');
         console.log('    react           Creates an react applications.(Based on Create React App application.)\n');
         //console.log('    vue             Creates an Vue.js applications.(Based on Vue CLI application) \n');
     },
