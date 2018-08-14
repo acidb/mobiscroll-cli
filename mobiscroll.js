@@ -206,6 +206,11 @@ function createProject(type, name) {
                 utils.testInstalledCLI('ng -v', 'npm install -g @angular/cli', 'ng serve -o', name, type);
             });
             break;
+        case 'ionic-angular':
+            startProject('https://github.com/acidb/ionic-angular-starter', "ionic", name, () => {
+                utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
+            });
+            break;
         case 'ionic':
             startProject('https://github.com/acidb/ionic-starter', type, name, () => {
                 utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
