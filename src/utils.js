@@ -8,6 +8,7 @@ const inquirer = require('inquirer');
 const path = require('path');
 const npmLogin = require('./npm-login/');
 const helperMessages = require('./helperMessages.js');
+const ncp = require('ncp').ncp;
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -121,6 +122,29 @@ function getApiKey(userName, callback) {
     });
 }
 
+function checkMeteor(packageJson, currDir, framework) {
+    if (packageJson['meteor']) {
+        console.log('\nMeteor based application detected...\n');
+        let publicDir = path.resolve(currDir, 'public'),
+            nodeDir = path.resolve(currDir, 'node_modules', '@mobiscroll', framework, 'dist', 'css');
+
+        if (!fs.existsSync(publicDir)) {
+            fs.mkdirSync(publicDir);
+        }
+
+        if (fs.existsSync(nodeDir)) {
+            printLog('Copying font files to the public folder.');
+            ncp(nodeDir, publicDir, (err) => {
+                if (err) {
+                    printError('Couldn\'t copy font files to the public folder: ' + err);
+                }
+            });
+        } else {
+            printLog('No font files found. Skipping copy...');
+        }
+    }
+}
+
 function login(useGlobalNpmrc) {
     // input questions
     var questions = [{
@@ -184,7 +208,7 @@ function testInstalledCLI(checkCmd, installCmd, helpCmd, name, type) {
 
 module.exports = {
     checkTypescriptVersion: (packageJson) => {
-        var version = packageJson.devDependencies.typescript || packageJson.dependencies.typescript;
+        var version = (packageJson.devDependencies ? packageJson.devDependencies.typescript : '') || packageJson.dependencies.typescript;
 
         var v = shapeVersionToArray(version);
 
@@ -335,8 +359,8 @@ module.exports = {
         });
     },
     importModules: function (moduleLocation, moduleName, mbscFileName) {
-        console.log(`  Adding module loading scripts to ${chalk.grey(moduleName)}`);  
-        
+        console.log(`  Adding module loading scripts to ${chalk.grey(moduleName)}`);
+
         // Modify *.module.ts add necessary modules
         if (fs.existsSync(moduleLocation)) {
             fs.readFile(moduleLocation, 'utf8', function (err, data) {
@@ -363,7 +387,7 @@ module.exports = {
             console.log(terminalLink('Mobiscroll Angular Docs - Quick install', 'https://docs.mobiscroll.com/angular/quick-install'))
             return false;
         } else {
-            console.log(`  Could not find module in the following location: ${chalk.grey(moduleLocation)}`);  
+            console.log(`  Could not find module in the following location: ${chalk.grey(moduleLocation)}`);
             return false;
         }
 
@@ -380,5 +404,6 @@ module.exports = {
     printWarning,
     printError,
     printLog,
+    checkMeteor,
     login
 };

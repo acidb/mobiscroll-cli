@@ -124,6 +124,8 @@ function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
 function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite, callback) {
     var packageJson = require(packageJsonLocation);
 
+    utils.checkMeteor(packageJson, currDir, projectType);
+
     switch (projectType) {
         case 'angular':
             configAngular(currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLite, callback);
