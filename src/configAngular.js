@@ -51,17 +51,30 @@ module.exports = {
             });
         } else if (fs.existsSync(currDir + '/angular.json')) { // angular 6
             // starting from cli v6.0 the configuration file name and structure changed 
-            var ngConfig = require(currDir + '/angular.json');
-            var projectName = Object.keys(ngConfig.projects)[0],
-                stylesArray = ngConfig.projects[projectName].architect.build.options.styles;
+            var stylesArray,
+                configPath,
+                cssFile = cssFileName.replace('../', './'),
+                ngConfig = require(currDir + '/angular.json'),
+                projectName = Object.keys(ngConfig.projects)[0],
+                projectConfig = ngConfig.projects[projectName];
+
+            if (projectConfig.architect) {
+                configPath = 'architect';
+                stylesArray = projectConfig.architect.build.options.styles;
+            } else if (projectConfig.targets) { // `architect` property is deprecated and `targets` will take it's place
+                configPath = 'targets';
+                stylesArray = projectConfig.targets.build.options.styles;
+            } else {
+                utils.printWarning('It looks like something changed in the angular.json configuration file. Couldn\'t locate the `styles` property. Skipping Mobiscroll stylesheet configuration.');
+                console.log('You will have to add the stylesheet manually. Here is it\'s location: ' + chalk.grey(cssFile));
+            }
 
             if (stylesArray) {
                 stylesArray = stylesArray.filter(x => x != null && typeof x == "object" ? x.input && x.input.indexOf('mobiscroll') == -1 : x.indexOf('mobiscroll') == -1); // remove previously installed mobiscroll styles
-                stylesArray.push(cssFileName.replace('../', './'));
-                ngConfig.projects[projectName].architect.build.options.styles = stylesArray;
+                stylesArray.push(cssFile);
+                ngConfig.projects[projectName][configPath].build.options.styles = stylesArray;
+                utils.writeToFile(currDir + '/angular.json', JSON.stringify(ngConfig, null, 2));
             }
-
-            utils.writeToFile(currDir + '/angular.json', JSON.stringify(ngConfig, null, 2));
         } else {
             utils.printWarning(`The file ${chalk.grey('angular.json')} could not be found. If this is not an Angular CLI app, make sure to load ${chalk.grey(cssFileName)} into your app.`)
             utils.printFeedback('Mobiscroll configuration ready.');
