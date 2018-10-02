@@ -128,7 +128,7 @@ function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileNa
 
     switch (projectType) {
         case 'angular':
-            configAngular(currDir, packageJson, jsFileName, cssFileName, isNpmSource, apiKey, isLite, callback);
+            configAngular(currDir, packageJson, jsFileName, cssFileName, false, isLite, callback);
             break;
         case 'angularjs':
             break;
