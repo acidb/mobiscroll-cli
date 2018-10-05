@@ -131,50 +131,53 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
     var modulePages = [],
         ngAppPath = path.resolve(currDir, (ionicVersion >= 4 ? 'src/app' : 'src/pages'));
 
-    // look for directories in the app folder
-    var ngModulesDir = fs.readdirSync(ngAppPath).filter((f) => {
-        return fs.lstatSync(path.resolve(ngAppPath, f)).isDirectory();
-    })
 
-    // check for *.module.ts files 
-    for (var i = 0; i < ngModulesDir.length; ++i) {
-        let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf('.module.ts') != -1);
-        if (checkModule.length) {
-            modulePages.push({
-                name: ngModulesDir[i] + ' - ' + checkModule[0]
-            });
-        }
-    }
+    if (fs.existsSync(ngAppPath)) {
+        // look for directories in the app folder
+        var ngModulesDir = fs.readdirSync(ngAppPath).filter((f) => {
+            return fs.lstatSync(path.resolve(ngAppPath, f)).isDirectory();
+        })
 
-    if (modulePages.length) {
-        console.log(chalk.bold(`\n\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`));
-
-        console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
-
-        inquirer.prompt([{
-            type: 'checkbox',
-            message: 'Please select where else do you want to inject the MbscModule? ',
-            name: 'pages',
-            choices: modulePages
-        }]).then(function (answers) {
-            if (answers.pages.length) {
-                console.log('\n');
-                for (let i = 0; i < answers.pages.length; ++i) {
-                    let pageInfo = answers.pages[i].split(' - ');
-                    utils.importModules(path.resolve(ngAppPath, pageInfo[0], pageInfo[1]), pageInfo[1], jsFileName);
-                }
-
-                utils.printFeedback('MbscModule injected successfully to the selected modules.');
-
-                if (callback) {
-                    callback();
-                }
+        // check for *.module.ts files 
+        for (var i = 0; i < ngModulesDir.length; ++i) {
+            let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf('.module.ts') != -1);
+            if (checkModule.length) {
+                modulePages.push({
+                    name: ngModulesDir[i] + ' - ' + checkModule[0]
+                });
             }
+        }
 
-            helperMessages.ionicLazy(apiKey, isLite);
-        });
+        if (modulePages.length) {
+            console.log(chalk.bold(`\n\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`));
 
-        return true;
+            console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
+
+            inquirer.prompt([{
+                type: 'checkbox',
+                message: 'Please select where else do you want to inject the MbscModule? ',
+                name: 'pages',
+                choices: modulePages
+            }]).then(function (answers) {
+                if (answers.pages.length) {
+                    console.log('\n');
+                    for (let i = 0; i < answers.pages.length; ++i) {
+                        let pageInfo = answers.pages[i].split(' - ');
+                        utils.importModules(path.resolve(ngAppPath, pageInfo[0], pageInfo[1]), pageInfo[1], jsFileName);
+                    }
+
+                    utils.printFeedback('MbscModule injected successfully to the selected modules.');
+
+                    if (callback) {
+                        callback();
+                    }
+                }
+
+                helperMessages.ionicLazy(apiKey, isLite);
+            });
+
+            return true;
+        }
     }
 
     if (callback) {
