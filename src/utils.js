@@ -67,8 +67,16 @@ function importModule(moduleName, location, data) {
     return data;
 }
 
-function getMobiscrollVersion(callback) {
-    request('https://api.mobiscroll.com/api/getmobiscrollversion', function (error, response, body) {
+function getMobiscrollVersion(proxy, callback) {
+    var requestOptions = {
+        url: 'https://api.mobiscroll.com/api/getmobiscrollversion'
+    }
+
+    if (proxy) {
+        requestOptions.proxy = proxy;
+    }
+
+    request(requestOptions, function (error, response, body) {
         if (error) {
             printError('Could not get mobiscroll version.' + error);
         }
@@ -104,14 +112,20 @@ function deleteFolderRecursive(path) {
     }
 }
 
-function getApiKey(userName, callback) {
-    request.get({
+function getApiKey(userName, proxy, callback) {
+    var requestOptions = {
         url: 'https://api.mobiscroll.com/api/userdata/' + userName,
         json: true,
         headers: {
             'User-Agent': 'request'
         }
-    }, (err, res, data) => {
+    }
+
+    if (proxy) {
+        requestOptions.proxy = proxy;
+    }
+
+    request(requestOptions, (err, res, data) => {
         if (err) {
             printError('There was an error during getting the user\'s trial code. Please see the error message for more information: ' + err);
         } else if (res.statusCode !== 200) {
@@ -269,7 +283,7 @@ module.exports = {
             callback();
         }
     },
-    checkMbscNpmLogin: function (isTrial, useGlobalNpmrc, callback) {
+    checkMbscNpmLogin: function (isTrial, useGlobalNpmrc, proxy, callback) {
         printFeedback('Checking logged in status...');
         // check if the user is already logged in
         runCommand('npm whoami --registry=' + mbscNpmUrl, false, true).then((userName) => {
@@ -284,15 +298,14 @@ module.exports = {
             console.log('Login error' + err);
         }).then((userName) => {
             // if returns an api key it is a trial user
-            getApiKey(userName, (data) => {
+            getApiKey(userName, proxy, (data) => {
                 var useTrial = !data.HasLicense || isTrial;
 
                 callback(userName, useTrial, data);
             });
         });
     },
-
-    installMobiscroll: function (framework, currDir, userName, isTrial, installVersion, callback) {
+    installMobiscroll: function (framework, currDir, userName, isTrial, installVersion, proxy, callback) {
         var frameworkName;
 
         switch (framework) {
@@ -311,7 +324,7 @@ module.exports = {
         var pkgName = frameworkName + (isTrial ? '-trial' : ''),
             command;
 
-        getMobiscrollVersion(function (version) {
+        getMobiscrollVersion(proxy, function (version) {
             if (isTrial) {
                 command = `npm install ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${version}.tgz --save --registry=${mbscNpmUrl}`;
             } else {

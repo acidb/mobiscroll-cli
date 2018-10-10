@@ -25,6 +25,7 @@ var printWarning = utils.printWarning;
 var localCliVersion = require('./package.json').version;
 var mobiscrollVersion = null;
 var useGlobalNpmrc = false;
+var proxyUrl = '';
 
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
 
@@ -81,6 +82,10 @@ function removeTokenFromNpmrc(path) {
         console.log(`No${useGlobalNpmrc ? ' global' : ' local'} .npmrc file found.`);
         notLoggedInFeedback();
     }
+}
+
+function handleProxy(url) {
+    proxyUrl = url;
 }
 
 function handleTrial() {
@@ -162,8 +167,8 @@ function cloneProject(url, type, name, newAppLocation, callback) {
         console.log(`Installing dependencies may take several minutes:\n`);
 
         utils.run('npm install', true).then(() => {
-            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial) => {
-                utils.installMobiscroll(type, newAppLocation, userName, useTrial, mobiscrollVersion, () => {
+            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, (userName, useTrial) => {
+                utils.installMobiscroll(type, newAppLocation, userName, useTrial, mobiscrollVersion, proxyUrl, () => {
                     if (callback) {
                         callback();
                     }
@@ -275,11 +280,11 @@ function handleConfig(projectType) {
                 config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, true);
             })
         } else if (isNpmSource) {
-            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, (userName, useTrial, data) => {
+            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, (userName, useTrial, data) => {
                 utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
                     // Install mobiscroll npm package
-                    utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, () => {
-                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''));
+                    utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, proxyUrl, () => {
+                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''), false);
                     });
                 });
             });
@@ -355,7 +360,6 @@ function handleConfig(projectType) {
 
                     // remove previously installed mobiscroll package (fix npm caching the local package)
                     utils.run(`npm uninstall @mobiscroll/${framework} --save`, true).then(() => {
-
                         // write the new package.json
                         utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
                             // pack with npm pack
@@ -414,7 +418,8 @@ program
     .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
     .option('-i, --lite', 'The project will be tuned up with lite configuration.\n', handleLite)
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.\n', handleNpmInstall)
-    .option('--version [version]', 'Pass the Mobiscroll version which you want to install.\n', handleMobiscrollVersion);
+    .option('--version [version]', 'Pass the Mobiscroll version which you want to install.\n', handleMobiscrollVersion)
+    .option('--proxy [proxy]', 'Define a proxy URL which will be passed to the internal requests.', handleProxy);
 
 program
     .command('login')
