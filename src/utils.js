@@ -48,14 +48,15 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
 
 function writeToFile(location, data, callback) {
     if (data) {
-        fs.writeFile(location, data, function (err) {
-            if (err) {
-                printError('Could not write to file ' + chalk.gray(location) + '. \n\n' + err);
-            }
+        try {
+            fs.writeFileSync(location, data);
+
             if (callback) {
                 callback();
             }
-        });
+        } catch (err) {
+            printError('Could not write to file ' + chalk.gray(location) + '. \n\n' + err);
+        }
     }
 }
 
@@ -100,15 +101,19 @@ function shapeVersionToArray(version) {
 
 function deleteFolderRecursive(path) {
     if (fs.existsSync(path)) {
-        fs.readdirSync(path).forEach(function (file) {
-            var curPath = path + "/" + file;
-            if (fs.lstatSync(curPath).isDirectory()) {
-                deleteFolderRecursive(curPath);
-            } else { // delete file
-                fs.unlinkSync(curPath);
-            }
-        });
-        fs.rmdirSync(path);
+        try {
+            fs.readdirSync(path).forEach(function (file) {
+                var curPath = path + "/" + file;
+                if (fs.lstatSync(curPath).isDirectory()) {
+                    deleteFolderRecursive(curPath);
+                } else { // delete file
+                    fs.unlinkSync(curPath);
+                }
+            });
+            fs.rmdirSync(path);
+        } catch (err) {
+            console.log(`Couldn't remove the ${path} folder. Error: ` + err);
+        }
     }
 }
 
@@ -185,6 +190,10 @@ function login(useGlobalNpmrc) {
                 printFeedback('Successful login!\n');
                 resolve(answers.username);
             }).catch(err => {
+                if (err.toString().indexOf("Could not find user with the specified username or password") !== -1) {
+                    printWarning('\n You can update your Mobiscroll username or password on the  ' + terminalLink('Mobiscroll Account page -', 'https://mobiscroll.com/account'));
+                    printWarning(`\n If you don't have a Mobiscroll account yet then you can start a free trial form here: ` + terminalLink('Start trial -', 'https://mobiscroll.com/starttrial'));
+                }
                 printError('npm login failed.\n\n' + err);
                 reject(err);
             });
@@ -193,7 +202,6 @@ function login(useGlobalNpmrc) {
         });
     });
 }
-
 
 function testInstalledCLI(checkCmd, installCmd, helpCmd, name, type) {
     runCommand(checkCmd, true, true, true).then((data) => { // check if the specific cli is installed ex: ionic -v
@@ -205,7 +213,7 @@ function testInstalledCLI(checkCmd, installCmd, helpCmd, name, type) {
             inquirer.prompt({
                 type: 'input',
                 name: 'confirm',
-                message: `It looks like the ${type + ' cli'} is not installed and it is required by this starter. Would you like to install it for you? (Y/n)`,
+                message: `It looks like the ${type + ' cli'} is not installed and it is required by this starter. Would you like us to install it for you? (Y/n)`,
                 default: 'Y',
             }).then(answer => {
                 if (answer.confirm.toLowerCase() == 'y') {
@@ -376,11 +384,8 @@ module.exports = {
 
         // Modify *.module.ts add necessary modules
         if (fs.existsSync(moduleLocation)) {
-            fs.readFile(moduleLocation, 'utf8', function (err, data) {
-                if (err) {
-                    printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
-                    return;
-                }
+            try {
+                let data = fs.readFileSync(moduleLocation, 'utf8').toString();
 
                 // Remove previous module load
                 data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
@@ -394,7 +399,10 @@ module.exports = {
                 data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
 
                 writeToFile(moduleLocation, data);
-            });
+            } catch (err) {
+                printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
+                return;
+            }
         } else if (moduleName == 'app.module.ts') {
             printWarning(`No app.module.ts file found. You are probably running this command in a non Angular-cli based application. Please visit the following page for further instructions:`);
             console.log(terminalLink('Mobiscroll Angular Docs - Quick install', 'https://docs.mobiscroll.com/angular/quick-install'))

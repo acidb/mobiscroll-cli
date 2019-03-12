@@ -86,12 +86,10 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
     console.log(`  Loading stylesheet in ${chalk.grey('src/index.html')}`);
 
     // Load css in the index.html
-    fs.readFile(currDir + '/src/index.html', 'utf8', function (err, data) {
-        if (err) {
-            utils.printError('Could not read index.html \n\n' + err);
-            return;
-        }
+    try {
+        let data = fs.readFileSync(currDir + '/src/index.html', 'utf8');
 
+        
         if (isNpmSource || isLite) {
             cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
         }
@@ -106,7 +104,10 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
 
             utils.writeToFile(currDir + '/src/index.html', data);
         }
-    });
+    } catch (err) {
+        utils.printError('Could not read index.html \n\n' + err);
+        return;
+    }
 
     if (isLazy) {
         utils.printFeedback(`Lazy mode: skipping MbscModule injection from app.module.ts`);
@@ -151,7 +152,7 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
         if (modulePages.length) {
             console.log(chalk.bold(`\n\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`));
 
-            console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
+            // console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
 
             inquirer.prompt([{
                 type: 'checkbox',

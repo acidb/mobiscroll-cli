@@ -12,7 +12,7 @@ module.exports = {
         console.log("            MbscModule, // add the mobiscroll module");
         console.log("            FormsModule // add the forms module");
         console.log("        ],");
-        console.log("        declarations: // ...");
+        console.log("        declarations: // ...\n");
     },
     configHelp: () => {
         console.log('\n\n  Installs Mobiscroll resources from npm and includes the necessary dependencies.');
