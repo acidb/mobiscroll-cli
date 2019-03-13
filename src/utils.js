@@ -15,7 +15,7 @@ function printWarning(text) {
 }
 
 function printError(text) {
-    console.log('\n' + chalk.bold.red(text) + chalk.magenta('\n\nIf the problem persists, please contact us at support@mobiscroll.com'));
+    console.log('\n' + chalk.bold.red(text) + chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com'));
     process.exit();
 }
 
@@ -191,8 +191,10 @@ function login(useGlobalNpmrc) {
                 resolve(answers.username);
             }).catch(err => {
                 if (err.toString().indexOf("Could not find user with the specified username or password") !== -1) {
-                    printWarning('\n You can update your Mobiscroll username or password on the  ' + terminalLink('Mobiscroll Account page -', 'https://mobiscroll.com/account'));
-                    printWarning(`\n If you don't have a Mobiscroll account yet then you can start a free trial form here: ` + terminalLink('Start trial -', 'https://mobiscroll.com/starttrial'));
+                    printWarning(`We couldn’t log you in. This might be  either because your account does not exist or you mistyped your login information. You can update your credentials `  + terminalLink('from your account', 'https://mobiscroll.com/account'));
+                    printWarning(`If you don’t have an account yet, you can start a free trial from https://mobiscroll.com/starttrial`);
+                    console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com')}`);
+                    process.exit();
                 }
                 printError('npm login failed.\n\n' + err);
                 reject(err);
