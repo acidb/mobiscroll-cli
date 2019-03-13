@@ -35,7 +35,7 @@ function configIonicPro(currDir, packageJson, packageJsonLocation) {
     });
 }
 
-function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro) {
+function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, callback) {
     console.log(`\n  Adding stylesheet copy script to ${chalk.grey('package.json')}`);
 
     // Add ionic_copy script to package.json and copy the scrips folder
@@ -124,6 +124,10 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
 
     if (isLazy) {
         helperMessages.ionicLazy(apiKey, isLite);
+    }
+
+    if (callback) {
+        callback();
     }
 }
 
@@ -217,11 +221,13 @@ module.exports = {
         }
 
         if (ionicVersion && mainIonicVersion >= 4) {
-            configAngular(currDir, ionicPackage, jsFileName, cssFileName, true);
+            configAngular(currDir, ionicPackage, jsFileName, cssFileName, true, isLite, () => {
+                detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
+            });
         } else {
-            configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, mainIonicVersion);
+            configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, () => {
+                detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
+            });
         }
-
-        detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
     }
 }
