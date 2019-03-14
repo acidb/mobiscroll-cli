@@ -1,6 +1,6 @@
 {
   "name": "@mobiscroll/cli",
-  "version": "0.8.9",
+  "version": "0.9.0",
   "description": "Mobiscroll command line configuration tool",
   "homepage": "https://mobiscroll.com/",
   "license": "Apache-2.0",
@@ -31,7 +31,7 @@
     "inquirer": "^6.2.0",
     "ncp": "^2.0.0",
     "npm-registry-client": "^8.6.0",
-    "terminal-link": "^1.1.0"
+    "terminal-link": "^1.2.0"
   },
   "devDependencies": {
     "crlf": "^1.1.1"

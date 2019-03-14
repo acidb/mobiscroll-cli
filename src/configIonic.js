@@ -35,7 +35,7 @@ function configIonicPro(currDir, packageJson, packageJsonLocation) {
     });
 }
 
-function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro) {
+function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, callback) {
     console.log(`\n  Adding stylesheet copy script to ${chalk.grey('package.json')}`);
 
     // Add ionic_copy script to package.json and copy the scrips folder
@@ -86,12 +86,10 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
     console.log(`  Loading stylesheet in ${chalk.grey('src/index.html')}`);
 
     // Load css in the index.html
-    fs.readFile(currDir + '/src/index.html', 'utf8', function (err, data) {
-        if (err) {
-            utils.printError('Could not read index.html \n\n' + err);
-            return;
-        }
+    try {
+        let data = fs.readFileSync(currDir + '/src/index.html', 'utf8');
 
+        
         if (isNpmSource || isLite) {
             cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
         }
@@ -106,7 +104,10 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
 
             utils.writeToFile(currDir + '/src/index.html', data);
         }
-    });
+    } catch (err) {
+        utils.printError('Could not read index.html \n\n' + err);
+        return;
+    }
 
     if (isLazy) {
         utils.printFeedback(`Lazy mode: skipping MbscModule injection from app.module.ts`);
@@ -123,6 +124,10 @@ function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, j
 
     if (isLazy) {
         helperMessages.ionicLazy(apiKey, isLite);
+    }
+
+    if (callback) {
+        callback();
     }
 }
 
@@ -185,7 +190,6 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
     }
 
     return false;
-
 }
 
 module.exports = {
@@ -216,11 +220,13 @@ module.exports = {
         }
 
         if (ionicVersion && mainIonicVersion >= 4) {
-            configAngular(currDir, ionicPackage, jsFileName, cssFileName, true);
+            configAngular(currDir, ionicPackage, jsFileName, cssFileName, true, isLite, () => {
+                detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
+            });
         } else {
-            configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, mainIonicVersion);
+            configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, () => {
+                detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
+            });
         }
-
-        detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
     }
 }

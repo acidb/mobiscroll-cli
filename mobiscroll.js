@@ -317,12 +317,12 @@ function handleConfig(projectType) {
                 }
 
                 if (!localJsFileName || !localCssFileName) {
-                    printWarning(`No mobiscroll js/css files were found in your current project. \n\nPlease make sure to extract the downloaded Mobiscroll package, then grab the ${ framework == 'angular' ? 'lib folder and copy it into src folder of your app!' : 'js and css folders and copy it into src/lib/mobiscroll folder of your app. If there is no such folder available, you can create it.' }`);
+                    printWarning(`No mobiscroll js/css files were found in your project's src/lib/mobiscroll folder. \n\nPlease make sure to extract the downloaded Mobiscroll package, then grab the ${ framework == 'angular' ? 'lib folder and copy it into src folder of your app!' : 'js and css folders and copy it into src/lib/mobiscroll folder of your app. If there is no such folder available, you can create it.' }`);
                     return;
                 }
 
                 var jsFileContent = (fs.readFileSync(path.resolve(jsFileLocation, localJsFileName.toString()).toString())).toString();
-                var version = (/version:"([a-z0-9.-]+)"/gm.exec(jsFileContent))[1];
+                var version = (/version:\s?['"]([a-z0-9.-]+)['"]/gm.exec(jsFileContent))[1]; 
                 let packageFolder = path.resolve(currDir, 'src', 'lib', 'mobiscroll-package');
                 let distFolder = path.resolve(packageFolder, 'dist');
 

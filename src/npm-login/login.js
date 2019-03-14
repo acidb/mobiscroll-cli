@@ -63,12 +63,15 @@ module.exports = {
     },
 
     readFile: function (args, callback) {
-        fs.readFile(args.configPath, 'utf-8', function (err, contents) {
-            if (err) {
-                contents = '';
-            }
-            return callback(null, contents);
-        });
+        var contents = '';
+
+        try {
+            contents = fs.readFileSync(args.configPath, 'utf-8');
+        } catch (err) {
+            console.log('Error in utils readFile: ' + err );
+        }
+
+        return callback(null, contents);
     },
 
     generateFileContents: function (args, contents, response) {
