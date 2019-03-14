@@ -156,7 +156,7 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
         if (modulePages.length) {
             console.log(chalk.bold(`\n\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`));
 
-            // console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
+            console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
 
             inquirer.prompt([{
                 type: 'checkbox',
@@ -190,7 +190,6 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
     }
 
     return false;
-
 }
 
 module.exports = {
