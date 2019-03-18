@@ -26,11 +26,13 @@
     "bugs": {
         "url": "https://github.com/acidb/mobiscroll/issues"
     },
+    "typings": "dist/src/mobiscroll.react.min.d.ts",
     "main": "dist/js/",
     "style": "dist/css/",
     "files": [
         "dist/js/**",
-        "dist/css/**"
+        "dist/css/**",
+        "dist/src/**"
     ],
     "peerDependencies": {
         "react": ">=15.3.0",
