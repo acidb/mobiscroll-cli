@@ -12,7 +12,7 @@ function configIonicPro(currDir, packageJson, packageJsonLocation) {
 
     utils.printFeedback(`The Mobiscroll package will be referenced in the package.json as a tgz file instead of the npm package. \n\nYou will find more info here: ${chalk.grey('http://help.mobiscroll.com/core-concepts-and-using-mobiscroll/using-mobiscroll-with-ionic-pro-and-ionic-view')}`);
 
-    utils.packMobiscroll(mobiscrollNpmFolder, currDir, 'angular', (packageFileName) => {
+    utils.packMobiscroll(mobiscrollNpmFolder, currDir, 'angular', false, (packageFileName) => {
         ncp(path.join(mobiscrollNpmFolder, packageFileName), path.join(currDir, packageFileName), function (err) {
             if (err) {
                 utils.printError('Could not copy generated mobiscroll package.\n\n' + err);

@@ -358,21 +358,25 @@ function handleConfig(projectType) {
                         noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
                     }
 
+                    let useYarn = utils.testYarn(currDir);
+
                     // remove previously installed mobiscroll package (fix npm caching the local package)
-                    utils.run(`npm uninstall @mobiscroll/${framework} --save`, true).then(() => {
+                    utils.run(`${useYarn ? 'yarn remove' : 'npm uninstall'} @mobiscroll/${framework} --save`, true, true, true).then(() => {
+                        utils.printLog('Removing old Mobiscroll version.');
                         // write the new package.json
                         utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
                             // pack with npm pack
-                            utils.packMobiscroll(packageFolder, currDir, framework, (packageName) => {
+                            utils.packMobiscroll(packageFolder, currDir, framework, useYarn, (packageName) => {
                                 let packageJson = require(packageJsonLocation);
-
-                                packageJson.dependencies[`@mobiscroll/${framework}`] = 'file:./src/lib/mobiscroll-package/' + packageName;
+                                if (!useYarn) {
+                                    packageJson.dependencies[`@mobiscroll/${framework}`] = 'file:./src/lib/mobiscroll-package/' + packageName;
+                                }
 
                                 utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
                                     console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll from the generated tzg file. \n`);
-
+                                    
                                     // run npm install
-                                    utils.run('npm install', true).then(() => {
+                                    utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : 'npm install'),  true).then(() => {
                                         cssFileName = (projectType == 'ionic' ? (packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
                                         config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, false, () => {
                                             console.log(`\n${chalk.green('>')} Removing unused mobiscroll files.`);

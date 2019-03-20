@@ -26,7 +26,7 @@
     "bugs": {
         "url": "https://github.com/acidb/mobiscroll/issues"
     },
-    "typings": "dist/src/mobiscroll.react.min.d.ts",
+    "typings": "dist/src/js/frameworks/react.d.ts",
     "main": "dist/js/",
     "style": "dist/css/",
     "files": [
