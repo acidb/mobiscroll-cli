@@ -341,7 +341,8 @@ module.exports = {
             command;
 
         getMobiscrollVersion(proxy, function (version) {
-            let installCmd =  testYarn(currDir) ? 'yarn add' : 'npm install';
+            let useYarn = testYarn(currDir);
+            let installCmd =  useYarn ? 'yarn add' : 'npm install';
             if (isTrial) {
                 command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${version}.tgz --save --registry=${mbscNpmUrl}`;
             } else {
@@ -349,22 +350,26 @@ module.exports = {
             }
 
             // Skip node warnings
-            printFeedback(`Installing packages via npm...`);
+            printFeedback(`Installing packages via ${useYarn ? 'yarn' : 'npm'}...`);
             runCommand(command, true).then(() => {
                 printFeedback(`Mobiscroll for ${framework} installed.`);
                 callback();
             }).catch((reason) => {
                 if (/403 Forbidden/.test(reason)) {
-                    reason = `User ${userName} has no access to package @mobiscroll/${pkgName}.` + reason;
+                    printWarning(`Looks like you have a Component license. That means NPM install is not supported. You can go https://download.mobiscroll.com, manually download the package, copy it into your project and run the same command with the ${chalk.gray('--no-npm')} flag.`);
+                    printWarning(`If you wish to use NPM installs, you can always upgrade to the Framework or Complete license.`);
+                    printWarning(`Feel free to get in touch or let us know if there is any trouble at support@mobiscroll.com`);
+                    process.exit();
+                } else {
+                    printError('Could not install Mobiscroll.\n\n' + reason);
                 }
-                printError('Could not install Mobiscroll.\n\n' + reason);
             });
         })
     },
     packMobiscroll: (packLocation, currDir, framework, useYarn, callback) => {
         process.chdir(packLocation); // change directory to node modules folder
 
-        console.log(`\n${chalk.green('>')} changed current directory to ${packLocation}. \n`);
+        console.log(`${chalk.green('>')} changed current directory to ${packLocation}. \n`);
 
         runCommand(`${ useYarn ? 'yarn pack' : 'npm pack'}`, true).then(() => { // run npm pack which will generate the mobiscroll package
             fs.readdir(packLocation, function (err, files) {

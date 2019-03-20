@@ -68,7 +68,7 @@ module.exports = {
         try {
             contents = fs.readFileSync(args.configPath, 'utf-8');
         } catch (err) {
-            console.log('Error in utils readFile: ' + err );
+            //console.log('Error in utils readFile: ' + err );
         }
 
         return callback(null, contents);
