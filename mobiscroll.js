@@ -368,7 +368,12 @@ function handleConfig(projectType) {
                             // pack with npm pack
                             utils.packMobiscroll(packageFolder, currDir, framework, useYarn, (packageName) => {
                                 let packageJson = require(packageJsonLocation);
-                                if (!useYarn) {
+                                if (useYarn) {
+                                    // workaround delete yarn cache tmp folder manually. Issue (https://github.com/yarnpkg/yarn/issues/5357)
+                                    let yarnCacheLocation = utils.runSync('yarn cache dir');
+                                    utils.deleteFolder(path.resolve(yarnCacheLocation.trim(), '.tmp'));
+                                    utils.runSync(`yarn cache clean @mobiscroll/${framework}`);
+                                } else {
                                     packageJson.dependencies[`@mobiscroll/${framework}`] = 'file:./src/lib/mobiscroll-package/' + packageName;
                                 }
 

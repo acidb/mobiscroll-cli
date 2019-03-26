@@ -1,6 +1,7 @@
 const fs = require('fs');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
+const execSync = require('child_process').execSync;
 const request = require('request');
 const mbscNpmUrl = 'https://npm.mobiscroll.com';
 const terminalLink = require('terminal-link');
@@ -49,6 +50,14 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
             }
         });
     });
+}
+
+function runCommandSync(cmd) {
+    try {
+        return (execSync(cmd)).toString('utf8');
+    } catch (error) {
+        console.log('Could not run command ' + chalk.gray(cmd) + '. \n\n' + error);
+    }
 }
 
 function writeToFile(location, data, callback) {
@@ -431,6 +440,7 @@ module.exports = {
     deleteFolder: deleteFolderRecursive,
     npmUrl: mbscNpmUrl,
     run: runCommand,
+    runSync: runCommandSync,
     writeToFile,
     shapeVersionToArray,
     getMobiscrollVersion,
