@@ -26,6 +26,7 @@ var localCliVersion = require('./package.json').version;
 var mobiscrollVersion = null;
 var useGlobalNpmrc = false;
 var proxyUrl = '';
+var useScss = false;
 
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
 
@@ -84,6 +85,10 @@ function removeTokenFromNpmrc(path) {
     }
 }
 
+function handleScss() {
+    useScss = true;
+}
+
 function handleProxy(url) {
     proxyUrl = url;
 }
@@ -126,30 +131,37 @@ function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
     return;
 }
 
-function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite, callback) {
-    var packageJson = require(packageJsonLocation);
-
-    utils.checkMeteor(packageJson, currDir, projectType);
+//function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite, callback) {
+function config(settings, callback) {
+    let packageJson = require(settings.packageJsonLocation);
+    let projectType = settings.projectType;
+    settings.packageJson = packageJson;
+    utils.checkMeteor(packageJson, settings.currDir, projectType);
 
     switch (projectType) {
         case 'angular':
-            configAngular(currDir, packageJson, jsFileName, cssFileName, false, isLite, callback);
+            //configAngular(currDir, packageJson, jsFileName, cssFileName, false, isLite, callback);
+            settings.isIonicApp = false;
+            configAngular(settings, callback);
             break;
         case 'angularjs':
             break;
         case 'ionic':
         case 'ionic-pro':
-            configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro', isLite, callback);
+            //configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro', isLite, callback);
+            settings.ionicPro = projectType == 'ionic-pro';
+            settings.isLazy = isLazy;
+            configIonic(settings, callback);
             break;
         case 'react':
-            helperMessages.reactHelp(apiKey, isLite, isNpmSource);
+            helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource);
             if (callback) {
                 callback();
             }
             break;
         case 'jquery':
         case 'javascript':
-            detectProjectFramework(packageJson, apiKey, isLite, projectType);
+            detectProjectFramework(settings.packageJson, settings.apiKey, settings.isLite, projectType);
             if (callback) {
                 callback();
             }
@@ -176,6 +188,31 @@ function cloneProject(url, type, name, newAppLocation, callback) {
             })
         });
     })
+}
+
+function askStyleSheetType(version, useScss, callback) {
+    version = utils.shapeVersionToArray(version);
+
+    if (version[0] >= 4 && version[1] >= 6 && !useScss) {
+        console.log('\n');
+        inquirer.prompt({
+            type: 'list',
+            name: 'stylesheet',
+            message: `Which stylesheet format would you like to use?`,
+            default: 'CSS',
+            choices: [
+                'CSS', 'SCSS'
+            ]
+        }).then(answer => {
+            if (callback) {
+                callback(answer.stylesheet === 'SCSS');
+            }
+        })
+    } else {
+        if (callback) {
+            callback();
+        }
+    }
 }
 
 function startProject(url, type, name, callback) {
@@ -277,15 +314,46 @@ function handleConfig(projectType) {
 
         if (isLite) {
             utils.installMobiscrollLite(projectType, mobiscrollVersion, function () {
-                config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, true);
+                let configObject = {
+                    projectType,
+                    currDir,
+                    packageJsonLocation,
+                    jsFileName,
+                    cssFileName,
+                    isNpmSource,
+                    apiKey: '',
+                    isLite,
+                    useScss
+                } 
+                //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, true);
+                config(configObject);
             })
         } else if (isNpmSource) {
             utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, (userName, useTrial, data) => {
                 utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
                     // Install mobiscroll npm package
-                    utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, proxyUrl, () => {
-                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''), false);
-                    });
+                    utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, proxyUrl, (version) => {
+                        askStyleSheetType(version, useScss, (isScssSelected) => {
+                            let configObject = {
+                                projectType,
+                                currDir,
+                                packageJsonLocation,
+                                jsFileName,
+                                cssFileName,
+                                isNpmSource,
+                                apiKey: (useTrial ? data.TrialCode : ''),
+                                isLite,
+                                useScss
+                            }
+
+                            if (isScssSelected) {
+                                configObject.useScss = true;
+                            }
+
+                            //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''), false);
+                            config(configObject);
+                        });
+                    })
                 });
             });
         } else {
@@ -383,11 +451,39 @@ function handleConfig(projectType) {
                                     // run npm install
                                     utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : 'npm install'),  true).then(() => {
                                         cssFileName = (projectType == 'ionic' ? (packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
-                                        config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, false, () => {
-                                            console.log(`\n${chalk.green('>')} Removing unused mobiscroll files.`);
-                                            fs.unlinkSync(path.resolve(packageFolder, 'package.json')); // delete the package.json in dist
-                                            utils.deleteFolder(mbscFolderLocation); // delete source folder
-                                            utils.deleteFolder(distFolder); // delete created dist
+
+                                        let configObject = {
+                                            projectType,
+                                            currDir,
+                                            packageJsonLocation,
+                                            jsFileName,
+                                            cssFileName,
+                                            isNpmSource,
+                                            apiKey: '',
+                                            isLite,
+                                            useScss
+                                        } 
+
+                                        askStyleSheetType(version, useScss, (isScssSelected) => {
+                                            configObject.useScss = isScssSelected;
+
+                                            if (configObject.useScss) {
+                                                let scssFileLocation = path.resolve(cssFileLocation, `mobiscroll.${framework}.scss`);
+                                                let fileData = fs.readFileSync(scssFileLocation).toString();
+
+                                                if (fileData) {
+                                                    fileData = fileData.replace("$mbsc-font-path: '' !default;", "$mbsc-font-path: '@mobiscroll/angular/dist/css/' !default;")
+                                                    utils.writeToFile(scssFileLocation, fileData)
+                                                }
+                                            }
+
+                                            //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, false, () => {
+                                            config(configObject, () => {
+                                                console.log(`\n${chalk.green('>')} Removing unused mobiscroll files.`);
+                                                fs.unlinkSync(path.resolve(packageFolder, 'package.json')); // delete the package.json in dist
+                                                utils.deleteFolder(mbscFolderLocation); // delete source folder
+                                                utils.deleteFolder(distFolder); // delete created dist
+                                            });
                                         });
                                     });
                                 });
@@ -428,7 +524,8 @@ program
     .option('-i, --lite', 'The project will be tuned up with lite configuration.\n', handleLite)
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.\n', handleNpmInstall)
     .option('--version [version]', 'Pass the Mobiscroll version which you want to install.\n', handleMobiscrollVersion)
-    .option('--proxy [proxy]', 'Define a proxy URL which will be passed to the internal requests.', handleProxy);
+    .option('--proxy [proxy]', 'Define a proxy URL which will be passed to the internal requests.', handleProxy)
+    .option('--scss', 'Configures the mobiscroll scss styles instead of css.', handleScss);
 
 program
     .command('login')

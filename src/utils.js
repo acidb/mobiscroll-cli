@@ -66,11 +66,24 @@ function writeToFile(location, data, callback) {
             fs.writeFileSync(location, data);
 
             if (callback) {
-                callback();
+                callback(null, true);
             }
         } catch (err) {
             printError('Could not write to file ' + chalk.gray(location) + '. \n\n' + err);
+            callback(err)
         }
+    }
+}
+
+function appendContentToFile(location, newData, callback) {
+    try {
+        let fileData = fs.readFileSync(location).toString();
+
+        if (fileData && fileData.indexOf(newData) == -1) {
+            writeToFile(location, fileData + '\r\n' + newData, callback );
+        }
+    } catch (err) {
+        printError('Could append to file ' + chalk.gray(location) + '. \n\n' + err);
     }
 }
 
@@ -360,9 +373,11 @@ module.exports = {
 
             // Skip node warnings
             printFeedback(`Installing packages via ${useYarn ? 'yarn' : 'npm'}...`);
-            runCommand(command, true).then(() => {
+            runCommand(command, true).then((out) => {
+                let version = out.match(/@([0-9.-]+)/gmi)[0];
+                
                 printFeedback(`Mobiscroll for ${framework} installed.`);
-                callback();
+                callback(version.replace('@', ''));
             }).catch((reason) => {
                 if (/403 Forbidden/.test(reason)) {
                     printWarning(`Looks like you have a Component license. That means NPM install is not supported. You can go https://download.mobiscroll.com, manually download the package, copy it into your project and run the same command with the ${chalk.gray('--no-npm')} flag.`);
@@ -451,5 +466,6 @@ module.exports = {
     printLog,
     checkMeteor,
     login,
-    testYarn
+    testYarn,
+    appendContentToFile
 };

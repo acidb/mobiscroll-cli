@@ -35,95 +35,112 @@ function configIonicPro(currDir, packageJson, packageJsonLocation) {
     });
 }
 
-function configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, callback) {
-    console.log(`\n  Adding stylesheet copy script to ${chalk.grey('package.json')}`);
+function configIonic(settings, callback) {
+    let ionicPackage = settings.packageJson;
+    let currDir = settings.currDir;
 
     // Add ionic_copy script to package.json and copy the scrips folder
     ionicPackage.config = ionicPackage.config || {};
 
-    console.log(`  Copying scripts`);
-
     var ionicCopyLocation = ionicPackage.config['ionic_copy'];
 
-    if (!ionicCopyLocation) {
-        // if there is no ionic_copy defined add the copy script and inject to the package.json
-
-        ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css.js';
-
-        utils.writeToFile(ionicPackageLocation, JSON.stringify(ionicPackage, null, 4));
-
-        ncp(__dirname + '/../resources/ionic/scripts', currDir + '/scripts', function (err) {
-            if (err) {
-                utils.printError('Could not copy mobiscroll resources.\n\n' + err);
-                return;
+    if (settings.useScss) {
+        let fileName = 'variables.scss'
+        console.log(`  Adding scss stylesheet to ${chalk.grey(fileName)}`);
+        utils.appendContentToFile(
+            path.resolve(currDir, 'src/theme', fileName),
+            `@import "~node_modules/@mobiscroll/angular/dist/scss/mobiscroll.min.scss";`,
+            (err) => {
+                if (err) {
+                    utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with sass?`);
+                    return;
+                }
             }
-        });
+        );
     } else {
-        // if the ionic_copy is already used update the specific script with mobiscroll copy
-        var copyScriptLocation = path.resolve(currDir, ionicCopyLocation);
+        console.log(`\n  Adding stylesheet copy script to ${chalk.grey('package.json')}`);
+        console.log(`  Copying scripts`);
+        if (!ionicCopyLocation) {
+            // if there is no ionic_copy defined add the copy script and inject to the package.json
 
-        fs.readFile(copyScriptLocation, (err, data) => {
-            if (err) {
-                utils.printError('Could not read ionic_copy script.\n\n' + err);
-                return;
-            }
+            ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css.js';
 
-            if (data.toString().indexOf('copyMobiscrollCss') == -1) {
-                data = data.toString().replace(
-                    'module.exports = {',
-                    `module.exports = {
+            utils.writeToFile(settings.packageJsonLocation, JSON.stringify(ionicPackage, null, 4));
+
+            ncp(__dirname + '/../resources/ionic/scripts', currDir + '/scripts', function (err) {
+                if (err) {
+                    utils.printError('Could not copy mobiscroll resources.\n\n' + err);
+                    return;
+                }
+            });
+        } else {
+            // if the ionic_copy is already used update the specific script with mobiscroll copy
+            var copyScriptLocation = path.resolve(currDir, ionicCopyLocation);
+
+            fs.readFile(copyScriptLocation, (err, data) => {
+                if (err) {
+                    utils.printError('Could not read ionic_copy script.\n\n' + err);
+                    return;
+                }
+
+                if (data.toString().indexOf('copyMobiscrollCss') == -1) {
+                    data = data.toString().replace(
+                        'module.exports = {',
+                        `module.exports = {
   copyMobiscrollCss: {
-    src: [${ isLite ?  '\'{{ROOT}}/node_modules/@mobiscroll/angular-lite/dist/css/*\'' : '\'{{ROOT}}/node_modules/@mobiscroll/angular/dist/css/*\'' }],
+    src: [${ settings.isLite ?  '\'{{ROOT}}/node_modules/@mobiscroll/angular-lite/dist/css/*\'' : '\'{{ROOT}}/node_modules/@mobiscroll/angular/dist/css/*\'' }],
     dest: '{{WWW}}/lib/mobiscroll/css/'
   },`
-                );
+                    );
 
-                utils.writeToFile(copyScriptLocation, data);
+                    utils.writeToFile(copyScriptLocation, data);
+                }
+            })
+        }
+
+        console.log(`  Loading stylesheet in ${chalk.grey('src/index.html')}`);
+
+        // Load css in the index.html
+        try {
+            let data = fs.readFileSync(currDir + '/src/index.html', 'utf8');
+
+
+            if (settings.isNpmSource || settings.isLite) {
+                settings.cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
             }
-        })
-    }
 
-    console.log(`  Loading stylesheet in ${chalk.grey('src/index.html')}`);
+            // replace previously added links
+            data = data.replace(/<link rel="stylesheet" href=".*mobiscroll.*">\s+/, '');
 
-    // Load css in the index.html
-    try {
-        let data = fs.readFileSync(currDir + '/src/index.html', 'utf8');
+            if (data.indexOf(settings.cssFileName) == -1) {
+                data = data.replace(/<link ([^>]+) rel="stylesheet">/, function (match) {
+                    return '<link rel="stylesheet" href="' + settings.cssFileName + '">\n  ' + match;
+                });
 
-        
-        if (isNpmSource || isLite) {
-            cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
+                utils.writeToFile(currDir + '/src/index.html', data);
+            }
+        } catch (err) {
+            utils.printError('Could not read index.html \n\n' + err);
+            return;
         }
 
-        // replace previously added links
-        data = data.replace(/<link rel="stylesheet" href=".*mobiscroll.*">\s+/, '');
-
-        if (data.indexOf(cssFileName) == -1) {
-            data = data.replace(/<link ([^>]+) rel="stylesheet">/, function (match) {
-                return '<link rel="stylesheet" href="' + cssFileName + '">\n  ' + match;
-            });
-
-            utils.writeToFile(currDir + '/src/index.html', data);
-        }
-    } catch (err) {
-        utils.printError('Could not read index.html \n\n' + err);
-        return;
     }
 
-    if (isLazy) {
+    if (settings.isLazy) {
         utils.printFeedback(`Lazy mode: skipping MbscModule injection from app.module.ts`);
     } else {
         // Modify app.module.ts add necessary modules
-        utils.importModules(path.resolve(currDir + '/src/app/app.module.ts'), 'app.module.ts', jsFileName);
+        utils.importModules(path.resolve(currDir + '/src/app/app.module.ts'), 'app.module.ts', settings.jsFileName);
     }
 
-    if (ionicPro) {
-        configIonicPro(currDir, ionicPackage, path.resolve(process.cwd(), 'package.json'), apiKey);
+    if (settings.ionicPro) {
+        configIonicPro(currDir, ionicPackage, path.resolve(process.cwd(), 'package.json'), settings.apiKey);
     } else {
         utils.printFeedback('Mobiscroll configuration ready!');
     }
 
-    if (isLazy) {
-        helperMessages.ionicLazy(apiKey, isLite);
+    if (settings.isLazy) {
+        helperMessages.ionicLazy(settings.apiKey, settings.isLite);
     }
 
     if (callback) {
@@ -155,7 +172,6 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
 
         if (modulePages.length) {
             console.log(chalk.bold(`\n\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`));
-
             console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
 
             inquirer.prompt([{
@@ -193,17 +209,18 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
 }
 
 module.exports = {
-    configIonic: function (currDir, ionicPackageLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, ionicPro, isLite, callback) {
+    configIonic: function (settings, callback) {
         utils.printFeedback('Configuring Ionic app...');
         var versionArray,
             mainIonicVersion,
-            ionicPackage = require(ionicPackageLocation),
+            ionicPackage = settings.packageJson, //require(settings.ionicPackageLocation),
             ionicVersion = ionicPackage.dependencies['ionic-angular'] || ionicPackage.dependencies['@ionic/angular'];
 
         if (ionicVersion) { // check ionic version
             versionArray = utils.shapeVersionToArray(ionicVersion);
 
             mainIonicVersion = versionArray[0];
+            settings.mainIonicVersion = mainIonicVersion;
 
             if (mainIonicVersion == 2 && versionArray[1] < 2) {
                 utils.printWarning('It looks like your are using an older version of ionic 2. The minimum required ionic 2 version is 2.2.0. Please update your ionic app in order to Mobiscroll work correctly.');
@@ -220,12 +237,14 @@ module.exports = {
         }
 
         if (ionicVersion && mainIonicVersion >= 4) {
-            configAngular(currDir, ionicPackage, jsFileName, cssFileName, true, isLite, () => {
-                detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
+            settings.isIonicApp = true;
+            configAngular(settings, () => {
+                detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, callback);
             });
         } else {
-            configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, () => {
-                detectLazyModules(currDir, apiKey, isLite, jsFileName, mainIonicVersion, callback);
+            //configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, () => {
+            configIonic(settings, () => {
+                detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, callback);
             });
         }
     }
