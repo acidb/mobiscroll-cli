@@ -49,7 +49,7 @@ function configIonic(settings, callback) {
         console.log(`  Adding scss stylesheet to ${chalk.grey(fileName)}`);
         utils.appendContentToFile(
             path.resolve(currDir, 'src/theme', fileName),
-            `@import "~node_modules/@mobiscroll/angular/dist/scss/mobiscroll.min.scss";`,
+            `@import "~@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ? '' : '.angular' }.scss";`,
             (err) => {
                 if (err) {
                     utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with sass?`);

@@ -193,7 +193,8 @@ function cloneProject(url, type, name, newAppLocation, callback) {
 function askStyleSheetType(version, useScss, callback) {
     version = utils.shapeVersionToArray(version);
 
-    if (version[0] >= 4 && version[1] >= 6 && !useScss) {
+    // only ask the scss install if the version is larger then 4.7.0 
+    if (version[0] >= 4 && version[1] >= 7 && !useScss) {
         console.log('\n');
         inquirer.prompt({
             type: 'list',
@@ -324,7 +325,7 @@ function handleConfig(projectType) {
                     apiKey: '',
                     isLite,
                     useScss
-                } 
+                }
                 //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, true);
                 config(configObject);
             })
@@ -390,7 +391,7 @@ function handleConfig(projectType) {
                 }
 
                 var jsFileContent = (fs.readFileSync(path.resolve(jsFileLocation, localJsFileName.toString()).toString())).toString();
-                var version = (/version:\s?['"]([a-z0-9.-]+)['"]/gm.exec(jsFileContent))[1]; 
+                var version = (/version:\s?['"]([a-z0-9.-]+)['"]/gm.exec(jsFileContent))[1];
                 let packageFolder = path.resolve(currDir, 'src', 'lib', 'mobiscroll-package');
                 let distFolder = path.resolve(packageFolder, 'dist');
 
@@ -400,82 +401,82 @@ function handleConfig(projectType) {
                     fs.mkdirSync(distFolder, 0o777);
                 }
 
-                // copy the mobiscroll resources to another folder for packing
-                ncp(mbscFolderLocation, path.resolve(distFolder), (err) => {
-                    if (err) {
-                        utils.printError('Could not copy Mobiscroll resources.\n\n' + err);
-                        return;
+                let configObject = {
+                    projectType,
+                    currDir,
+                    packageJsonLocation,
+                    jsFileName,
+                    isNpmSource,
+                    apiKey: '',
+                    isLite,
+                    useScss
+                }
+
+                askStyleSheetType(version, useScss, (isScssSelected) => {
+                    configObject.useScss = isScssSelected;
+
+                    if (configObject.useScss) {
+                        let scssFileLocation = path.resolve(cssFileLocation, `mobiscroll.${framework}.scss`);
+                        let fileData = fs.readFileSync(scssFileLocation).toString();
+                        
+                        if (fileData) {
+                            fileData = fileData.replace("$mbsc-font-path: '' !default;", "$mbsc-font-path: '@mobiscroll/angular/dist/css/' !default;")
+                            utils.writeToFile(scssFileLocation, fileData)
+                        }
                     }
 
-                    let noNpmPackageJson = require(path.resolve(__dirname, 'resources', framework, 'pckg.json'));
+                    // copy the mobiscroll resources to another folder for packing
+                    ncp(mbscFolderLocation, path.resolve(distFolder), (err) => {
+                        if (err) {
+                            utils.printError('Could not copy Mobiscroll resources.\n\n' + err);
+                            return;
+                        }
 
-                    console.log(`\n${chalk.green('>')} Mobiscroll resources was copied successfully.`);
+                        let noNpmPackageJson = require(path.resolve(__dirname, 'resources', framework, 'pckg.json'));
 
-                    // create the package.json file for the
-                    noNpmPackageJson.version = version;
-                    if (noNpmPackageJson.main) {
-                        noNpmPackageJson.main = noNpmPackageJson.main + localJsFileName[0];
-                    }
-                    if (noNpmPackageJson.module) {
-                        noNpmPackageJson.module = noNpmPackageJson.module + localJsFileName[0];
-                    }
-                    if (noNpmPackageJson.types) {
-                        noNpmPackageJson.types = noNpmPackageJson.types + localJsFileName[0].replace('js', 'd.ts');
-                    }
-                    if (noNpmPackageJson.style) {
-                        noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
-                    }
+                        console.log(`\n${chalk.green('>')} Mobiscroll resources was copied successfully.`);
 
-                    let useYarn = utils.testYarn(currDir);
+                        // create the package.json file for the
+                        noNpmPackageJson.version = version;
+                        if (noNpmPackageJson.main) {
+                            noNpmPackageJson.main = noNpmPackageJson.main + localJsFileName[0];
+                        }
+                        if (noNpmPackageJson.module) {
+                            noNpmPackageJson.module = noNpmPackageJson.module + localJsFileName[0];
+                        }
+                        if (noNpmPackageJson.types) {
+                            noNpmPackageJson.types = noNpmPackageJson.types + localJsFileName[0].replace('js', 'd.ts');
+                        }
+                        if (noNpmPackageJson.style) {
+                            noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
+                        }
 
-                    // remove previously installed mobiscroll package (fix npm caching the local package)
-                    utils.run(`${useYarn ? 'yarn remove' : 'npm uninstall'} @mobiscroll/${framework} --save`, true, true, true).then(() => {
-                        utils.printLog('Removing old Mobiscroll version.');
-                        // write the new package.json
-                        utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
-                            // pack with npm pack
-                            utils.packMobiscroll(packageFolder, currDir, framework, useYarn, (packageName) => {
-                                let packageJson = require(packageJsonLocation);
-                                if (useYarn) {
-                                    // workaround delete yarn cache tmp folder manually. Issue (https://github.com/yarnpkg/yarn/issues/5357)
-                                    let yarnCacheLocation = utils.runSync('yarn cache dir');
-                                    utils.deleteFolder(path.resolve(yarnCacheLocation.trim(), '.tmp'));
-                                    utils.runSync(`yarn cache clean @mobiscroll/${framework}`);
-                                } else {
-                                    packageJson.dependencies[`@mobiscroll/${framework}`] = 'file:./src/lib/mobiscroll-package/' + packageName;
-                                }
+                        let useYarn = utils.testYarn(currDir);
 
-                                utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
-                                    console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll from the generated tzg file. \n`);
-                                    
-                                    // run npm install
-                                    utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : 'npm install'),  true).then(() => {
-                                        cssFileName = (projectType == 'ionic' ? (packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
+                        // remove previously installed mobiscroll package (fix npm caching the local package)
+                        utils.run(`${useYarn ? 'yarn remove' : 'npm uninstall'} @mobiscroll/${framework} --save`, true, true, true).then(() => {
+                            utils.printLog('Removing old Mobiscroll version.');
+                            // write the new package.json
+                            utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
+                                // pack with npm pack
+                                utils.packMobiscroll(packageFolder, currDir, framework, useYarn, (packageName) => {
+                                    let packageJson = require(packageJsonLocation);
+                                    if (useYarn) {
+                                        // workaround delete yarn cache tmp folder manually. Issue (https://github.com/yarnpkg/yarn/issues/5357)
+                                        let yarnCacheLocation = utils.runSync('yarn cache dir');
+                                        utils.deleteFolder(path.resolve(yarnCacheLocation.trim(), '.tmp'));
+                                        utils.runSync(`yarn cache clean @mobiscroll/${framework}`);
+                                    } else {
+                                        packageJson.dependencies[`@mobiscroll/${framework}`] = 'file:./src/lib/mobiscroll-package/' + packageName;
+                                    }
 
-                                        let configObject = {
-                                            projectType,
-                                            currDir,
-                                            packageJsonLocation,
-                                            jsFileName,
-                                            cssFileName,
-                                            isNpmSource,
-                                            apiKey: '',
-                                            isLite,
-                                            useScss
-                                        } 
+                                    utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
+                                        console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll from the generated tzg file. \n`);
 
-                                        askStyleSheetType(version, useScss, (isScssSelected) => {
-                                            configObject.useScss = isScssSelected;
-
-                                            if (configObject.useScss) {
-                                                let scssFileLocation = path.resolve(cssFileLocation, `mobiscroll.${framework}.scss`);
-                                                let fileData = fs.readFileSync(scssFileLocation).toString();
-
-                                                if (fileData) {
-                                                    fileData = fileData.replace("$mbsc-font-path: '' !default;", "$mbsc-font-path: '@mobiscroll/angular/dist/css/' !default;")
-                                                    utils.writeToFile(scssFileLocation, fileData)
-                                                }
-                                            }
+                                        // run npm install
+                                        utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : 'npm install'), true).then(() => {
+                                            cssFileName = (projectType == 'ionic' ? (packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
+                                            configObject.cssFileName = cssFileName
 
                                             //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, false, () => {
                                             config(configObject, () => {
@@ -525,7 +526,7 @@ program
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.\n', handleNpmInstall)
     .option('--version [version]', 'Pass the Mobiscroll version which you want to install.\n', handleMobiscrollVersion)
     .option('--proxy [proxy]', 'Define a proxy URL which will be passed to the internal requests.', handleProxy)
-    .option('--scss', 'Configures the mobiscroll scss styles instead of css.', handleScss);
+    .option('--scss', 'The project will be configured with scss styles instead of css.', handleScss);
 
 program
     .command('login')

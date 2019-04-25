@@ -17,7 +17,7 @@ function angularConfig(settings, callback) {
         console.log(`  Adding stylesheet to ${chalk.grey(fileName)}`);
         utils.appendContentToFile(
             path.resolve(currDir, 'src', fileName),
-            `@import "~node_modules/@mobiscroll/angular/dist/scss/mobiscroll.min.scss";`,
+            `@import "~@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.angular'  }.scss";`,
             (err) => {
                 if (err) {
                     utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with sass?`)
@@ -95,14 +95,19 @@ module.exports = {
         }
 
         var angularVersion = utils.shapeVersionToArray(settings.packageJson.dependencies['@angular/common']);
-        console.log(settings.packageJson['rxjs-compat'])
+
         if (angularVersion[0] >= 6) { // check if angular 6 or newer
             // install rxjs-compat package
-            utils.run('npm install rxjs-compat --save', true).then(() => {
+            if (settings.packageJson.dependencies['rxjs-compat']) {
+                utils.printFeedback('rxjs-compat package detected');
                 angularConfig(settings, callback);
-            }).catch((err) => {
-                utils.printError('An error occurred during the project configuration. Error: ' + err);
-            })
+            } else {
+                utils.run('npm install rxjs-compat --save', true).then(() => {
+                    angularConfig(settings, callback);
+                }).catch((err) => {
+                    utils.printError('An error occurred during the project configuration. Error: ' + err);
+                })
+            }
         } else {
             angularConfig(settings, callback);
         }
