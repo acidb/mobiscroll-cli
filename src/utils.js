@@ -90,7 +90,7 @@ function appendContentToFile(location, newData, callback) {
 function importModule(moduleName, location, data) {
     if (data.indexOf(moduleName) == -1) { // check if module is not loaded
         data = "import { " + moduleName + " } from '" + location + "';\n" + data;
-        data = data.replace('imports: [', 'imports: [ \n' + '    ' + moduleName + ',');
+        data = data.replace('imports: [', 'imports: [ \n' + '    ' + moduleName + ', ');
     }
     return data;
 }
@@ -427,7 +427,7 @@ module.exports = {
 
                 // Remove previous module load
                 data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
-                data = data.replace(/[ \t]*MbscModule,[ \t\r]*\n/, '');
+                data = data.replace(/[ \t]*MbscModule,[ \t\r]*\s?/, '');
 
                 // Add angular module imports which are needed for mobiscroll
                 data = importModule('MbscModule', mbscFileName, data);
