@@ -33,20 +33,20 @@ module.exports = {
         console.log('    react           Creates an react applications.(Based on Create React App application.)\n');
         //console.log('    vue             Creates an Vue.js applications.(Based on Vue CLI application) \n');
     },
-    vueHelp: (framework, isTrial, isLite) => {
+    vueHelp: (framework, isTrial, isLite, useScss) => {
         console.log(`
 A vue.js application detected. Here is how to import Mobiscroll into your app:
 
 import mobiscroll from ` + `'@mobiscroll/${framework}` + (isLite ? '-lite' : '') + `';
-import '` + `@mobiscroll/${framework}` + (isLite ? '-lite' : '') + `/dist/css/mobiscroll.min.css';
+import '` + `@mobiscroll/${framework}` + (isLite ? '-lite' : '') + `/dist/css/mobiscroll.${useScss ? 'scss' : 'min.css'}';
         `);
     },
-    reactHelp: (isTrial, isLite, npmSource) => {
+    reactHelp: (isTrial, isLite, npmSource, useScss) => {
         console.log(`
 You can import Mobiscroll to your react component like:
 
 import mobiscroll from ` + `'@mobiscroll/react` + (isLite ? '-lite' : '') + `';
-import '` + `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}min.css';
+import '` + `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'};
         `);
 
     },

@@ -119,12 +119,12 @@ function handleGlobalInstall() {
 
 function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
     if (packageJson.dependencies.vue) {
-        helperMessages.vueHelp(projectType, apiKey, isLite);
+        helperMessages.vueHelp(projectType, apiKey, isLite, useScss);
         return 'vue';
     }
 
     if (packageJson.dependencies.react) {
-        helperMessages.reactHelp(apiKey, isLite, isNpmSource);
+        helperMessages.reactHelp(apiKey, isLite, isNpmSource, useScss);
         return "react";
     }
 
@@ -154,7 +154,7 @@ function config(settings, callback) {
             configIonic(settings, callback);
             break;
         case 'react':
-            helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource);
+            helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource, useScss);
             if (callback) {
                 callback();
             }
@@ -272,7 +272,7 @@ function createProject(type, name) {
             //     });
             //     break;
         default:
-            printWarning('No valid project type was specified. Currently the following project types are supported: [ angular, ionic, react ]');
+            printWarning('No valid project type was specified. Currently the following project types are supported: [ angular, ionic, ionic-angular, react ]');
             break;
     }
 }
