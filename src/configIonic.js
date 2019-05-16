@@ -83,18 +83,23 @@ function configIonic(settings, callback) {
                     return;
                 }
 
-                if (data.toString().indexOf('copyMobiscrollCss') == -1) {
-                    data = data.toString().replace(
-                        'module.exports = {',
-                        `module.exports = {
+                //[\s]+copyMobiscrollCss:[\s\S]+},
+
+                if (data.toString().indexOf('copyMobiscrollCss') !== -1) {
+                    data = data.toString().replace(/[\s]+copyMobiscrollCss:[\S\s]*?(?=},)},/, '');
+                }
+
+                data = data.toString().replace(
+                    'module.exports = {',
+                    `module.exports = {
   copyMobiscrollCss: {
     src: [${ settings.isLite ?  '\'{{ROOT}}/node_modules/@mobiscroll/angular-lite/dist/css/*\'' : '\'{{ROOT}}/node_modules/@mobiscroll/angular/dist/css/*\'' }],
     dest: '{{WWW}}/lib/mobiscroll/css/'
   },`
-                    );
+                );
 
-                    utils.writeToFile(copyScriptLocation, data);
-                }
+                utils.writeToFile(copyScriptLocation, data);
+
             })
         }
 
