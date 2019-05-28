@@ -434,7 +434,7 @@ function handleConfig(projectType) {
 
                         let noNpmPackageJson = require(path.resolve(__dirname, 'resources', framework, 'pckg.json'));
 
-                        console.log(`\n${chalk.green('>')} Mobiscroll resources was copied successfully.`);
+                        console.log(`\n${chalk.green('>')} Mobiscroll resources were copied successfully.`);
 
                         // create the package.json file for the
                         noNpmPackageJson.version = version;
@@ -471,7 +471,7 @@ function handleConfig(projectType) {
                                     }
 
                                     utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
-                                        console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll from the generated tzg file. \n`);
+                                        console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll from the generated package file. \n`);
 
                                         // run npm install
                                         utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : 'npm install'), true).then(() => {

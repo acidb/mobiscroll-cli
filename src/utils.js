@@ -75,12 +75,18 @@ function writeToFile(location, data, callback) {
     }
 }
 
-function appendContentToFile(location, newData, callback) {
+function appendContentToFile(location, newData, replaceRegex, callback) {
     try {
         let fileData = fs.readFileSync(location).toString();
 
+        if (replaceRegex) {
+            fileData = fileData.replace(replaceRegex, '');
+        }
+
         if (fileData && fileData.indexOf(newData) == -1) {
-            writeToFile(location, fileData + '\r\n' + newData, callback );
+            writeToFile(location, fileData + '\r\n' + newData, callback);
+        } else if (callback) {
+            callback(null);
         }
     } catch (err) {
         printError('Could append to file ' + chalk.gray(location) + '. \n\n' + err);
@@ -425,12 +431,16 @@ module.exports = {
             try {
                 let data = fs.readFileSync(moduleLocation, 'utf8').toString();
 
-                // Remove previous module load
-                data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
-                data = data.replace(/[ \t]*MbscModule,[ \t\r]*\s?/, '');
+                let checkForRoute = data.indexOf('MbscModule.forRoot') == -1;
 
-                // Add angular module imports which are needed for mobiscroll
-                data = importModule('MbscModule', mbscFileName, data);
+                // Remove previous module load
+                if (checkForRoute) {
+                    data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
+                    data = data.replace(/[ \t]*MbscModule,[ \t\r]*\s?/, '');
+
+                    // Add angular module imports which are needed for mobiscroll
+                    data = importModule('MbscModule', mbscFileName, data);
+                }
                 data = importModule('FormsModule', '@angular/forms', data);
 
                 // Remove previous api key if present

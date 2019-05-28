@@ -24,7 +24,7 @@ function configIonicPro(currDir, packageJson, packageJsonLocation) {
             packageJson.dependencies['@mobiscroll/angular'] = "file:./" + packageFileName;
 
             utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
-                console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll from the generated tzg file. \n`);
+                console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll from the generated package file. \n`);
 
                 // run npm install
                 utils.run('npm install', true).then(() => {
@@ -33,6 +33,21 @@ function configIonicPro(currDir, packageJson, packageJsonLocation) {
             });
         });
     });
+}
+
+function updateCssCopy(settings, ionicPackage) {
+    // if there is no ionic_copy defined add the copy script and inject to the package.json
+    if (!settings.useScss) {
+        ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css.js';
+        utils.writeToFile(settings.packageJsonLocation, JSON.stringify(ionicPackage, null, 4));
+
+        ncp(__dirname + '/../resources/ionic/scripts', path.resolve(settings.currDir , 'scripts'), function (err) {
+            if (err) {
+                utils.printError('Could not copy mobiscroll resources.\n\n' + err);
+                return;
+            }
+        });
+    }
 }
 
 function configIonic(settings, callback) {
@@ -49,7 +64,8 @@ function configIonic(settings, callback) {
         console.log(`  Adding scss stylesheet to ${chalk.grey(fileName)}`);
         utils.appendContentToFile(
             path.resolve(currDir, 'src/theme', fileName),
-            `@import "~@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ? '' : '.angular' }.scss";`,
+            `@import "../../node_modules/@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ? '' : '.angular' }.scss";`,
+            /@import "[\S]+mobiscroll[\S]+\.scss";/g,
             (err) => {
                 if (err) {
                     utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with sass?`);
@@ -60,75 +76,60 @@ function configIonic(settings, callback) {
     } else {
         console.log(`\n  Adding stylesheet copy script to ${chalk.grey('package.json')}`);
         console.log(`  Copying scripts`);
-        if (!ionicCopyLocation) {
-            // if there is no ionic_copy defined add the copy script and inject to the package.json
+    }
 
-            ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css.js';
+    if (!ionicCopyLocation) {
+        updateCssCopy(settings, ionicPackage);
+    } else {
+        // if the ionic_copy is already used update the specific script with mobiscroll copy
+        var copyScriptLocation = path.resolve(currDir, ionicCopyLocation);
+        let copyScript = require(copyScriptLocation);
 
+        if (Object.keys(copyScript).length === 1 && copyScript['copyMobiscrollCss']) {
+            fs.unlinkSync(copyScriptLocation);
+            delete ionicPackage.config['ionic_copy'];
+            if (settings.useScss) {
             utils.writeToFile(settings.packageJsonLocation, JSON.stringify(ionicPackage, null, 4));
-
-            ncp(__dirname + '/../resources/ionic/scripts', currDir + '/scripts', function (err) {
-                if (err) {
-                    utils.printError('Could not copy mobiscroll resources.\n\n' + err);
-                    return;
-                }
-            });
+            } else {
+                updateCssCopy(settings, ionicPackage);
+            }
         } else {
-            // if the ionic_copy is already used update the specific script with mobiscroll copy
-            var copyScriptLocation = path.resolve(currDir, ionicCopyLocation);
-
-            fs.readFile(copyScriptLocation, (err, data) => {
-                if (err) {
-                    utils.printError('Could not read ionic_copy script.\n\n' + err);
-                    return;
+            delete copyScript['copyMobiscrollCss'];
+            if (!settings.useScss) {
+                copyScript['copyMobiscrollCss'] = {
+                    src: [`${ settings.isLite ?  '{{ROOT}}/node_modules/@mobiscroll/angular-lite/dist/css/*' : '{{ROOT}}/node_modules/@mobiscroll/angular/dist/css/*' }`],
+                    dest: '{{WWW}}/lib/mobiscroll/css/'
                 }
-
-                //[\s]+copyMobiscrollCss:[\s\S]+},
-
-                if (data.toString().indexOf('copyMobiscrollCss') !== -1) {
-                    data = data.toString().replace(/[\s]+copyMobiscrollCss:[\S\s]*?(?=},)},/, '');
-                }
-
-                data = data.toString().replace(
-                    'module.exports = {',
-                    `module.exports = {
-  copyMobiscrollCss: {
-    src: [${ settings.isLite ?  '\'{{ROOT}}/node_modules/@mobiscroll/angular-lite/dist/css/*\'' : '\'{{ROOT}}/node_modules/@mobiscroll/angular/dist/css/*\'' }],
-    dest: '{{WWW}}/lib/mobiscroll/css/'
-  },`
-                );
-
-                utils.writeToFile(copyScriptLocation, data);
-
-            })
-        }
-
-        console.log(`  Loading stylesheet in ${chalk.grey('src/index.html')}`);
-
-        // Load css in the index.html
-        try {
-            let data = fs.readFileSync(currDir + '/src/index.html', 'utf8');
-
-
-            if (settings.isNpmSource || settings.isLite) {
-                settings.cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
             }
 
-            // replace previously added links
-            data = data.replace(/<link rel="stylesheet" href=".*mobiscroll.*">\s+/, '');
+            utils.writeToFile(copyScriptLocation, 'module.exports = ' + JSON.stringify(copyScript, null, 4))
+        }
+    }
 
-            if (data.indexOf(settings.cssFileName) == -1) {
-                data = data.replace(/<link ([^>]+) rel="stylesheet">/, function (match) {
-                    return '<link rel="stylesheet" href="' + settings.cssFileName + '">\n  ' + match;
-                });
+    console.log(`  Loading stylesheet in ${chalk.grey('src/index.html')}`);
 
-                utils.writeToFile(currDir + '/src/index.html', data);
-            }
-        } catch (err) {
-            utils.printError('Could not read index.html \n\n' + err);
-            return;
+    // Load css in the index.html
+    try {
+        let data = fs.readFileSync(currDir + '/src/index.html', 'utf8');
+
+
+        if (settings.isNpmSource || settings.isLite) {
+            settings.cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
         }
 
+        // replace previously added links
+        data = data.replace(/<link rel="stylesheet" href=".*mobiscroll.*">\s+/, '');
+
+        if (data.indexOf(settings.cssFileName) == -1 && !settings.useScss) {
+            data = data.replace(/<link ([^>]+) rel="stylesheet">/, function (match) {
+                return '<link rel="stylesheet" href="' + settings.cssFileName + '">\n  ' + match;
+            });
+        }
+
+        utils.writeToFile(currDir + '/src/index.html', data);
+    } catch (err) {
+        utils.printError('Could not read index.html \n\n' + err);
+        return;
     }
 
     if (settings.isLazy) {
