@@ -61,10 +61,10 @@ function angularConfig(settings, callback) {
         );
     } else {
         console.log(`  Adding stylesheet to ${chalk.grey('angular.json')}`);
-        if (fs.existsSync(currDir + '/.angular-cli.json')) {
+        if (fs.existsSync(path.resolve(currDir, '.angular-cli.json'))) {
             // Modify .angular-cli.json to load styles
             try {
-                let data = fs.readdirSync(currDir + '/.angular-cli.json', 'utf8').toString();
+                let data = fs.readFileSync(path.resolve(currDir, '.angular-cli.json'), 'utf8').toString();
                 // Remove old configuration
                 data = data.replace(/"\.\.\/node_modules\/@mobiscroll\/angular(?:-trial)?(?:-lite)?\/dist\/css\/mobiscroll\.min\.css",\s*/, '');
                 data = data.replace(/"\.\.\/node_modules\/mobiscroll-angular\/dist\/css\/mobiscroll\.min\.css",\s*/, '');
@@ -74,7 +74,7 @@ function angularConfig(settings, callback) {
                 // add angular module imports which are needed for mobiscroll
                 data = data.replace('"styles": [', `"styles": [\n        "${settings.cssFileName}",`);
 
-                utils.writeToFile(currDir + '/.angular-cli.json', data);
+                utils.writeToFile(path.resolve(currDir, '.angular-cli.json'), data);
 
                 utils.printFeedback('Mobiscroll configuration ready.');
             } catch (err) {
