@@ -37,17 +37,15 @@ function configIonicPro(currDir, packageJson, packageJsonLocation) {
 
 function updateCssCopy(settings, ionicPackage) {
     // if there is no ionic_copy defined add the copy script and inject to the package.json
-    if (!settings.useScss) {
-        ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css.js';
-        utils.writeToFile(settings.packageJsonLocation, JSON.stringify(ionicPackage, null, 4));
+    ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css.js';
+    utils.writeToFile(settings.packageJsonLocation, JSON.stringify(ionicPackage, null, 4));
 
-        ncp(__dirname + '/../resources/ionic/scripts', path.resolve(settings.currDir , 'scripts'), function (err) {
-            if (err) {
-                utils.printError('Could not copy mobiscroll resources.\n\n' + err);
-                return;
-            }
-        });
-    }
+    ncp(__dirname + '/../resources/ionic/scripts', path.resolve(settings.currDir, 'scripts'), function (err) {
+        if (err) {
+            utils.printError('Could not copy mobiscroll resources.\n\n' + err);
+            return;
+        }
+    });
 }
 
 function configIonic(settings, callback) {
@@ -64,8 +62,9 @@ function configIonic(settings, callback) {
         console.log(`  Adding scss stylesheet to ${chalk.grey(fileName)}`);
         utils.appendContentToFile(
             path.resolve(currDir, 'src/theme', fileName),
-            `@import "../../node_modules/@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ? '' : '.angular' }.scss";`,
-            /@import "[\S]+mobiscroll[\S]+\.scss";/g,
+            `$mbsc-font-path: '../lib/mobiscroll/css/';
+@import "../../node_modules/@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ? '' : '.angular' }.scss";`,
+            /(\$mbsc-font-path: '..\/lib\/mobiscroll\/css\/';[\s\S]+)?@import "[\S]+mobiscroll[\S]+\.scss";/gm,
             (err) => {
                 if (err) {
                     utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with sass?`);
@@ -88,18 +87,14 @@ function configIonic(settings, callback) {
         if (Object.keys(copyScript).length === 1 && copyScript['copyMobiscrollCss']) {
             fs.unlinkSync(copyScriptLocation);
             delete ionicPackage.config['ionic_copy'];
-            if (settings.useScss) {
-            utils.writeToFile(settings.packageJsonLocation, JSON.stringify(ionicPackage, null, 4));
-            } else {
-                updateCssCopy(settings, ionicPackage);
-            }
+            updateCssCopy(settings, ionicPackage);
+
         } else {
             delete copyScript['copyMobiscrollCss'];
-            if (!settings.useScss) {
-                copyScript['copyMobiscrollCss'] = {
-                    src: [`${ settings.isLite ?  '{{ROOT}}/node_modules/@mobiscroll/angular-lite/dist/css/*' : '{{ROOT}}/node_modules/@mobiscroll/angular/dist/css/*' }`],
-                    dest: '{{WWW}}/lib/mobiscroll/css/'
-                }
+
+            copyScript['copyMobiscrollCss'] = {
+                src: [`${ settings.isLite ?  '{{ROOT}}/node_modules/@mobiscroll/angular-lite/dist/css/*' : '{{ROOT}}/node_modules/@mobiscroll/angular/dist/css/*' }`],
+                dest: '{{WWW}}/lib/mobiscroll/css/'
             }
 
             utils.writeToFile(copyScriptLocation, 'module.exports = ' + JSON.stringify(copyScript, null, 4))
@@ -111,7 +106,6 @@ function configIonic(settings, callback) {
     // Load css in the index.html
     try {
         let data = fs.readFileSync(currDir + '/src/index.html', 'utf8');
-
 
         if (settings.isNpmSource || settings.isLite) {
             settings.cssFileName = 'lib/mobiscroll/css/mobiscroll.min.css';
