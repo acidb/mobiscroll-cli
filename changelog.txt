@@ -1,0 +1,202 @@
+Mobiscroll CLI changelog
+
+v 1.0.0 - 3 Jul 2019
+  
+  * New: added `--css` flag to force css style config.
+
+  * New: ionic config detects previosly used style type. It can be override with the `--css` and `--scss` flags.
+
+v 0.10.3  - 12 Jun 2019
+
+  * Fixed: ionic 3 config font loading errors in case of scss style.
+
+v 0.10.2 - 4 Jun 2019
+
+  * Fixed: older angular cli config `not a directory` error.
+
+v 0.10.1 - 28 May 2019
+
+  * Fixed: changing config from css to scss improvements and fixes.
+
+v 0.10.0 - 17 May 2019
+
+  * New: added scss config support.
+  
+v 0.9.2 - 26 Mar 2019
+
+  * Fixed: --no-npm install package caching problem with yarn.
+
+v 0.9.1 - 20 Mar 2019
+
+  * New: Detect yarn and use it's commands where the project was configured with it.
+  
+  * New: Inproved no access to packege feedback message.
+
+v 0.9.0 - 14 Mar 2019
+
+  * New: Imporved failed npm install feedback messages.
+  
+  * New: Reduced async operations. 
+
+v 0.8.9 - 13 Nov 2018
+
+  * Fixed: Updated package versions. Older inquer(v3.x) was not working with newer node versions.
+
+  * New: New proxy flag where the user can define a proxy URL which will be passed to the internal requests.
+
+v 0.8.8  - 10 Oct 2018
+
+  * Fixed: config angular --no-npm wasn't clearing unused files.
+  
+v 0.8.7  - 20 Sept 2018
+
+  * Fixed:  config angular errors during the stylesheet configuration. (The angular-cli modified the structer of it's angular.json config file. Added support for both of the configurations).
+  
+v 0.8.6 - 11 Sep 2018
+
+  * New: Copying font files to the public folder in case of meteor app. Fixed angular typescript check which was giving error if no devDependencies were found in the pacakge.json.
+  
+v 0.8.5  - 14 aug 2018
+  
+   * New: support for ionic 4 based app
+
+v 0.8.4 - 13 aug 2018
+  
+   * Fixed: trial version of angular config 
+   
+v 0.8.3  - 3 aug 2018
+
+  * New: Added angular and react project support for start command. 
+  
+  * Fixed: add feedback message when Logout command didn't find .npmrc file.
+  
+v 0.8.2 - 3 aug 2018
+
+  * Fixed: Ionic 3 config css link 
+   
+v 0.8.0 - 2 aug 2018
+
+  * New: support for ionic 4 based app
+  
+  * Fixed: no-npm install fixes
+
+v 0.7.1 - 19 jul 2018
+
+  * Fixed: `-v`(version) flag
+
+  * New: print warning on unknown command, 
+
+v 0.7.0 - 19 jul 2018
+
+  * New: `start` command for creating starter apps.
+
+v 0.6.4 - 11 jul 2018
+
+  * New: Modified --no-npm version info. It is get from the local file instead of an apicall.
+  
+  * Fixed:typo fixes
+  
+  * Fixed:react install istruction fixes
+  
+  * Fixed: no-npm remove unused file fixes
+
+v 0.6.3 - 9 jul 2018
+
+  * New: handle non angular-cli based config angular installs
+
+v 0.6.2 - 4 jul 2018
+
+  * Fixed: modified http links to https
+
+v 0.6.1 - 22 jun 2018
+
+  * Fixed: fix mobiscroll logout commnad
+
+v 0.6.0 - 20 jun 2018
+
+  * New: .npmrc file will be generated in the working directory by default and added --global flag to modify this.
+  
+  * New: config commad new --version flag
+  
+  * New: print warnings if the config ionic command is used in older ionic projects
+
+v 0.5.1 - 14 may 2018
+
+  * Fixed: updated getApiKey request, used request.get instead of http.get
+  
+  * New: added angular cli v6 support
+
+v 0.5.0 - 29 mar 2018
+
+  * New: unified trial & package names
+  
+  * New: config angular command installs rxjs-compat package
+
+v 0.4.8 - 5 mar 2018
+
+  * Fixed: angular config lite/trial old lite replace fix
+
+  * Fixed: normalizing line endings
+
+v 0.4.4 - 21 Feb 2018
+
+  * Fixed: trial config fix
+  
+  * Fixed: no-npm support errors
+
+
+v 0.4.0 - 
+
+  * New: added support for `react`, `javascript`, `jquery`, `angularjs` config
+
+
+v 0.3.1
+
+  * New: added separate help for the config command.
+  
+  * Fixed: added description for lazy flag.
+  
+  * Fixed: ioni-pro command error
+  
+
+v 0.3.0 - 21 dec 2017
+
+  * New: add `ionic-pro` command to config
+  
+  * New: added `--lazy` flag
+
+  * New: Use local npm-login instead of git and removed assets copy from copy script.
+
+v 0.2.2 - 11 dec 2017
+  
+  * Fixed: removed harmony flag for fixing compatibility problems
+  
+  * New: remove trial/nontrial packages from package.json if the other version is installed
+
+v 0.2.1 - 5 oct 2017
+
+  * New: config command ask for email and username
+
+v 0.2.0 - 4 oct 2017
+
+  * New: angular configuration
+ 
+v 0.1.4 - 2 oct 2017
+
+  * Fixed: npm install error message improvements
+
+v 0.1.3 - 29 sept 2017
+
+  * Fixed: npm login/logout issues
+
+v 0.1.2 - 29 sept 2017
+
+  * New: npm login/logout support
+
+v 0.1.1 - 28 sept - 2017
+
+  * Fixed: Error message improvements
+
+v 0.1.0
+
+  * New: Introducing Mobiscroll CLI with ionic configuration tool

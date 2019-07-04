@@ -26,36 +26,45 @@ var localCliVersion = require('./package.json').version;
 var mobiscrollVersion = null;
 var useGlobalNpmrc = false;
 var proxyUrl = '';
-var useScss = false;
+var useScss = undefined;
 
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
 
 function checkUpdate() {
     return new Promise((resolve) => {
-        run('npm show @mobiscroll/cli version', false, false, true).then((npmCliVersion) => { // get the mobiscroll cli version from npm
-            npmCliVersion = npmCliVersion.trim();
+        run('npm show @mobiscroll/cli version', true, true, true).then((npmCliVersion) => { // get the mobiscroll cli version from npm
 
-            if (localCliVersion != npmCliVersion) {
-                // if the two versions are not equal ask for update
-                inquirer.prompt({
-                    type: 'input',
-                    name: 'update',
-                    message: `The Mobiscroll CLI has an update available (${localCliVersion} => ${npmCliVersion})! Would you like to install it? (Y/n)`,
-                    default: 'y'
-                }).then(answer => {
-                    if (answer.update.toLowerCase() == 'y') {
-                        run('npm install -g @mobiscroll/cli@latest').then(() => {
-                            printFeedback(`Updated Mobiscroll CLI to ${npmCliVersion}! \n\nPlease re-run your command!\n`);
-                            process.exit();
-                        });
-                    } else {
-                        console.log(`Skipping the installation of the latest Mobiscroll CLI version.`);
-                        resolve();
-                    }
-                })
+            if (npmCliVersion) {
+                npmCliVersion = npmCliVersion.trim();
+
+                if (localCliVersion != npmCliVersion) {
+                    // if the two versions are not equal ask for update
+                    inquirer.prompt({
+                        type: 'input',
+                        name: 'update',
+                        message: `The Mobiscroll CLI has an update available (${localCliVersion} => ${npmCliVersion})! Would you like to install it? (Y/n)`,
+                        default: 'y'
+                    }).then(answer => {
+                        if (answer.update.toLowerCase() == 'y') {
+                            run('npm install -g @mobiscroll/cli@latest').then(() => {
+                                printFeedback(`Updated Mobiscroll CLI to ${npmCliVersion}! \n\nPlease re-run your command!\n`);
+                                process.exit();
+                            });
+                        } else {
+                            console.log(`Skipping the installation of the latest Mobiscroll CLI version.`);
+                            resolve();
+                        }
+                    })
+                } else {
+                    // No CLI update found continuing the installation...
+                    resolve();
+                }
             } else {
-                // No CLI update found continuing the installation...
-                resolve();
+
+               // utils.printWarning('Npm run check failed. Npm is a requirement for the Mobiscroll CLI. Please make sure that the npm is installed in your system. If you already have npm installed please re-run this command to exclude temporary npm errors.');
+               utils.printWarning(`It looks like the CLI couldn't run npm commands. Make sure that a recent npm is installed. You can update it by running ${chalk.gray('npm install npm@latest -g')} `);
+               console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
+               process.exit();
             }
         })
     });
@@ -87,6 +96,10 @@ function removeTokenFromNpmrc(path) {
 
 function handleScss() {
     useScss = true;
+}
+
+function handleCss() {
+    useScss = false;
 }
 
 function handleProxy(url) {
@@ -190,20 +203,42 @@ function cloneProject(url, type, name, newAppLocation, callback) {
     })
 }
 
-function askStyleSheetType(version, useScss, callback) {
+function askStyleSheetType(version, useScss, config, callback) {
+    var skipQuestion = false;
+    var localScss = undefined;
+    var isIonic = config.projectType === 'ionic';
     version = utils.shapeVersionToArray(version);
+    
+
+    if (isIonic && useScss === undefined) {
+        let packageJson = require(config.packageJsonLocation);
+        
+        if (packageJson && packageJson.dependencies['@ionic/angular']) {
+            let checkStyleLoaded =  fs.readFileSync(path.resolve(config.currDir, 'src', 'global.scss'), 'utf8').toString();
+            
+            if (checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1) {
+                console.log('hereherhreherer...');
+                skipQuestion = true;
+                localScss = true;
+            } else {
+                checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir,  'angular.json'), 'utf8').toString();
+                skipQuestion =  checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1;
+                localScss = false;
+            }
+        }
+    }
 
     // only ask the scss install if the version is larger then 4.7.0 
-    if (version[0] >= 4 && version[1] >= 7 && !useScss) {
+    if (version[0] >= 4 && version[1] >= 7 && useScss === undefined && !skipQuestion) {
+        let choices = [ 'CSS', 'SCSS'];
         console.log('\n');
         inquirer.prompt({
             type: 'list',
             name: 'stylesheet',
             message: `Which stylesheet format would you like to use?`,
-            default: 'CSS',
-            choices: [
-                'CSS', 'SCSS'
-            ]
+            default: isIonic ? 'SCSS' : 'CSS',
+            choices: isIonic ? choices.reverse() : choices
+
         }).then(answer => {
             if (callback) {
                 callback(answer.stylesheet === 'SCSS');
@@ -211,7 +246,7 @@ function askStyleSheetType(version, useScss, callback) {
         })
     } else {
         if (callback) {
-            callback();
+            callback(localScss);
         }
     }
 }
@@ -326,7 +361,7 @@ function handleConfig(projectType) {
                     isLite,
                     useScss
                 }
-                //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, true);
+
                 config(configObject);
             })
         } else if (isNpmSource) {
@@ -334,24 +369,25 @@ function handleConfig(projectType) {
                 utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
                     // Install mobiscroll npm package
                     utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, proxyUrl, (version) => {
-                        askStyleSheetType(version, useScss, (isScssSelected) => {
-                            let configObject = {
-                                projectType,
-                                currDir,
-                                packageJsonLocation,
-                                jsFileName,
-                                cssFileName,
-                                isNpmSource,
-                                apiKey: (useTrial ? data.TrialCode : ''),
-                                isLite,
-                                useScss
-                            }
+                        let configObject = {
+                            projectType,
+                            currDir,
+                            packageJsonLocation,
+                            jsFileName,
+                            cssFileName,
+                            isNpmSource,
+                            apiKey: (useTrial ? data.TrialCode : ''),
+                            isLite,
+                            useScss
+                        }
 
-                            if (isScssSelected) {
-                                configObject.useScss = true;
-                            }
+                        askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
+                            // if (isScssSelected) {
+                                configObject.useScss = isScssSelected;
+                            // }
 
-                            //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, (useTrial ? data.TrialCode : ''), false);
+                            console.log('\n\nisScssSelected', isScssSelected)
+
                             config(configObject);
                         });
                     })
@@ -412,7 +448,7 @@ function handleConfig(projectType) {
                     useScss
                 }
 
-                askStyleSheetType(version, useScss, (isScssSelected) => {
+                askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
                     configObject.useScss = isScssSelected;
 
                     if (configObject.useScss) {
@@ -526,7 +562,8 @@ program
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.\n', handleNpmInstall)
     .option('--version [version]', 'Pass the Mobiscroll version which you want to install.\n', handleMobiscrollVersion)
     .option('--proxy [proxy]', 'Define a proxy URL which will be passed to the internal requests.', handleProxy)
-    .option('--scss', 'The project will be configured with scss styles instead of css.', handleScss);
+    .option('--scss', 'The project will be configured with scss styles instead of css.', handleScss)
+    .option('--css', 'The project will be configured with css styles instead of scss.', handleCss);
 
 program
     .command('login')
