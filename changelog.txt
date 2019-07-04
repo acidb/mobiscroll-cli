@@ -1,10 +1,10 @@
 Mobiscroll CLI changelog
 
-v 1.0.0 - 3 Jul 2019
+v 1.0.0 - 4 Jul 2019
   
   * New: added `--css` flag to force css style config.
 
-  * New: ionic config detects previosly used style type. It can be override with the `--css` and `--scss` flags.
+  * New: ionic config detects previously used style type. It can be override with the `--css` and `--scss` flags.
 
 v 0.10.3  - 12 Jun 2019
 

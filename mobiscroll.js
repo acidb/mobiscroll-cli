@@ -215,9 +215,8 @@ function askStyleSheetType(version, useScss, config, callback) {
         
         if (packageJson && packageJson.dependencies['@ionic/angular']) {
             let checkStyleLoaded =  fs.readFileSync(path.resolve(config.currDir, 'src', 'global.scss'), 'utf8').toString();
-            
+
             if (checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1) {
-                console.log('hereherhreherer...');
                 skipQuestion = true;
                 localScss = true;
             } else {
@@ -382,12 +381,7 @@ function handleConfig(projectType) {
                         }
 
                         askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
-                            // if (isScssSelected) {
-                                configObject.useScss = isScssSelected;
-                            // }
-
-                            console.log('\n\nisScssSelected', isScssSelected)
-
+                            configObject.useScss = isScssSelected;
                             config(configObject);
                         });
                     })
