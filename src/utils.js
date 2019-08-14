@@ -75,7 +75,7 @@ function writeToFile(location, data, callback) {
     }
 }
 
-function appendContentToFile(location, newData, replaceRegex, callback) {
+function appendContentToFile(location, newData, replaceRegex, prepend, callback) {
     try {
         let fileData = fs.readFileSync(location).toString();
 
@@ -84,7 +84,7 @@ function appendContentToFile(location, newData, replaceRegex, callback) {
         }
 
         if (fileData && fileData.indexOf(newData) == -1) {
-            writeToFile(location, fileData + '\r\n' + newData, callback);
+            writeToFile(location, prepend ? newData + '\r\n' + fileData : fileData + '\r\n' + newData, callback);
         } else if (callback) {
             callback(null);
         }
@@ -349,13 +349,20 @@ module.exports = {
             });
         });
     },
-    installMobiscroll: function (framework, currDir, userName, isTrial, installVersion, proxy, callback) {
-        var frameworkName;
+    
+    installMobiscroll: (config, callback) => {
+        var framework = config.projectType,
+            currDir = config.currDir,
+            isTrial = config.useTrial,
+            installVersion = config.mobiscrollVersion,
+            proxy = config.proxyUrl,
+            packageJson = config.packageJson,
+            frameworkName = '';
 
         switch (framework) {
             case 'ionic':
             case 'ionic-pro':
-                frameworkName = 'angular';
+                frameworkName = packageJson.dependencies['@ionic/react'] ? 'react' : 'angular';
                 break;
             case 'vue':
                 frameworkName = 'javascript';
@@ -368,7 +375,7 @@ module.exports = {
         var pkgName = frameworkName + (isTrial ? '-trial' : ''),
             command;
 
-        getMobiscrollVersion(proxy, function (version) {
+        getMobiscrollVersion(proxy,  (version) => {
             let useYarn = testYarn(currDir);
             let installCmd =  useYarn ? 'yarn add' : 'npm install';
             if (isTrial) {
@@ -398,7 +405,6 @@ module.exports = {
     },
     packMobiscroll: (packLocation, currDir, framework, useYarn, callback) => {
         process.chdir(packLocation); // change directory to node modules folder
-
         console.log(`${chalk.green('>')} changed current directory to ${packLocation}. \n`);
 
         runCommand(`${ useYarn ? 'yarn pack' : 'npm pack'}`, true).then(() => { // run npm pack which will generate the mobiscroll package

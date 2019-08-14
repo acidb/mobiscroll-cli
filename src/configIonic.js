@@ -65,6 +65,7 @@ function configIonic(settings, callback) {
             `$mbsc-font-path: '../lib/mobiscroll/css/';
 @import "../../node_modules/@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ? '' : '.angular' }.scss";`,
             /(\$mbsc-font-path: '..\/lib\/mobiscroll\/css\/';[\s\S]+)?@import "[\S]+mobiscroll[\S]+\.scss";/gm,
+            false,
             (err) => {
                 if (err) {
                     utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with sass?`);
@@ -148,6 +149,57 @@ function configIonic(settings, callback) {
     }
 }
 
+function detectReactPages(settings, callback) {
+    let pages = [],
+        pagesPath = path.resolve(settings.currDir, 'src', 'pages');
+
+    if (fs.existsSync(pagesPath)) {
+        pages = fs.readdirSync(pagesPath).filter((f) => {
+            return path.extname(f) == '.tsx';
+        })
+
+        if (pages.length) {
+            console.log(chalk.bold(`\n\nMultiple pages detected. The mobiscroll variable must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject mobiscroll import for you?\n`));
+
+            inquirer.prompt([{
+                type: 'checkbox',
+                message: 'Please select where else do you want to inject mobiscroll import? ',
+                name: 'pages',
+                choices: pages
+            }]).then(function (answers) {
+                if (answers.pages.length) {
+                    console.log('\n');
+                    for (let i = 0; i < answers.pages.length; ++i) {
+
+                        utils.appendContentToFile(
+                            path.resolve(pagesPath, answers.pages[i]),
+                            `import mobiscroll from '@mobiscroll/react';`,
+                            `import mobiscroll from '@mobiscroll/react';`,
+                            true,
+                            (err) => {
+                                if (err) {
+                                    utils.printError(`Couldn't update the following file ${ answers.pages[i]}`);
+                                    return;
+                                }
+                            }
+                        )
+                    }
+
+                    utils.printFeedback('Mobiscroll injected successfully to the selected pages.');
+
+                    if (callback) {
+                        callback();
+                    }
+                }
+
+            });
+
+            return true;
+        }
+    }
+
+}
+
 function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, callback) {
 
     var modulePages = [],
@@ -214,38 +266,80 @@ module.exports = {
         var versionArray,
             mainIonicVersion,
             ionicPackage = settings.packageJson, //require(settings.ionicPackageLocation),
-            ionicVersion = ionicPackage.dependencies['ionic-angular'] || ionicPackage.dependencies['@ionic/angular'];
+            ionicVersion = ionicPackage.dependencies['ionic-angular'] || ionicPackage.dependencies['@ionic/angular'],
+            ionicReactVersion = ionicPackage.dependencies['@ionic/react'];
 
-        if (ionicVersion) { // check ionic version
-            versionArray = utils.shapeVersionToArray(ionicVersion);
+        if (ionicReactVersion) {
+            if (settings.useScss) {
+                let fileName = 'variables.scss'
+                console.log(`  Adding scss stylesheet to ${chalk.grey(fileName)}`);
+                utils.appendContentToFile(
+                    path.resolve(settings.currDir, 'src', 'theme', fileName),
+                    `@import "@mobiscroll/react/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.react'  }.scss";`,
+                    /@import "[\S]+mobiscroll[\S]+\.scss";/g,
+                    false,
+                    (err) => {
+                        if (err) {
+                            utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`)
+                            return;
+                        }
+                    }
+                );
+            } else {
+                let appFile = path.resolve(settings.currDir, 'src', 'App.tsx');
 
-            mainIonicVersion = versionArray[0];
-            settings.mainIonicVersion = mainIonicVersion;
+                let appFileData = fs.readFileSync(appFile, 'utf8');
 
-            if (mainIonicVersion == 2 && versionArray[1] < 2) {
-                utils.printWarning('It looks like your are using an older version of ionic 2. The minimum required ionic 2 version is 2.2.0. Please update your ionic app in order to Mobiscroll work correctly.');
+                if (appFileData) {
+                    console.log(`  Adding css stylesheet to ${chalk.grey('app.tsx')}`);
 
+                    //if (appFileData.indexOf(settings.cssFileName) == -1) {
+                    appFileData = appFileData.replace(/import '@mobiscroll.*css';\s?/gm, '');
+                    //}
+
+                    appFileData = appFileData.replace(`import '@ionic/react/css/core.css';`, `import '@ionic/react/css/core.css';\n\rimport '@mobiscroll/react/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.react'  }.min.css';\n\r`);
+                    utils.writeToFile(appFile, appFileData);
+                }
+            }
+
+            detectReactPages(settings, () => {
+                if (callback) {
+                    callback()
+                }
+            })
+
+        } else {
+            if (ionicVersion) { // check ionic version
+                versionArray = utils.shapeVersionToArray(ionicVersion);
+
+                mainIonicVersion = versionArray[0];
+                settings.mainIonicVersion = mainIonicVersion;
+
+                if (mainIonicVersion == 2 && versionArray[1] < 2) {
+                    utils.printWarning('It looks like your are using an older version of ionic 2. The minimum required ionic 2 version is 2.2.0. Please update your ionic app in order to Mobiscroll work correctly.');
+
+                    return;
+                }
+            } else if (ionicPackage.devDependencies['gulp']) { // check if ionic 1.x where gulp is used
+                utils.printWarning('It looks like you are trying to run this command in an ionic 1 application. The `mobiscroll config ionic` supports only ionic 2+ apps. Please run `mobiscroll config --help` for more information.')
                 return;
             }
-        } else if (ionicPackage.devDependencies['gulp']) { // check if ionic 1.x where gulp is used
-            utils.printWarning('It looks like you are trying to run this command in an ionic 1 application. The `mobiscroll config ionic` supports only ionic 2+ apps. Please run `mobiscroll config --help` for more information.')
-            return;
-        }
 
-        if (!utils.checkTypescriptVersion(ionicPackage)) {
-            return;
-        }
+            if (!utils.checkTypescriptVersion(ionicPackage)) {
+                return;
+            }
 
-        if (ionicVersion && mainIonicVersion >= 4) {
-            settings.isIonicApp = true;
-            configAngular(settings, () => {
-                detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, callback);
-            });
-        } else {
-            //configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, () => {
-            configIonic(settings, () => {
-                detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, callback);
-            });
+            if (ionicVersion && mainIonicVersion >= 4) {
+                settings.isIonicApp = true;
+                configAngular(settings, () => {
+                    detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, callback);
+                });
+            } else {
+                //configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, () => {
+                configIonic(settings, () => {
+                    detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, callback);
+                });
+            }
         }
     }
 }

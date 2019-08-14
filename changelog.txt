@@ -1,5 +1,13 @@
 Mobiscroll CLI changelog
 
+
+v 1.1.0 - 12 Aug 2019
+
+  * New: config ionic now support's ionic react based applications.
+
+  * Fixed: Exit configuration process if the command is not executed on the root folder where the `pacakge.json` is located.
+
+
 v 1.0.0 - 4 Jul 2019
   
   * New: added `--css` flag to force css style config.

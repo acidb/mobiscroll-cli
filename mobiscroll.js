@@ -60,8 +60,6 @@ function checkUpdate() {
                     resolve();
                 }
             } else {
-
-               // utils.printWarning('Npm run check failed. Npm is a requirement for the Mobiscroll CLI. Please make sure that the npm is installed in your system. If you already have npm installed please re-run this command to exclude temporary npm errors.');
                utils.printWarning(`It looks like the CLI couldn't run npm commands. Make sure that a recent npm is installed. You can update it by running ${chalk.gray('npm install npm@latest -g')} `);
                console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
                process.exit();
@@ -206,10 +204,9 @@ function cloneProject(url, type, name, newAppLocation, callback) {
 function askStyleSheetType(version, useScss, config, callback) {
     var skipQuestion = false;
     var localScss = undefined;
-    var isIonic = config.projectType === 'ionic';
+    var isIonic = config.projectType === 'ionic' && config.framework !== 'react';
     version = utils.shapeVersionToArray(version);
     
-
     if (isIonic && useScss === undefined) {
         let packageJson = require(config.packageJsonLocation);
         
@@ -335,14 +332,22 @@ function handleConfig(projectType) {
     }
 
     checkUpdate().then(() => {
-        var jsFileName = `@mobiscroll/angular${ isLite ? '-lite' : '' }`,
+        var framework,
+            jsFileName = `@mobiscroll/angular${ isLite ? '-lite' : '' }`,
             cssFileName = `../node_modules/@mobiscroll/angular${ isLite ? '-lite' : '' }/dist/css/mobiscroll.min.css`,
             currDir = process.cwd(), // get the directory where the mobiscroll command was executed
-            packageJsonLocation = path.resolve(currDir, 'package.json');
+            packageJsonLocation = path.resolve(currDir, 'package.json'),
+            packageJson = '';
+
+        if (packageJsonLocation) {
+            packageJson = require(packageJsonLocation);
+            framework = projectType == 'ionic' ? ( packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType;
+        }
 
         // check if package.json is in the current directory
         if (!fs.existsSync(packageJsonLocation)) {
             printWarning('There is no package.json in this directory.\nPlease run this command in the project\'s root directory!');
+            process.exit();
         }
 
         printFeedback('Mobiscroll configuration started.');
@@ -366,20 +371,26 @@ function handleConfig(projectType) {
         } else if (isNpmSource) {
             utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, (userName, useTrial, data) => {
                 utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
-                    // Install mobiscroll npm package
-                    utils.installMobiscroll(projectType, currDir, userName, useTrial, mobiscrollVersion, proxyUrl, (version) => {
-                        let configObject = {
-                            projectType,
-                            currDir,
-                            packageJsonLocation,
-                            jsFileName,
-                            cssFileName,
-                            isNpmSource,
-                            apiKey: (useTrial ? data.TrialCode : ''),
-                            isLite,
-                            useScss
-                        }
+                    let configObject = {
+                        projectType,
+                        currDir,
+                        packageJsonLocation,
+                        packageJson,
+                        jsFileName,
+                        cssFileName,
+                        isNpmSource,
+                        apiKey: (useTrial ? data.TrialCode : ''),
+                        isLite,
+                        useScss,
+                        userName,
+                        useTrial,
+                        mobiscrollVersion,
+                        proxyUrl,
+                        framework
+                    }
 
+                    // Install mobiscroll npm package
+                    utils.installMobiscroll(configObject, (version) => {
                         askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
                             configObject.useScss = isScssSelected;
                             config(configObject);
@@ -392,11 +403,11 @@ function handleConfig(projectType) {
             var files,
                 localCssFileName,
                 localJsFileName,
+               // framework = projectType == 'ionic' ? ( packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType,
                 mbscFolderLocation = path.resolve(currDir, 'src', 'lib', 'mobiscroll'),
                 jsFileLocation = path.resolve(mbscFolderLocation, 'js'),
-                cssFileLocation = path.resolve(mbscFolderLocation, 'css'),
-                framework = projectType == 'ionic' ? 'angular' : projectType;
-
+                cssFileLocation = path.resolve(mbscFolderLocation, 'css');
+                
             utils.removeUnusedPackages(projectType, packageJsonLocation, false, false, () => {
 
                 // check if mobiscroll js files are copied to the specific location and get the js file name
@@ -439,7 +450,8 @@ function handleConfig(projectType) {
                     isNpmSource,
                     apiKey: '',
                     isLite,
-                    useScss
+                    useScss,
+                    framework
                 }
 
                 askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
@@ -506,7 +518,7 @@ function handleConfig(projectType) {
                                         // run npm install
                                         utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : 'npm install'), true).then(() => {
                                             cssFileName = (projectType == 'ionic' ? (packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
-                                            configObject.cssFileName = cssFileName
+                                            configObject.cssFileName = cssFileName;
 
                                             //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, false, () => {
                                             config(configObject, () => {
