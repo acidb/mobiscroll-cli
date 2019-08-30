@@ -60,9 +60,9 @@ function checkUpdate() {
                     resolve();
                 }
             } else {
-               utils.printWarning(`It looks like the CLI couldn't run npm commands. Make sure that a recent npm is installed. You can update it by running ${chalk.gray('npm install npm@latest -g')} `);
-               console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
-               process.exit();
+                utils.printWarning(`It looks like the CLI couldn't run npm commands. Make sure that a recent npm is installed. You can update it by running ${chalk.gray('npm install npm@latest -g')} `);
+                console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
+                process.exit();
             }
         })
     });
@@ -191,7 +191,15 @@ function cloneProject(url, type, name, newAppLocation, callback) {
 
         utils.run('npm install', true).then(() => {
             utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, (userName, useTrial) => {
-                utils.installMobiscroll(type, newAppLocation, userName, useTrial, mobiscrollVersion, proxyUrl, () => {
+                let configObject = {
+                    projectType: type,
+                    currDir: newAppLocation,
+                    userName,
+                    useTrial,
+                    mobiscrollVersion,
+                    proxyUrl
+                };
+                utils.installMobiscroll(configObject, () => {
                     if (callback) {
                         callback();
                     }
@@ -206,19 +214,19 @@ function askStyleSheetType(version, useScss, config, callback) {
     var localScss = undefined;
     var isIonic = config.projectType === 'ionic' && config.framework !== 'react';
     version = utils.shapeVersionToArray(version);
-    
+
     if (isIonic && useScss === undefined) {
         let packageJson = require(config.packageJsonLocation);
-        
+
         if (packageJson && packageJson.dependencies['@ionic/angular']) {
-            let checkStyleLoaded =  fs.readFileSync(path.resolve(config.currDir, 'src', 'global.scss'), 'utf8').toString();
+            let checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir, 'src', 'global.scss'), 'utf8').toString();
 
             if (checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1) {
                 skipQuestion = true;
                 localScss = true;
             } else {
-                checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir,  'angular.json'), 'utf8').toString();
-                skipQuestion =  checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1;
+                checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir, 'angular.json'), 'utf8').toString();
+                skipQuestion = checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1;
                 localScss = false;
             }
         }
@@ -226,7 +234,7 @@ function askStyleSheetType(version, useScss, config, callback) {
 
     // only ask the scss install if the version is larger then 4.7.0 
     if (version[0] >= 4 && version[1] >= 7 && useScss === undefined && !skipQuestion) {
-        let choices = [ 'CSS', 'SCSS'];
+        let choices = ['CSS', 'SCSS'];
         console.log('\n');
         inquirer.prompt({
             type: 'list',
@@ -341,7 +349,7 @@ function handleConfig(projectType) {
 
         if (packageJsonLocation) {
             packageJson = require(packageJsonLocation);
-            framework = projectType == 'ionic' ? ( packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType;
+            framework = projectType == 'ionic' ? (packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType;
         }
 
         // check if package.json is in the current directory
@@ -403,11 +411,11 @@ function handleConfig(projectType) {
             var files,
                 localCssFileName,
                 localJsFileName,
-               // framework = projectType == 'ionic' ? ( packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType,
+                // framework = projectType == 'ionic' ? ( packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType,
                 mbscFolderLocation = path.resolve(currDir, 'src', 'lib', 'mobiscroll'),
                 jsFileLocation = path.resolve(mbscFolderLocation, 'js'),
                 cssFileLocation = path.resolve(mbscFolderLocation, 'css');
-                
+
             utils.removeUnusedPackages(projectType, packageJsonLocation, false, false, () => {
 
                 // check if mobiscroll js files are copied to the specific location and get the js file name
@@ -460,7 +468,7 @@ function handleConfig(projectType) {
                     if (configObject.useScss) {
                         let scssFileLocation = path.resolve(cssFileLocation, `mobiscroll.${framework}.scss`);
                         let fileData = fs.readFileSync(scssFileLocation).toString();
-                        
+
                         if (fileData) {
                             fileData = fileData.replace("$mbsc-font-path: '' !default;", "$mbsc-font-path: '@mobiscroll/angular/dist/css/' !default;")
                             utils.writeToFile(scssFileLocation, fileData)

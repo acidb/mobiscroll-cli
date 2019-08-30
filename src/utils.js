@@ -225,7 +225,7 @@ function login(useGlobalNpmrc) {
             }).catch(err => {
                 err = err.toString();
                 if (err.indexOf("Could not find user with the specified username or password") !== -1 || err.indexOf("Incorrect username or password") !== -1) {
-                    printWarning(`We couldn’t log you in. This might be  either because your account does not exist or you mistyped your login information. You can update your credentials `  + terminalLink('from your account', 'https://mobiscroll.com/account') + '.');
+                    printWarning(`We couldn’t log you in. This might be  either because your account does not exist or you mistyped your login information. You can update your credentials ` + terminalLink('from your account', 'https://mobiscroll.com/account') + '.');
                     printWarning(`If you don’t have an account yet, you can start a free trial from https://mobiscroll.com/starttrial`);
                     console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
                     process.exit();
@@ -349,7 +349,7 @@ module.exports = {
             });
         });
     },
-    
+
     installMobiscroll: (config, callback) => {
         var framework = config.projectType,
             currDir = config.currDir,
@@ -362,7 +362,7 @@ module.exports = {
         switch (framework) {
             case 'ionic':
             case 'ionic-pro':
-                frameworkName = packageJson.dependencies['@ionic/react'] ? 'react' : 'angular';
+                frameworkName = packageJson && packageJson.dependencies && packageJson.dependencies['@ionic/react'] ? 'react' : 'angular';
                 break;
             case 'vue':
                 frameworkName = 'javascript';
@@ -375,9 +375,9 @@ module.exports = {
         var pkgName = frameworkName + (isTrial ? '-trial' : ''),
             command;
 
-        getMobiscrollVersion(proxy,  (version) => {
+        getMobiscrollVersion(proxy, (version) => {
             let useYarn = testYarn(currDir);
-            let installCmd =  useYarn ? 'yarn add' : 'npm install';
+            let installCmd = useYarn ? 'yarn add' : 'npm install';
             if (isTrial) {
                 command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${version}.tgz --save --registry=${mbscNpmUrl}`;
             } else {
@@ -388,7 +388,7 @@ module.exports = {
             printFeedback(`Installing packages via ${useYarn ? 'yarn' : 'npm'}...`);
             runCommand(command, true).then((out) => {
                 let version = out.match(/@([0-9.-]+)/gmi)[0];
-                
+
                 printFeedback(`Mobiscroll for ${framework} installed.`);
                 callback(version.replace('@', ''));
             }).catch((reason) => {
