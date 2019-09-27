@@ -110,8 +110,6 @@ module.exports = {
         var angularVersion = utils.shapeVersionToArray(settings.packageJson.dependencies['@angular/common']);
 
         if (angularVersion[0] >= 6) { // check if angular 6 or newer
-            console.log('configAngular settings', settings.mobiscrollVersion,semver.gte(settings.mobiscrollVersion, '4.8.2'), semver.gt('4.7.2', '4.8.2'), semver.gte('4.8.2', '4.8.2'), semver.gte('4.9.1', '4.8.2'));
-            
             if (semver.gte(settings.mobiscrollVersion, '4.8.2')) {
                 // skip rxjs-compat install after version 4.8.2
                 angularConfig(settings, callback);
