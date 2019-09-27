@@ -10,6 +10,7 @@ const path = require('path');
 const npmLogin = require('./npm-login/');
 const helperMessages = require('./helperMessages.js');
 const ncp = require('ncp').ncp;
+var semver = require('semver');
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -150,9 +151,9 @@ function deleteFolderRecursive(path) {
     }
 }
 
-function getApiKey(userName, proxy, callback) {
+function getApiKey(userName, proxy, framework, callback) {
     var requestOptions = {
-        url: 'https://api.mobiscroll.com/api/userdata/' + userName,
+        url: 'https://api.mobiscroll.com/api/access/' + userName + '/' + framework,
         json: true,
         headers: {
             'User-Agent': 'request'
@@ -327,7 +328,7 @@ module.exports = {
             callback();
         }
     },
-    checkMbscNpmLogin: function (isTrial, useGlobalNpmrc, proxy, callback) {
+    checkMbscNpmLogin: (isTrial, useGlobalNpmrc, proxy, framework, installVersion, callback) => {
         printFeedback('Checking logged in status...');
         // check if the user is already logged in
         runCommand('npm whoami --registry=' + mbscNpmUrl, false, true).then((userName) => {
@@ -342,10 +343,12 @@ module.exports = {
             console.log('Login error' + err);
         }).then((userName) => {
             // if returns an api key it is a trial user
-            getApiKey(userName, proxy, (data) => {
-                var useTrial = !data.HasLicense || isTrial;
+            getApiKey(userName, proxy, framework, (data) => {
+                if (!installVersion) {
+                    installVersion = data.LatestVersion;
+                }
 
-                callback(userName, useTrial, data);
+                callback(userName, data.LatestVersion && !isTrial ? semver.gt('3.2.4', installVersion) : true, data);
             });
         });
     },
@@ -390,7 +393,7 @@ module.exports = {
                 let version = out.match(/@([0-9.-]+)/gmi)[0];
 
                 printFeedback(`Mobiscroll for ${framework} installed.`);
-                callback(version.replace('@', ''));
+                callback(installVersion || version.replace('@', ''));
             }).catch((reason) => {
                 if (/403 Forbidden/.test(reason)) {
                     printWarning(`Looks like you have a Component license. That means NPM install is not supported. You can go https://download.mobiscroll.com, manually download the package, copy it into your project and run the same command with the ${chalk.gray('--no-npm')} flag.`);

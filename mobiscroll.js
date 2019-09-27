@@ -190,7 +190,7 @@ function cloneProject(url, type, name, newAppLocation, callback) {
         console.log(`Installing dependencies may take several minutes:\n`);
 
         utils.run('npm install', true).then(() => {
-            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, (userName, useTrial) => {
+            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, type, mobiscrollVersion, (userName, useTrial) => {
                 let configObject = {
                     projectType: type,
                     currDir: newAppLocation,
@@ -340,7 +340,7 @@ function handleConfig(projectType) {
     }
 
     checkUpdate().then(() => {
-        var framework,
+        var framework = projectType,
             jsFileName = `@mobiscroll/angular${ isLite ? '-lite' : '' }`,
             cssFileName = `../node_modules/@mobiscroll/angular${ isLite ? '-lite' : '' }/dist/css/mobiscroll.min.css`,
             currDir = process.cwd(), // get the directory where the mobiscroll command was executed
@@ -377,7 +377,7 @@ function handleConfig(projectType) {
                 config(configObject);
             })
         } else if (isNpmSource) {
-            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, (userName, useTrial, data) => {
+            utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, framework, mobiscrollVersion, (userName, useTrial, data) => {
                 utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
                     let configObject = {
                         projectType,
@@ -399,6 +399,7 @@ function handleConfig(projectType) {
 
                     // Install mobiscroll npm package
                     utils.installMobiscroll(configObject, (version) => {
+                        configObject.mobiscrollVersion = version;
                         askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
                             configObject.useScss = isScssSelected;
                             config(configObject);
