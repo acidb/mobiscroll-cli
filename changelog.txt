@@ -1,5 +1,11 @@
 Mobiscroll CLI changelog
 
+v 1.2.0 - 27 Sep 2019
+
+  * New: angular config won't install rxjs-compat package starting form Mobiscroll v4.8.2.
+
+  * New: config command will install the trial version if the user has a different or old license.
+
 v 1.1.1 - 30 Aug 2019
 
   * Fixed: `start` command failed when trying to install mobiscroll to the created starter app.
@@ -42,11 +48,11 @@ v 0.9.1 - 20 Mar 2019
 
   * New: Detect yarn and use it's commands where the project was configured with it.
   
-  * New: Inproved no access to packege feedback message.
+  * New: Improved no access to package feedback message.
 
 v 0.9.0 - 14 Mar 2019
 
-  * New: Imporved failed npm install feedback messages.
+  * New: Improved failed npm install feedback messages.
   
   * New: Reduced async operations. 
 
@@ -62,11 +68,11 @@ v 0.8.8  - 10 Oct 2018
   
 v 0.8.7  - 20 Sept 2018
 
-  * Fixed:  config angular errors during the stylesheet configuration. (The angular-cli modified the structer of it's angular.json config file. Added support for both of the configurations).
+  * Fixed:  config angular errors during the stylesheet configuration. (The angular-cli modified the structure of it's angular.json config file. Added support for both of the configurations).
   
 v 0.8.6 - 11 Sep 2018
 
-  * New: Copying font files to the public folder in case of meteor app. Fixed angular typescript check which was giving error if no devDependencies were found in the pacakge.json.
+  * New: Copying font files to the public folder in case of meteor app. Fixed angular typescript check which was giving error if no devDependencies were found in the package.json.
   
 v 0.8.5  - 14 aug 2018
   
@@ -108,7 +114,7 @@ v 0.6.4 - 11 jul 2018
   
   * Fixed:typo fixes
   
-  * Fixed:react install istruction fixes
+  * Fixed:react install instruction fixes
   
   * Fixed: no-npm remove unused file fixes
 
@@ -122,13 +128,13 @@ v 0.6.2 - 4 jul 2018
 
 v 0.6.1 - 22 jun 2018
 
-  * Fixed: fix mobiscroll logout commnad
+  * Fixed: fix mobiscroll logout command
 
 v 0.6.0 - 20 jun 2018
 
   * New: .npmrc file will be generated in the working directory by default and added --global flag to modify this.
   
-  * New: config commad new --version flag
+  * New: config command new --version flag
   
   * New: print warnings if the config ionic command is used in older ionic projects
 
