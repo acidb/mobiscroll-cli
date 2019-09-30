@@ -445,6 +445,8 @@ function handleConfig(projectType) {
                 let packageFolder = path.resolve(currDir, 'src', 'lib', 'mobiscroll-package');
                 let distFolder = path.resolve(packageFolder, 'dist');
 
+                mobiscrollVersion = version;
+
                 // create new folders
                 if (!fs.existsSync(packageFolder)) {
                     fs.mkdirSync(packageFolder, 0o777);
@@ -460,7 +462,8 @@ function handleConfig(projectType) {
                     apiKey: '',
                     isLite,
                     useScss,
-                    framework
+                    framework,
+                    mobiscrollVersion
                 }
 
                 askStyleSheetType(version, useScss, configObject, (isScssSelected) => {

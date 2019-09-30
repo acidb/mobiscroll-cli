@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.2.1 - 30 Sep 2019
+
+  * Fixed: angular `--no-npm` config version check error.
+
 v 1.2.0 - 27 Sep 2019
 
   * New: angular config won't install rxjs-compat package starting form Mobiscroll v4.8.2.

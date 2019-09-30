@@ -109,22 +109,16 @@ module.exports = {
 
         var angularVersion = utils.shapeVersionToArray(settings.packageJson.dependencies['@angular/common']);
 
-        if (angularVersion[0] >= 6) { // check if angular 6 or newer
-            if (semver.gte(settings.mobiscrollVersion, '4.8.2')) {
-                // skip rxjs-compat install after version 4.8.2
+        if (angularVersion[0] >= 6 && settings.mobiscrollVersion && semver.lt(settings.mobiscrollVersion, '4.8.2')) { // check if angular 6 or older than v4.8.2
+            if (settings.packageJson.dependencies['rxjs-compat']) {
+                utils.printFeedback('rxjs-compat package detected');
                 angularConfig(settings, callback);
-            } else {       
-                // install rxjs-compat package
-                if (settings.packageJson.dependencies['rxjs-compat']) {
-                    utils.printFeedback('rxjs-compat package detected');
+            } else {
+                utils.run('npm install rxjs-compat --save', true).then(() => {
                     angularConfig(settings, callback);
-                } else {
-                    utils.run('npm install rxjs-compat --save', true).then(() => {
-                        angularConfig(settings, callback);
-                    }).catch((err) => {
-                        utils.printError('An error occurred during the project configuration. Error: ' + err);
-                    })
-                }
+                }).catch((err) => {
+                    utils.printError('An error occurred during the project configuration. Error: ' + err);
+                })
             }
         } else {
             angularConfig(settings, callback);
