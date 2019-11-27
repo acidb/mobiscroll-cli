@@ -24,12 +24,13 @@
         "url": "https://github.com/acidb/mobiscroll/issues"
     },
     "main": "dist/js/",
-    "module": "dist/js/",
+    "module": "dist/esm5/",
     "types": "dist/js/",
     "style": "dist/css/",
     "files": [
-        "dist/js/**",
         "dist/css/**",
+        "dist/esm5/**",
+        "dist/js/**",
         "dist/src/**"
     ],
     "peerDependencies": {
