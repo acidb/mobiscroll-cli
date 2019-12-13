@@ -1,5 +1,15 @@
 Mobiscroll CLI changelog
 
+v 1.3.1 - 16 Dec 2019
+
+ * Fixed: Previously configured css/scss versions wasn't detected by the config command in case of angular-cli based apps.
+
+ * Fixed: js and css file detection check was not correct in case of no-npm config 
+
+ * Fixed: Get rid of `UnhandledPromiseRejectionWarning` warnings.
+
+ * Fixed: no-npm config update grabbed the older package instead of the newly generated one.
+
 v 1.3.0 - 27 Nov 2019
 
   * Fixed: angular `--no-npm` includes the esm5 file in the generated package, required by Ivy.

@@ -406,7 +406,7 @@ module.exports = {
             });
         })
     },
-    packMobiscroll: (packLocation, currDir, framework, useYarn, callback) => {
+    packMobiscroll: (packLocation, currDir, framework, useYarn, version, callback) => {
         process.chdir(packLocation); // change directory to node modules folder
         console.log(`${chalk.green('>')} changed current directory to ${packLocation}. \n`);
 
@@ -416,10 +416,9 @@ module.exports = {
                     printError('Could not access to the directory files.\n\n' + err);
                     return;
                 }
-
                 let mbscPackage = files.filter((f) => {
                     // return the full name of the generated package
-                    return f.includes(`mobiscroll-${framework}`);
+                    return f.includes(`mobiscroll-${framework}-${version}`);
                 });
 
                 if (mbscPackage.length) {

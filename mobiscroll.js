@@ -144,7 +144,14 @@ function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
 
 //function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite, callback) {
 function config(settings, callback) {
-    let packageJson = require(settings.packageJsonLocation);
+    var packageJson = '';
+
+    try {
+        packageJson = require(settings.packageJsonLocation);
+    } catch (err) {
+        utils.printError('Could not open package.json file.\n\n' + err);
+    }
+
     let projectType = settings.projectType;
     settings.packageJson = packageJson;
     utils.checkMeteor(packageJson, settings.currDir, projectType);
@@ -215,11 +222,18 @@ function askStyleSheetType(version, useScss, config, callback) {
     var isIonic = config.projectType === 'ionic' && config.framework !== 'react';
     version = utils.shapeVersionToArray(version);
 
-    if (isIonic && useScss === undefined) {
-        let packageJson = require(config.packageJsonLocation);
+    if (useScss === undefined) {
+        var packageJson = '';
 
-        if (packageJson && packageJson.dependencies['@ionic/angular']) {
-            let checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir, 'src', 'global.scss'), 'utf8').toString();
+        try {
+            packageJson = require(config.packageJsonLocation);
+        } catch (err) {
+            utils.printError('Could not open package.json file.\n\n' + err);
+        }
+
+        // ionic
+        if (packageJson && (config.projectType === 'angular' || config.projectType === 'ionic')) {
+            let checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir, 'src', isIonic ? 'global.scss' : 'styles.scss'), 'utf8').toString();
 
             if (checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1) {
                 skipQuestion = true;
@@ -348,8 +362,11 @@ function handleConfig(projectType) {
             packageJson = '';
 
         if (packageJsonLocation) {
-            packageJson = require(packageJsonLocation);
-            framework = projectType == 'ionic' ? (packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType;
+            try {
+                packageJson = require(packageJsonLocation);
+            } finally {
+                framework = projectType == 'ionic' ? (packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType;
+            }
         }
 
         // check if package.json is in the current directory
@@ -410,8 +427,8 @@ function handleConfig(projectType) {
         } else {
             // if no-npm flag is set
             var files,
-                localCssFileName,
-                localJsFileName,
+                localCssFileName = [],
+                localJsFileName = [],
                 // framework = projectType == 'ionic' ? ( packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType,
                 mbscFolderLocation = path.resolve(currDir, 'src', 'lib', 'mobiscroll'),
                 jsFileLocation = path.resolve(mbscFolderLocation, 'js'),
@@ -435,7 +452,7 @@ function handleConfig(projectType) {
                     });
                 }
 
-                if (!localJsFileName || !localCssFileName) {
+                if (!localJsFileName.length || !localCssFileName.length) {
                     printWarning(`No mobiscroll js/css files were found in your project's src/lib/mobiscroll folder. \n\nPlease make sure to extract the downloaded Mobiscroll package, then grab the ${ framework == 'angular' ? 'lib folder and copy it into src folder of your app!' : 'js and css folders and copy it into src/lib/mobiscroll folder of your app. If there is no such folder available, you can create it.' }`);
                     return;
                 }
@@ -485,8 +502,13 @@ function handleConfig(projectType) {
                             utils.printError('Could not copy Mobiscroll resources.\n\n' + err);
                             return;
                         }
+                        var noNpmPackageJson = '';
 
-                        let noNpmPackageJson = require(path.resolve(__dirname, 'resources', framework, 'pckg.json'));
+                        try {
+                            noNpmPackageJson = require(path.resolve(__dirname, 'resources', framework, 'pckg.json'));
+                        } catch (err) {
+                            utils.printError('Could not open package.json file.\n\n' + err);
+                        }
 
                         console.log(`\n${chalk.green('>')} Mobiscroll resources were copied successfully.`);
 
@@ -513,8 +535,15 @@ function handleConfig(projectType) {
                             // write the new package.json
                             utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
                                 // pack with npm pack
-                                utils.packMobiscroll(packageFolder, currDir, framework, useYarn, (packageName) => {
-                                    let packageJson = require(packageJsonLocation);
+                                utils.packMobiscroll(packageFolder, currDir, framework, useYarn, mobiscrollVersion, (packageName) => {
+                                    var packageJson = '';
+                                    console.log('\n\n\n\npackage0name\n\n\n\n', packageName);
+                                    try {
+                                        packageJson = require(packageJsonLocation);
+                                    } catch (err) {
+                                        utils.printError('Could not open package.json file.\n\n' + err);
+                                    }
+
                                     if (useYarn) {
                                         // workaround delete yarn cache tmp folder manually. Issue (https://github.com/yarnpkg/yarn/issues/5357)
                                         let yarnCacheLocation = utils.runSync('yarn cache dir');
