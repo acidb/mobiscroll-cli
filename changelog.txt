@@ -10,6 +10,8 @@ v 1.3.1 - 16 Dec 2019
 
  * Fixed: no-npm config update grabbed the older package instead of the newly generated one.
 
+ * Fixed: modified angular config to do not replace modules which are already present in the module file.
+
 v 1.3.0 - 27 Nov 2019
 
   * Fixed: angular `--no-npm` includes the esm5 file in the generated package, required by Ivy.

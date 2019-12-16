@@ -431,7 +431,7 @@ module.exports = {
             })
         });
     },
-    importModules: function (moduleLocation, moduleName, mbscFileName) {
+    importModules: (moduleLocation, moduleName, mbscFileName) => {
         console.log(`  Adding module loading scripts to ${chalk.grey(moduleName)}`);
 
         // Modify *.module.ts add necessary modules
@@ -439,22 +439,25 @@ module.exports = {
             try {
                 let data = fs.readFileSync(moduleLocation, 'utf8').toString();
 
-                let checkForRoute = data.indexOf('MbscModule.forRoot') == -1;
+                if (data.indexOf('MbscModule.forRoot') === -1) {
+                    let checkForRoute = data.indexOf('MbscModule.forRoot') == -1;
 
-                // Remove previous module load
-                if (checkForRoute) {
-                    data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
-                    data = data.replace(/[ \t]*MbscModule,[ \t\r]*\s?/, '');
+                    // Remove previous module load
+                    if (checkForRoute) {
+                        data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
+                        data = data.replace(/[ \t]*MbscModule,[ \t\r]*\s?/, '');
 
-                    // Add angular module imports which are needed for mobiscroll
-                    data = importModule('MbscModule', mbscFileName, data);
+                        // Add angular module imports which are needed for mobiscroll
+                        data = importModule('MbscModule', mbscFileName, data);
+                    }
+                    data = importModule('FormsModule', '@angular/forms', data);
+
+                    // Remove previous api key if present
+                    data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
+
+                    writeToFile(moduleLocation, data);
                 }
-                data = importModule('FormsModule', '@angular/forms', data);
 
-                // Remove previous api key if present
-                data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
-
-                writeToFile(moduleLocation, data);
             } catch (err) {
                 printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
                 return;

@@ -537,7 +537,6 @@ function handleConfig(projectType) {
                                 // pack with npm pack
                                 utils.packMobiscroll(packageFolder, currDir, framework, useYarn, mobiscrollVersion, (packageName) => {
                                     var packageJson = '';
-                                    console.log('\n\n\n\npackage0name\n\n\n\n', packageName);
                                     try {
                                         packageJson = require(packageJsonLocation);
                                     } catch (err) {
