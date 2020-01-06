@@ -220,6 +220,7 @@ function askStyleSheetType(version, useScss, config, callback) {
     var skipQuestion = false;
     var localScss = undefined;
     var isIonic = config.projectType === 'ionic' && config.framework !== 'react';
+    var isOldIonic = config.packageJson.dependencies['ionic-angular'] !== undefined;
     version = utils.shapeVersionToArray(version);
 
     if (useScss === undefined) {
@@ -232,7 +233,7 @@ function askStyleSheetType(version, useScss, config, callback) {
         }
 
         // ionic
-        if (packageJson && (config.projectType === 'angular' || config.projectType === 'ionic')) {
+        if (packageJson && (config.projectType === 'angular' || config.projectType === 'ionic') && !isOldIonic) {
             let checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir, 'src', isIonic ? 'global.scss' : 'styles.scss'), 'utf8').toString();
 
             if (checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1) {

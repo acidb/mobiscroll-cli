@@ -329,6 +329,8 @@ module.exports = {
                 return;
             }
 
+            settings.ionicVersion = mainIonicVersion;
+
             if (ionicVersion && mainIonicVersion >= 4) {
                 settings.isIonicApp = true;
                 configAngular(settings, () => {
