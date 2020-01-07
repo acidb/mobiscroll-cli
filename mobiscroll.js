@@ -220,20 +220,13 @@ function askStyleSheetType(version, useScss, config, callback) {
     var skipQuestion = false;
     var localScss = undefined;
     var isIonic = config.projectType === 'ionic' && config.framework !== 'react';
-    var isOldIonic = config.packageJson.dependencies['ionic-angular'] !== undefined;
     version = utils.shapeVersionToArray(version);
 
-    if (useScss === undefined) {
-        var packageJson = '';
-
-        try {
-            packageJson = require(config.packageJsonLocation);
-        } catch (err) {
-            utils.printError('Could not open package.json file.\n\n' + err);
-        }
+    if (useScss === undefined && config.packageJson) {
+        var isOldIonic = config.packageJson.dependencies['ionic-angular'] !== undefined; /* ionic version 2/3*/
 
         // ionic
-        if (packageJson && (config.projectType === 'angular' || config.projectType === 'ionic') && !isOldIonic) {
+        if ((config.projectType === 'angular' || config.projectType === 'ionic') && !isOldIonic) {
             let checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir, 'src', isIonic ? 'global.scss' : 'styles.scss'), 'utf8').toString();
 
             if (checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1) {
@@ -475,6 +468,7 @@ function handleConfig(projectType) {
                     projectType,
                     currDir,
                     packageJsonLocation,
+                    packageJson,
                     jsFileName,
                     isNpmSource,
                     apiKey: '',

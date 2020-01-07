@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.3.2 - 7 Jan 2020
+
+ * Fixed: Ionic --no-npm config crashing. It gave the following error: `TypeError: Cannot read property 'dependencies' of undefined`.
+
 v 1.3.2 - 6 Jan 2020
 
  * Fixed: Ionic 3 config was crashing. It gave the following error: `no such file or directory, open '...global.scss'`.
