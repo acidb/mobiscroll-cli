@@ -1,6 +1,14 @@
 Mobiscroll CLI changelog
 
-v 1.3.2 - 7 Jan 2020
+v 1.3.4 - 22 Jan 2020
+
+ * Fixed: yarn detection was improved, before it didn't detect correctly if the yarn is installed on system.
+
+ * Fixed: error occured when scss stylesheet was selected in Angular CLI app and it wasn configurated with only css.
+
+ * Fixed: rxsj-compat package detection on osx.
+
+v 1.3.3 - 7 Jan 2020
 
  * Fixed: Ionic --no-npm config crashing. It gave the following error: `TypeError: Cannot read property 'dependencies' of undefined`.
 

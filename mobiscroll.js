@@ -128,7 +128,7 @@ function handleGlobalInstall() {
     useGlobalNpmrc = true;
 }
 
-function detectProjectFramework(packageJson, apiKey, isLite, projectType) {
+function detectProjectFramework(packageJson, apiKey, isLite, projectType, useScss) {
     if (packageJson.dependencies.vue) {
         helperMessages.vueHelp(projectType, apiKey, isLite, useScss);
         return 'vue';
@@ -172,14 +172,14 @@ function config(settings, callback) {
             configIonic(settings, callback);
             break;
         case 'react':
-            helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource, useScss);
+            helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource, settings.useScss);
             if (callback) {
                 callback();
             }
             break;
         case 'jquery':
         case 'javascript':
-            detectProjectFramework(settings.packageJson, settings.apiKey, settings.isLite, projectType);
+            detectProjectFramework(settings.packageJson, settings.apiKey, settings.isLite, projectType, settings.useScss);
             if (callback) {
                 callback();
             }
@@ -225,11 +225,13 @@ function askStyleSheetType(version, useScss, config, callback) {
     if (useScss === undefined && config.packageJson) {
         var isOldIonic = config.packageJson.dependencies['ionic-angular'] !== undefined; /* ionic version 2/3*/
 
-        // ionic
+        // ionic && angular cli
         if ((config.projectType === 'angular' || config.projectType === 'ionic') && !isOldIonic) {
-            let checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir, 'src', isIonic ? 'global.scss' : 'styles.scss'), 'utf8').toString();
+            let globalScssPath = path.resolve(config.currDir, 'src', isIonic ? 'global.scss' : 'styles.scss');
+            let isGlobalScss = fs.existsSync(globalScssPath);
+            let checkStyleLoaded = isGlobalScss && fs.readFileSync(globalScssPath, 'utf8').toString();
 
-            if (checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1) {
+            if (isGlobalScss && checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1) {
                 skipQuestion = true;
                 localScss = true;
             } else {

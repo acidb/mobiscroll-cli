@@ -25,11 +25,11 @@ function updateAngularJsonWithCss(settings) {
 
     if (stylesArray) {
         stylesArray = stylesArray.filter(x => x != null && typeof x == "object" ? x.input && x.input.indexOf('mobiscroll') == -1 : x.indexOf('mobiscroll') == -1); // remove previously installed mobiscroll styles
-        
-        if(!settings.useScss) {
+
+        if (!settings.useScss) {
             stylesArray.push(cssFile);
         }
-        
+
         ngConfig.projects[projectName][configPath].build.options.styles = stylesArray;
         utils.writeToFile(settings.currDir + '/angular.json', JSON.stringify(ngConfig, null, 2));
     }
@@ -46,21 +46,26 @@ function angularConfig(settings, callback) {
 
     if (settings.useScss) {
         let fileName = settings.isIonicApp ? 'global.scss' : 'styles.scss';
-        console.log(`  Adding stylesheet to ${chalk.grey(fileName)}`);
-        utils.appendContentToFile(
-            path.resolve(currDir, 'src', fileName),
-            `@import "~@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.angular'  }.scss";`,
-            /@import "[\S]+mobiscroll[\S]+\.scss";/g,
-            false,
-            (err) => {
-                if (err) {
-                    utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`)
-                    return;
-                }
+        let filePath = path.resolve(currDir, 'src', fileName);
 
-                updateAngularJsonWithCss(settings);
-            }
-        );
+        if (fs.existsSync(filePath)) {
+            utils.appendContentToFile(
+                filePath,
+                `@import "~@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.angular'  }.scss";`,
+                /@import "[\S]+mobiscroll[\S]+\.scss";/g,
+                false,
+                (err) => {
+                    if (err) {
+                        utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`);
+                        return;
+                    }
+
+                    updateAngularJsonWithCss(settings);
+                }
+            );
+        } else {
+            utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`);
+        }
     } else {
         console.log(`  Adding stylesheet to ${chalk.grey('angular.json')}`);
         if (fs.existsSync(path.resolve(currDir, '.angular-cli.json'))) {

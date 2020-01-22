@@ -30,8 +30,9 @@ function printLog(text) {
 }
 
 function testYarn(currDir) {
-    // check if a yarn.lock exists
-    return fs.existsSync(path.resolve(currDir, 'yarn.lock'))
+    printLog('Testing yarn')
+    // check if yarn command is installade and check if a yarn.lock exists in root project
+    return runCommandSync('yarn -v', true) !== undefined && fs.existsSync(path.resolve(currDir, 'yarn.lock'));
 }
 
 function runCommand(cmd, skipWarning, skipError, skipLog) {
@@ -53,11 +54,13 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
     });
 }
 
-function runCommandSync(cmd) {
+function runCommandSync(cmd, skipError) {
     try {
         return (execSync(cmd)).toString('utf8');
     } catch (error) {
-        console.log('Could not run command ' + chalk.gray(cmd) + '. \n\n' + error);
+        if (!skipError) {
+            console.log('Could not run command ' + chalk.gray(cmd) + '. \n\n' + error);
+        }
     }
 }
 
@@ -226,7 +229,7 @@ function login(useGlobalNpmrc) {
             }).catch(err => {
                 err = err.toString();
                 if (err.indexOf("Could not find user with the specified username or password") !== -1 || err.indexOf("Incorrect username or password") !== -1) {
-                    printWarning(`We couldn’t log you in. This might be  either because your account does not exist or you mistyped your login information. You can update your credentials ` + terminalLink('from your account', 'https://mobiscroll.com/account') + '.');
+                    printWarning(`We couldn’t log you in. This might be either because your account does not exist or you mistyped your login information. You can update your credentials ` + terminalLink('from your account', 'https://mobiscroll.com/account') + '.');
                     printWarning(`If you don’t have an account yet, you can start a free trial from https://mobiscroll.com/starttrial`);
                     console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
                     process.exit();
@@ -380,6 +383,7 @@ module.exports = {
 
         getMobiscrollVersion(proxy, (version) => {
             let useYarn = testYarn(currDir);
+
             let installCmd = useYarn ? 'yarn add' : 'npm install';
             if (isTrial) {
                 command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${version}.tgz --save --registry=${mbscNpmUrl}`;
@@ -390,10 +394,10 @@ module.exports = {
             // Skip node warnings
             printFeedback(`Installing packages via ${useYarn ? 'yarn' : 'npm'}...`);
             runCommand(command, true).then((out) => {
-                let version = out.match(/@([0-9.-]+)/gmi)[0];
+                let version = /@mobiscroll\/[a-z]+@([0-9.-]+)/gmi.exec(out)[1];
 
                 printFeedback(`Mobiscroll for ${framework} installed.`);
-                callback(installVersion || version.replace('@', ''));
+                callback(installVersion || version);
             }).catch((reason) => {
                 if (/403 Forbidden/.test(reason)) {
                     printWarning(`Looks like you have a Component license. That means NPM install is not supported. You can go https://download.mobiscroll.com, manually download the package, copy it into your project and run the same command with the ${chalk.gray('--no-npm')} flag.`);
