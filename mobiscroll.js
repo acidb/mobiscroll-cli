@@ -220,6 +220,8 @@ function askStyleSheetType(version, useScss, config, callback) {
     var skipQuestion = false;
     var localScss = undefined;
     var isIonic = config.projectType === 'ionic' && config.framework !== 'react';
+    var globalScssPath = path.resolve(config.currDir, 'src', isIonic ? 'global.scss' : 'styles.scss');
+    var isGlobalScss = fs.existsSync(globalScssPath);
     version = utils.shapeVersionToArray(version);
 
     if (useScss === undefined && config.packageJson) {
@@ -227,17 +229,20 @@ function askStyleSheetType(version, useScss, config, callback) {
 
         // ionic && angular cli
         if ((config.projectType === 'angular' || config.projectType === 'ionic') && !isOldIonic) {
-            let globalScssPath = path.resolve(config.currDir, 'src', isIonic ? 'global.scss' : 'styles.scss');
-            let isGlobalScss = fs.existsSync(globalScssPath);
+
             let checkStyleLoaded = isGlobalScss && fs.readFileSync(globalScssPath, 'utf8').toString();
 
             if (isGlobalScss && checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1) {
                 skipQuestion = true;
                 localScss = true;
             } else {
-                checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir, 'angular.json'), 'utf8').toString();
-                skipQuestion = checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1;
+                skipQuestion = !isGlobalScss; // only ask if the angular project was set up wiht scss
                 localScss = false;
+                if (isIonic && fs.existsSync(path.resolve(config.currDir, 'angular.json'))) {
+                    checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir, 'angular.json'), 'utf8').toString();
+                    skipQuestion = checkStyleLoaded && checkStyleLoaded.indexOf('mobiscroll') !== -1;
+                    localScss = false;
+                }
             }
         }
     }

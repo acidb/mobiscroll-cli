@@ -33,6 +33,8 @@ function updateAngularJsonWithCss(settings) {
         ngConfig.projects[projectName][configPath].build.options.styles = stylesArray;
         utils.writeToFile(settings.currDir + '/angular.json', JSON.stringify(ngConfig, null, 2));
     }
+
+    utils.printFeedback('Mobiscroll configuration ready.');
 }
 
 function angularConfig(settings, callback) {
@@ -49,6 +51,7 @@ function angularConfig(settings, callback) {
         let filePath = path.resolve(currDir, 'src', fileName);
 
         if (fs.existsSync(filePath)) {
+            console.log(`  Adding scss import to ${chalk.grey(fileName)}`);
             utils.appendContentToFile(
                 filePath,
                 `@import "~@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.angular'  }.scss";`,

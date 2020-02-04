@@ -1,5 +1,11 @@
 Mobiscroll CLI changelog
 
+v 1.3.5 - 22 Jan 2020
+
+ * Fixed: Config angular gave an error with older angular cli apps. The command searched for a `style.scss` file even if the app didn't have scss config.
+
+ * Fixed: Improved angular config feedback messages.
+
 v 1.3.4 - 22 Jan 2020
 
  * Fixed: yarn detection was improved, before it didn't detect correctly if the yarn is installed on system.
