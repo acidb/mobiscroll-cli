@@ -66,6 +66,7 @@ function configIonic(settings, callback) {
 @import "../../node_modules/@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ? '' : '.angular' }.scss";`,
             /(\$mbsc-font-path: '..\/lib\/mobiscroll\/css\/';[\s\S]+)?@import "[\S]+mobiscroll[\S]+\.scss";/gm,
             false,
+            '',
             (err) => {
                 if (err) {
                     utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with sass?`);
@@ -170,12 +171,14 @@ function detectReactPages(settings, callback) {
                 if (answers.pages.length) {
                     console.log('\n');
                     for (let i = 0; i < answers.pages.length; ++i) {
-
+                        let filePath = path.resolve(pagesPath, answers.pages[i]);
+                        if (fs.existsSync(filePath)) {}
                         utils.appendContentToFile(
-                            path.resolve(pagesPath, answers.pages[i]),
+                            filePath,
                             `import mobiscroll from '@mobiscroll/react';`,
                             `import mobiscroll from '@mobiscroll/react';`,
                             true,
+                            /import.*'@mobiscroll\/react';/gm,
                             (err) => {
                                 if (err) {
                                     utils.printError(`Couldn't update the following file ${ answers.pages[i]}`);
@@ -278,6 +281,7 @@ module.exports = {
                     `@import "@mobiscroll/react/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.react'  }.scss";`,
                     /@import "[\S]+mobiscroll[\S]+\.scss";/g,
                     false,
+                    '',
                     (err) => {
                         if (err) {
                             utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`)

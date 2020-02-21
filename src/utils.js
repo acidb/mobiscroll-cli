@@ -79,18 +79,25 @@ function writeToFile(location, data, callback) {
     }
 }
 
-function appendContentToFile(location, newData, replaceRegex, prepend, callback) {
+function appendContentToFile(location, newData, replaceRegex, prepend, skipRegex, callback) {
     try {
         let fileData = fs.readFileSync(location).toString();
 
-        if (replaceRegex) {
-            fileData = fileData.replace(replaceRegex, '');
-        }
+        if (skipRegex && skipRegex.test(fileData)) {
+            if (callback) {
+                callback(null);
+            }
+        } else {
 
-        if (fileData && fileData.indexOf(newData) == -1) {
-            writeToFile(location, prepend ? newData + '\r\n' + fileData : fileData + '\r\n' + newData, callback);
-        } else if (callback) {
-            callback(null);
+            if (replaceRegex) {
+                fileData = fileData.replace(replaceRegex, '');
+            }
+
+            if (fileData && fileData.indexOf(newData) == -1) {
+                writeToFile(location, prepend ? newData + '\r\n' + fileData : fileData + '\r\n' + newData, callback);
+            } else if (callback) {
+                callback(null);
+            }
         }
     } catch (err) {
         printError('Could append to file ' + chalk.gray(location) + '. \n\n' + err);

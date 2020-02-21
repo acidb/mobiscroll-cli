@@ -57,6 +57,7 @@ function angularConfig(settings, callback) {
                 `@import "~@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.angular'  }.scss";`,
                 /@import "[\S]+mobiscroll[\S]+\.scss";/g,
                 false,
+                '',
                 (err) => {
                     if (err) {
                         utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`);

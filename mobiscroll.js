@@ -27,6 +27,7 @@ var mobiscrollVersion = null;
 var useGlobalNpmrc = false;
 var proxyUrl = '';
 var useScss = undefined;
+var startIoncVesrion = '';
 
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
 
@@ -124,6 +125,10 @@ function handleMobiscrollVersion(vers) {
     mobiscrollVersion = vers;
 }
 
+function handleStartIonicVersion(version) {
+    startIoncVesrion = version;
+}
+
 function handleGlobalInstall() {
     useGlobalNpmrc = true;
 }
@@ -188,10 +193,10 @@ function config(settings, callback) {
 
 }
 
-function cloneProject(url, type, name, newAppLocation, callback) {
+function cloneProject(url, type, name, newAppLocation, gitOptions, callback) {
     utils.printLog(`Cloning ${type} starter app from git: ${url}`);
 
-    clone(url, './' + name, {}, () => {
+    clone(url, './' + name, gitOptions, () => {
         utils.printLog(`Repository cloned successfully.`);
         process.chdir(newAppLocation); // change directory to node modules folder
         console.log(`Installing dependencies may take several minutes:\n`);
@@ -270,7 +275,7 @@ function askStyleSheetType(version, useScss, config, callback) {
     }
 }
 
-function startProject(url, type, name, callback) {
+function startProject(url, type, name, gitOptions, callback) {
 
     printFeedback('Mobiscroll start command started.');
 
@@ -286,7 +291,7 @@ function startProject(url, type, name, callback) {
         }).then(answer => {
             if (answer.confirm.toLowerCase() == 'y') {
                 utils.deleteFolder(newAppLocation); // delete the app with the same name
-                cloneProject(url, type, name, newAppLocation, callback);
+                cloneProject(url, type, name, newAppLocation, gitOptions, callback);
             } else {
                 console.log(`Not erasing existing project in .\\${name}`);
                 return;
@@ -294,29 +299,43 @@ function startProject(url, type, name, callback) {
         })
         //return;
     } else {
-        cloneProject(url, type, name, newAppLocation, callback);
+        cloneProject(url, type, name, newAppLocation, gitOptions, callback);
     }
 }
 
 function createProject(type, name) {
     switch (type) {
         case 'angular':
-            startProject('https://github.com/acidb/angular-starter', type, name, () => {
+            startProject('https://github.com/acidb/angular-starter', type, name, {}, () => {
                 utils.testInstalledCLI('ng -v', 'npm install -g @angular/cli', 'ng serve -o', name, type);
             });
             break;
         case 'ionic-angular':
-            startProject('https://github.com/acidb/ionic-angular-starter', "ionic", name, () => {
-                utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
+            if (startIoncVesrion && +startIoncVesrion === 4) {
+
+                startProject('https://github.com/acidb/ionic-angular-starter', "ionic", name, {
+                    checkout: 'v4'
+                }, () => {
+                    utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
+                });
+            } else {
+                startProject('https://github.com/acidb/ionic-angular-starter', "ionic", name, {}, () => {
+                    utils.testInstalledCLI('ionic -v', 'npm install -g @ionic/cli', 'ionic serve', name, type);
+                });
+            }
+            break;
+        case 'ionic-react':
+            startProject('https://github.com/acidb/ionic-react', type, name, {}, () => {
+                utils.testInstalledCLI('ionic -v', 'npm install -g @ionic/cli', 'ionic serve', name, type);
             });
             break;
         case 'ionic':
-            startProject('https://github.com/acidb/ionic-starter', type, name, () => {
+            startProject('https://github.com/acidb/ionic-starter', type, name, {}, () => {
                 utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
             });
             break;
         case 'react':
-            startProject('https://github.com/acidb/react-starter', type, name, () => {
+            startProject('https://github.com/acidb/react-starter', type, name, {}, () => {
                 utils.testInstalledCLI('create-react-app --version', 'npm install -g create-react-app', 'npm start', name, type);
             });
             break;
@@ -628,9 +647,9 @@ program
     .command('start [types] [name]')
     .on('--help', helperMessages.startHelp)
     .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
+    .option('--ionic-version [version]', `Pass the ionic-angular version of the starter app which you want to start. E.g ${chalk.gray('mobiscroll start ionic-angular --ionic-version=4')}`, handleStartIonicVersion)
     .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
     .action(handleStart)
-
 
 program.on('command:*', function () {
     // warning on unknown commands

@@ -1,5 +1,13 @@
 Mobiscroll CLI changelog
 
+v 1.4.0 - 21 Feb 2020
+
+  * New: start command now supports ionic-react apps.
+
+  * New: start ionic-angular command now installs Ionic v5 based apps. For ionic 4 based app implemented an `--ionic-version=4` flag.
+
+  * Fixed: config ionic command duplicated mobiscroll imports in react apps.
+
 v 1.3.5 - 22 Jan 2020
 
  * Fixed: Config angular gave an error with older angular cli apps. The command searched for a `style.scss` file even if the app didn't have scss config.

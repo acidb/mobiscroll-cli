@@ -29,7 +29,8 @@ module.exports = {
         console.log('\n  Types:\n');
         console.log('    angular         Creates an Angular applications.(Based on Angular CLI application.)\n');
         console.log('    ionic           Creates an ionic application. (Based on Ionic 3 application.)\n');
-        console.log('    ionic-angular   Creates an ionic-angular application. (Based on Ionic 4 angular application.)\n');
+        console.log(`    ionic-angular   Creates an ionic-angular application. (Based on Ionic 5 angular application. For Ionic 4 based application use ${chalk.grey('--ionic-version=4')} flag.)\n`);
+        console.log('    ionic-react     Creates an ionic-react application. (Based on Ionic 5 react application.)\n');
         console.log('    react           Creates a react applications.(Based on Create React App application.)\n');
         //console.log('    vue             Creates an Vue.js applications.(Based on Vue CLI application) \n');
     },
