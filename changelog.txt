@@ -1,6 +1,6 @@
 Mobiscroll CLI changelog
 
-v 1.4.0 - 21 Feb 2020
+v 1.4.0 - 25 Feb 2020
 
   * New: start command now supports ionic-react apps.
 

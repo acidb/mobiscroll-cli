@@ -325,8 +325,8 @@ function createProject(type, name) {
             }
             break;
         case 'ionic-react':
-            startProject('https://github.com/acidb/ionic-react', type, name, {}, () => {
-                utils.testInstalledCLI('ionic -v', 'npm install -g @ionic/cli', 'ionic serve', name, type);
+            startProject('https://github.com/acidb/ionic-react-starter', "react", name, {}, () => {
+                utils.testInstalledCLI('ionic -v', 'npm install -g @ionic/cli', 'ionic serve', name, "react");
             });
             break;
         case 'ionic':
