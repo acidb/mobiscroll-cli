@@ -13,6 +13,7 @@ const ncp = require('ncp').ncp;
 const figlet = require('figlet');
 const os = require('os');
 const clone = require('git-clone');
+const semver = require('semver');
 
 var isNpmSource = true;
 var isTrial = false;
@@ -133,14 +134,14 @@ function handleGlobalInstall() {
     useGlobalNpmrc = true;
 }
 
-function detectProjectFramework(packageJson, apiKey, isLite, projectType, useScss) {
+function detectProjectFramework(packageJson, apiKey, isLite, projectType, useScss, version) {
     if (packageJson.dependencies.vue) {
-        helperMessages.vueHelp(projectType, apiKey, isLite, useScss);
+        helperMessages.vueHelp(projectType, apiKey, isLite, useScss, version);
         return 'vue';
     }
 
     if (packageJson.dependencies.react) {
-        helperMessages.reactHelp(apiKey, isLite, isNpmSource, useScss);
+        helperMessages.reactHelp(apiKey, isLite, isNpmSource, useScss, version);
         return "react";
     }
 
@@ -177,14 +178,14 @@ function config(settings, callback) {
             configIonic(settings, callback);
             break;
         case 'react':
-            helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource, settings.useScss);
+            helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
             if (callback) {
                 callback();
             }
             break;
         case 'jquery':
         case 'javascript':
-            detectProjectFramework(settings.packageJson, settings.apiKey, settings.isLite, projectType, settings.useScss);
+            detectProjectFramework(settings.packageJson, settings.apiKey, settings.isLite, projectType, settings.useScss, settings.mobiscrollVersion);
             if (callback) {
                 callback();
             }
@@ -270,7 +271,7 @@ function askStyleSheetType(version, useScss, config, callback) {
         })
     } else {
         if (callback) {
-            callback(localScss);
+            callback(localScss || useScss);
         }
     }
 }
@@ -478,7 +479,7 @@ function handleConfig(projectType) {
                 }
 
                 var jsFileContent = (fs.readFileSync(path.resolve(jsFileLocation, localJsFileName.toString()).toString())).toString();
-                var version = (/version:\s?['"]([a-z0-9.-]+)['"]/gm.exec(jsFileContent))[1];
+                var version = (/version:\s?['"]([a-z0-9.-]+)['"]/gmi.exec(jsFileContent))[1];
                 let packageFolder = path.resolve(currDir, 'src', 'lib', 'mobiscroll-package');
                 let distFolder = path.resolve(packageFolder, 'dist');
 
@@ -491,6 +492,8 @@ function handleConfig(projectType) {
                 }
 
                 let configObject = {
+                    localCssFileName: localCssFileName[0],
+                    localJsFileName: localJsFileName[0],
                     projectType,
                     currDir,
                     packageJsonLocation,
@@ -501,7 +504,7 @@ function handleConfig(projectType) {
                     isLite,
                     useScss,
                     framework,
-                    mobiscrollVersion
+                    mobiscrollVersion,
                 }
 
                 askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
@@ -546,6 +549,11 @@ function handleConfig(projectType) {
                         }
                         if (noNpmPackageJson.style) {
                             noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
+                        }
+
+                        if (semver.gte(version, '5.0.0-beta') && framework !== 'angular') {
+                            // typing location is different in v5 except angular
+                            noNpmPackageJson.typings = "dist/src/" + framework + "/bundle.d.ts";
                         }
 
                         let useYarn = utils.testYarn(currDir);

@@ -428,8 +428,8 @@ module.exports = {
                     return;
                 }
                 let mbscPackage = files.filter((f) => {
-                    // return the full name of the generated package
-                    return f.includes(`mobiscroll-${framework}-${version}`);
+                    const rgx = new RegExp("mobiscroll-[a-z]+-v?" + version + "\.tgz");
+                    return rgx.test(f);
                 });
 
                 if (mbscPackage.length) {

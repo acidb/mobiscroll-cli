@@ -278,7 +278,7 @@ module.exports = {
                 console.log(`  Adding scss stylesheet to ${chalk.grey(fileName)}`);
                 utils.appendContentToFile(
                     path.resolve(settings.currDir, 'src', 'theme', fileName),
-                    `@import "@mobiscroll/react/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.react'  }.scss";`,
+                    `@import "@mobiscroll/react/dist/css/${ settings.isNpmSource ?  'mobiscroll.scss' : settings.localCssFileName.replace('min.css', 'scss')  }";`,
                     /@import "[\S]+mobiscroll[\S]+\.scss";/g,
                     false,
                     '',
@@ -301,7 +301,7 @@ module.exports = {
                     appFileData = appFileData.replace(/import '@mobiscroll.*css';\s?/gm, '');
                     //}
 
-                    appFileData = appFileData.replace(`import '@ionic/react/css/core.css';`, `import '@ionic/react/css/core.css';\n\rimport '@mobiscroll/react/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.react'  }.min.css';\n\r`);
+                    appFileData = appFileData.replace(`import '@ionic/react/css/core.css';`, `import '@ionic/react/css/core.css';\n\rimport '@mobiscroll/react/dist/css/${ settings.isNpmSource ?  'mobiscroll.min.css' : settings.localCssFileName  }';\n\r`);
                     utils.writeToFile(appFile, appFileData);
                 }
             }

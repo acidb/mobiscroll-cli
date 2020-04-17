@@ -1,5 +1,13 @@
 Mobiscroll CLI changelog
 
+v 1.5.0 - 17 Apr 2020
+
+  * New: added compatibility with Mobiscroll version 5.
+
+  * Fixed: fixed `--scss` flag was not working if the project was already configured. 
+
+  * Fixed: no-npm config didn't completed the package generation if yarn was used.
+
 v 1.4.0 - 25 Feb 2020
 
   * New: start command now supports ionic-react apps.
