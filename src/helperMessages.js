@@ -45,7 +45,6 @@ import '` + `@mobiscroll/${framework}` + (isLite ? '-lite' : '') + `/dist/css/mo
         `);
     },
     reactHelp: (isTrial, isLite, npmSource, useScss, version) => {
-        console.log('react version', version);
         console.log(`
 You can import Mobiscroll to your react component like:
 
