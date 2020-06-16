@@ -217,11 +217,13 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
 
         // check for *.module.ts files 
         for (var i = 0; i < ngModulesDir.length; ++i) {
-            let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf('.module.ts') != -1);
+            let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf('.module.ts') !== -1);
             if (checkModule.length) {
-                modulePages.push({
-                    name: ngModulesDir[i] + ' - ' + checkModule[0]
-                });
+                for (let m = 0; m < checkModule.length; ++m) {
+                    modulePages.push({
+                        name: ngModulesDir[i] + ' - ' + checkModule[m]
+                    });
+                }
             }
         }
 

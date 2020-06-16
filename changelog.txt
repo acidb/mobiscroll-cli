@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.5.3 - 16 Jun 2020
+
+  * Fixed: We fixed the angular module detection in case of an Ionic 5 apps. It only displayed the routing modules of the pages.
+
 v 1.5.2 - 4 May 2020
 
   * Fixed: We fixed a bug which was present in the no-npm config with sass stylesheet. An angular specific replace in the scss was applied to other frameworks and it caused the problems. 
