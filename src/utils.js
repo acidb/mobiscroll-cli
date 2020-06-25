@@ -353,7 +353,6 @@ module.exports = {
             console.log('Login error' + err);
         }).then((userName) => {
             getApiKey(userName, proxy, framework, (data) => {
-                console.log
                 if (!installVersion) {
                     installVersion = data.LatestVersion;
                 }
@@ -452,7 +451,6 @@ module.exports = {
                 if (mbscPackage.length) {
                     // set the current directory back to the default
                     process.chdir(currDir);
-                    //console.log(`\n${chalk.green('>')} Changed back current directory to the default one. \n`);
 
                     callback(mbscPackage[0]);
                 }
