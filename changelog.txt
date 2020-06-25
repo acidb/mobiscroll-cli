@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.5.4 - 25 Jun 2020
+
+  * Fixed: We fixed and improved on the warning message which is appearing when the user doesn't have an appropriate license to install mobiscroll from npm.
+
 v 1.5.3 - 16 Jun 2020
 
   * Fixed: We fixed the angular module detection in case of an Ionic 5 apps. It only displayed the routing modules of the pages.

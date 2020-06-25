@@ -352,13 +352,38 @@ module.exports = {
         }, (err) => {
             console.log('Login error' + err);
         }).then((userName) => {
-            // if returns an api key it is a trial user
             getApiKey(userName, proxy, framework, (data) => {
+                console.log
                 if (!installVersion) {
                     installVersion = data.LatestVersion;
                 }
 
-                callback(userName, data.LatestVersion && !isTrial ? semver.gt('3.2.4', installVersion) : true, data);
+                if (data.HasAccess === false && data.License !== '') {
+                    printWarning(`Looks like you don't have a compatible license to install the ${chalk.gray('@mobiscroll/' + framework)} package from NPM. This means you either have a Component license or this framework is not supported by your license.`)
+                    printWarning(`You can check your current licenses at: ${chalk.gray('https://mobiscroll.com/account/licenses')}`);
+
+                    if (data.License === 'component') {
+                        printWarning(`With a Component license the CLI can't install from NPM. Go to ${chalk.gray('https://download.mobiscroll.com')}, manually download the package, copy it into your project and run the same command with the ${chalk.gray('--no-npm')} flag.`);
+                        printWarning(`If you wish to use NPM installs, you can always upgrade to the Framework or Complete license.`);
+                    }
+
+                    printWarning(`Feel free to get in touch or let us know if there is any trouble at support@mobiscroll.com \n`);
+
+                    inquirer.prompt({
+                        type: 'input',
+                        name: 'confirm',
+                        message: `Would you like to install the trial version? (y/N)`,
+                        default: 'N',
+                    }).then(answer => {
+                        if (answer.confirm.toLowerCase() == 'y') {
+                            callback(userName, true, data);
+                        } else {
+                            process.exit();
+                        }
+                    })
+                } else {
+                    callback(userName, data.LatestVersion && !isTrial ? semver.gt('3.2.4', installVersion) : true, data);
+                }
             });
         });
     },
@@ -405,14 +430,7 @@ module.exports = {
                 printFeedback(`Mobiscroll for ${framework} installed.`);
                 callback(installVersion || version);
             }).catch((reason) => {
-                if (/403 Forbidden/.test(reason)) {
-                    printWarning(`Looks like you have a Component license. That means NPM install is not supported. You can go https://download.mobiscroll.com, manually download the package, copy it into your project and run the same command with the ${chalk.gray('--no-npm')} flag.`);
-                    printWarning(`If you wish to use NPM installs, you can always upgrade to the Framework or Complete license.`);
-                    printWarning(`Feel free to get in touch or let us know if there is any trouble at support@mobiscroll.com`);
-                    process.exit();
-                } else {
-                    printError('Could not install Mobiscroll.\n\n' + reason);
-                }
+                printError('Could not install Mobiscroll.\n\n' + reason);
             });
         })
     },
