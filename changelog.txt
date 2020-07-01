@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.5.5 - 1 Jul 2020
+
+  * Fixed: We fixed scss font path variable pointed to a wrong path in case of angular 10 and no-npm config. 
+
 v 1.5.4 - 25 Jun 2020
 
   * Fixed: We fixed and improved on the warning message which is appearing when the user doesn't have an appropriate license to install mobiscroll from npm.

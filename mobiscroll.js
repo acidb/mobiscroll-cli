@@ -515,7 +515,7 @@ function handleConfig(projectType) {
                         let fileData = fs.readFileSync(scssFileLocation).toString();
 
                         if (fileData && framework === 'angular') {
-                            fileData = fileData.replace("$mbsc-font-path: '' !default;", "$mbsc-font-path: '@mobiscroll/angular/dist/css/' !default;");
+                            fileData = fileData.replace("$mbsc-font-path: '' !default;", "$mbsc-font-path: '~@mobiscroll/angular/dist/css/' !default;");
                             utils.writeToFile(scssFileLocation, fileData)
                         }
                     }
