@@ -135,20 +135,21 @@ function handleGlobalInstall() {
 }
 
 function detectProjectFramework(packageJson, apiKey, isLite, projectType, useScss, version) {
-    if (packageJson.dependencies.vue) {
-        helperMessages.vueHelp(projectType, apiKey, isLite, useScss, version);
-        return 'vue';
-    }
+    if (packageJson.dependencies) {
+        if (packageJson.dependencies.vue) {
+            helperMessages.vueHelp(projectType, apiKey, isLite, useScss, version);
+            return 'vue';
+        }
 
-    if (packageJson.dependencies.react) {
-        helperMessages.reactHelp(apiKey, isLite, isNpmSource, useScss, version);
-        return "react";
+        if (packageJson.dependencies.react) {
+            helperMessages.reactHelp(apiKey, isLite, isNpmSource, useScss, version);
+            return "react";
+        }
     }
-
+    // TODO return guide to the default installation
     return;
 }
 
-//function config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLite, callback) {
 function config(settings, callback) {
     var packageJson = '';
 
@@ -231,7 +232,7 @@ function askStyleSheetType(version, useScss, config, callback) {
     version = utils.shapeVersionToArray(version);
 
     if (useScss === undefined && config.packageJson) {
-        var isOldIonic = config.packageJson.dependencies['ionic-angular'] !== undefined; /* ionic version 2/3*/
+        var isOldIonic = config.packageJson.dependencies && config.packageJson.dependencies['ionic-angular'] !== undefined; /* ionic version 2/3*/
 
         // ionic && angular cli
         if ((config.projectType === 'angular' || config.projectType === 'ionic') && !isOldIonic) {

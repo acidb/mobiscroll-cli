@@ -425,7 +425,7 @@ module.exports = {
             // Skip node warnings
             printFeedback(`Installing packages via ${useYarn ? 'yarn' : 'npm'}...`);
             runCommand(command, true).then((out) => {
-                let version = /@mobiscroll\/[a-z]+@([0-9a-z.-]+)/gmi.exec(out)[1];
+                // let version = /@mobiscroll\/[a-z]+@([0-9a-z.-]+)/gmi.exec(out)[1]; // TODO handle when the npm install didn't return the package name and the version
                 printFeedback(`Mobiscroll for ${framework} installed.`);
                 callback(installVersion || version);
             }).catch((reason) => {
