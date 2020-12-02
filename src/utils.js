@@ -112,9 +112,9 @@ function importModule(moduleName, location, data) {
     return data;
 }
 
-function getMobiscrollVersion(proxy, callback) {
+function getMobiscrollVersion(proxy, version, callback) {
     var requestOptions = {
-        url: 'https://api.mobiscroll.com/api/getmobiscrollversion'
+        url: 'https://api.mobiscroll.com/api/getmobiscrollversion' + (version ? ('/' + version) : '')
     }
 
     if (proxy) {
@@ -381,7 +381,7 @@ module.exports = {
                         }
                     })
                 } else {
-                    callback(userName, data.LatestVersion && !isTrial ? semver.gt('3.2.4', installVersion) : true, data);
+                    callback(userName, data.LatestVersion && !isTrial ? (semver.gt('3.2.4', (semver.valid(installVersion) ? installVersion : semver.coerce(installVersion)))) : true, data);
                 }
             });
         });
@@ -394,7 +394,8 @@ module.exports = {
             installVersion = config.mobiscrollVersion,
             proxy = config.proxyUrl,
             packageJson = config.packageJson,
-            frameworkName = '';
+            frameworkName = '',
+            mainVersion;
 
         switch (framework) {
             case 'ionic':
@@ -412,12 +413,19 @@ module.exports = {
         var pkgName = frameworkName + (isTrial ? '-trial' : ''),
             command;
 
-        getMobiscrollVersion(proxy, (version) => {
+        if (!semver.valid(installVersion)) {
+            mainVersion = installVersion;
+        }
+
+        getMobiscrollVersion(proxy, mainVersion, (version) => {
             let useYarn = testYarn(currDir);
+            if (mainVersion) {
+                installVersion = version;
+            }
 
             let installCmd = useYarn ? 'yarn add' : 'npm install';
             if (isTrial) {
-                command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${version}.tgz --save --registry=${mbscNpmUrl}`;
+                command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
             } else {
                 command = `${installCmd} @mobiscroll/${pkgName}@${ installVersion || version } --save`;
             }

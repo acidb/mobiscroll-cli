@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.5.8 - 2 Dec 2020
+
+  * New: added support for v5 trial installation and improved on the version flag. It is possible to pass main versions to the flag and it will install the latest from the passed version.
+
 v 1.5.7 - 20 Nov 2020
 
   * Fixed: We fixed series of error messages which occurred when the package.json didn't have dependencies property.
