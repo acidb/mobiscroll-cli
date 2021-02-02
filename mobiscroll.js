@@ -62,9 +62,9 @@ function checkUpdate() {
                     resolve();
                 }
             } else {
-                utils.printWarning(`It looks like the CLI couldn't run npm commands. Make sure that a recent npm is installed. You can update it by running ${chalk.gray('npm install npm@latest -g')} `);
+                utils.printWarning(`It looks like the CLI couldn't determine the installed cli version. This problem might indicate npm problems on your system. You can update it manually by running the ${chalk.gray('npm install npm@latest -g')} `);
                 console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
-                process.exit();
+                resolve();
             }
         })
     });
@@ -151,16 +151,21 @@ function detectProjectFramework(packageJson, apiKey, isLite, projectType, useScs
 }
 
 function config(settings, callback) {
-    var packageJson = '';
+    var packageJson = settings.packageJson;
 
-    try {
-        packageJson = require(settings.packageJsonLocation);
-    } catch (err) {
-        utils.printError('Could not open package.json file.\n\n' + err);
+    // console.log("CONFIg \n", settings);
+
+    if (!packageJson) {
+        try {
+            packageJson = require(settings.packageJsonLocation);
+            settings.packageJson = packageJson;
+        } catch (err) {
+            utils.printError('Could not open package.json file.\n\n' + err);
+        }
     }
 
     let projectType = settings.projectType;
-    settings.packageJson = packageJson;
+    // settings.packageJson = packageJson;
     utils.checkMeteor(packageJson, settings.currDir, projectType);
 
     switch (projectType) {
@@ -383,18 +388,18 @@ function handleConfig(projectType) {
             packageJsonLocation = path.resolve(currDir, 'package.json'),
             packageJson = '';
 
+        // check if package.json is in the current directory
+        if (!fs.existsSync(packageJsonLocation)) {
+            printWarning('There is no package.json in this directory.\nPlease run this command in the project\'s root directory!');
+            process.exit();
+        }
+
         if (packageJsonLocation) {
             try {
                 packageJson = require(packageJsonLocation);
             } finally {
                 framework = projectType == 'ionic' ? (packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType;
             }
-        }
-
-        // check if package.json is in the current directory
-        if (!fs.existsSync(packageJsonLocation)) {
-            printWarning('There is no package.json in this directory.\nPlease run this command in the project\'s root directory!');
-            process.exit();
         }
 
         printFeedback('Mobiscroll configuration started.');
@@ -636,8 +641,8 @@ program
     .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
     .option('-i, --lite', 'The project will be tuned up with lite configuration.\n', handleLite)
     .option('-n, --no-npm', 'Mobiscroll resources won\'t be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.\n', handleNpmInstall)
-    .option('--version [version]', 'Pass the Mobiscroll version which you want to install.\n', handleMobiscrollVersion)
-    .option('--proxy [proxy]', 'Define a proxy URL which will be passed to the internal requests.', handleProxy)
+    .option('--version [version]', `Pass the Mobiscroll version which you want to install. Supports the following formats: ${chalk.gray('--version=4.7.1')} or ${chalk.gray('--version=5')}\n`, handleMobiscrollVersion)
+    .option('--proxy [proxy]', `Pass a proxy URL which will be passed to the internal requests. Supports the following formats: ${chalk.gray('{protocol}://{host}:{port} example: --proxy=http://myproxy.com:1122')} or with auth details ${chalk.gray('{protocol}://{user}:{password}@{host}:{port} example: --proxy=http://myuser:mypass@myproxy.com:1122')}`, handleProxy)
     .option('--scss', 'The project will be configured with scss styles instead of css.', handleScss)
     .option('--css', 'The project will be configured with css styles instead of scss.', handleCss);
 

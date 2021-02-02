@@ -2,7 +2,6 @@ const fs = require('fs');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
 const execSync = require('child_process').execSync;
-const request = require('request');
 const mbscNpmUrl = 'https://npm.mobiscroll.com';
 const terminalLink = require('terminal-link');
 const inquirer = require('inquirer');
@@ -10,7 +9,45 @@ const path = require('path');
 const npmLogin = require('./npm-login/');
 const helperMessages = require('./helperMessages.js');
 const ncp = require('ncp').ncp;
+const axios = require('axios');
 var semver = require('semver');
+
+
+function processProxyUrl(url) {
+    const proxyObj = {};
+    let proxyParts = [];
+    console.log('here on top', url);
+    if (url.indexOf('@') === -1) {
+        const proxyParts = url.replace('//', '').split(':');
+        proxyObj.protocol = proxyParts[0];
+        proxyObj.host = proxyParts[1];
+
+        if (proxyParts.length > 2) {
+            proxyObj.port = proxyParts[2]
+        }
+    } else {
+        proxyParts = url.split('@');
+        proxyAuth = proxyParts[0].replace('//', '').split(':');;
+        proxyHost = proxyParts[1].split(':');
+
+        proxyObj.protocol = proxyAuth[0];
+        proxyObj.host = proxyHost[0];
+
+        if (proxyHost.length > 1) {
+            proxyObj.port = proxyHost[1];
+        }
+
+        if(proxyAuth.length >= 3) {
+            proxyObj.auth = {
+                username: proxyAuth[1],
+                password: proxyAuth[2]
+            }
+        }
+
+    }
+
+    return proxyObj;
+}
 
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
@@ -88,12 +125,10 @@ function appendContentToFile(location, newData, replaceRegex, prepend, skipRegex
                 callback(null);
             }
         } else {
-
-            if (replaceRegex) {
-                fileData = fileData.replace(replaceRegex, '');
-            }
-
-            if (fileData && fileData.indexOf(newData) == -1) {
+            if (fileData && replaceRegex) {
+                fileData = fileData.replace(replaceRegex, newData);
+                writeToFile(location, fileData);
+            } else if (fileData && fileData.indexOf(newData) == -1) {
                 writeToFile(location, prepend ? newData + '\r\n' + fileData : fileData + '\r\n' + newData, callback);
             } else if (callback) {
                 callback(null);
@@ -118,18 +153,13 @@ function getMobiscrollVersion(proxy, version, callback) {
     }
 
     if (proxy) {
-        requestOptions.proxy = proxy;
+        requestOptions.proxy = processProxyUrl(proxy);
     }
 
-    request(requestOptions, function (error, response, body) {
-        if (error) {
-            printError('Could not get mobiscroll version.' + error);
-        }
-
-        if (!error && response.statusCode === 200) {
-            body = JSON.parse(body);
-            callback(body.Version);
-        }
+    axios(requestOptions).then((resp) => {
+        callback(resp.data.Version);
+    }).catch(err => {
+        printError('Could not get mobiscroll version. Please see the error message for more information: ' + err);
     });
 }
 
@@ -164,24 +194,20 @@ function deleteFolderRecursive(path) {
 function getApiKey(userName, proxy, framework, callback) {
     var requestOptions = {
         url: 'https://api.mobiscroll.com/api/access/' + userName + '/' + framework,
-        json: true,
+        // json: true,
         headers: {
             'User-Agent': 'request'
         }
     }
 
     if (proxy) {
-        requestOptions.proxy = proxy;
+        requestOptions.proxy = processProxyUrl(proxy);
     }
 
-    request(requestOptions, (err, res, data) => {
-        if (err) {
-            printError('There was an error during getting the user\'s trial code. Please see the error message for more information: ' + err);
-        } else if (res.statusCode !== 200) {
-            printError('There was a problem during getting the user\'s trial code. Status: ' + res.statusCode + ' , User: ' + userName);
-        } else {
-            callback(data);
-        }
+    axios(requestOptions).then((resp) => {
+        callback(resp.data);
+    }).catch(err => {
+        printError(`There was an error during getting the user\'s trial code. Status: ${err.response.status}, User: ${userName}. \nPlease see the error message for more information: ` + err);
     });
 }
 
@@ -474,16 +500,19 @@ module.exports = {
                 let data = fs.readFileSync(moduleLocation, 'utf8').toString();
 
                 if (data.indexOf('MbscModule.forRoot') === -1) {
-                    let checkForRoute = data.indexOf('MbscModule.forRoot') == -1;
+                    // let checkForRoute = data.indexOf('MbscModule.forRoot') === -1;
 
                     // Remove previous module load
-                    if (checkForRoute) {
-                        data = data.replace(/import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/, '');
-                        data = data.replace(/[ \t]*MbscModule,[ \t\r]*\s?/, '');
+                    // if (checkForRoute) {
+                        const importRegex = /import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/;
+                        if (importRegex.test(data)) {
+                            data = data.replace(importRegex, '');
+                            data = data.replace(/[ \t]*MbscModule,[ \t\r]*\s?/, '');
+                        }
 
                         // Add angular module imports which are needed for mobiscroll
                         data = importModule('MbscModule', mbscFileName, data);
-                    }
+                    // }
                     data = importModule('FormsModule', '@angular/forms', data);
 
                     // Remove previous api key if present

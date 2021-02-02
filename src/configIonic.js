@@ -64,9 +64,9 @@ function configIonic(settings, callback) {
             path.resolve(currDir, 'src/theme', fileName),
             `$mbsc-font-path: '../lib/mobiscroll/css/';
 @import "../../node_modules/@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ? '' : '.angular' }.scss";`,
-            /(\$mbsc-font-path: '..\/lib\/mobiscroll\/css\/';[\s\S]+)?@import "[\S]+mobiscroll[\S]+\.scss";/gm,
-            false,
             '',
+            false,
+            /(\$mbsc-font-path: '..\/lib\/mobiscroll\/css\/';[\s\S]+)?@import "[\S]+mobiscroll[\S]+\.scss";/gm,
             (err) => {
                 if (err) {
                     utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with sass?`);

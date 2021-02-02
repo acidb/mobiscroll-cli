@@ -1,5 +1,17 @@
 Mobiscroll CLI changelog
 
+v 1.6.0
+
+  * New: We removed the deprecated request library and change it with axios.
+
+  * New: We added esm build support for the packages created with the no-npm config.
+
+  * Fixed: We fixed the unhandled package.json error message when the CLI was not executed in the root folder of the application.
+
+  * Fixed: We fixed the missing MbscModule module problem in angular apps. The module was removed when the config command was re-executed.
+
+  * Fixed: Don't exit the config process if the update process was not successful.
+
 v 1.5.8 - 2 Dec 2020
 
   * New: added support for v5 trial installation and improved on the version flag. It is possible to pass main versions to the flag and it will install the latest from the passed version.
