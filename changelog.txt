@@ -10,6 +10,10 @@ v 1.6.0
 
   * Fixed: We fixed the missing MbscModule module problem in angular apps. The module was removed when the config command was re-executed.
 
+  * Fixed: We fixed the `--scss` and `--css` flags doesn't removed the previous style import.
+
+  * Fixed: We fixed the v5 config which always loaded the css even if the scss option was selected.
+
   * Fixed: Don't exit the config process if the update process was not successful.
 
 v 1.5.8 - 2 Dec 2020

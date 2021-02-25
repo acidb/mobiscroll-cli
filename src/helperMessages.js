@@ -1,5 +1,6 @@
 const chalk = require('chalk');
-var semver = require('semver');
+const terminalLink = require('terminal-link');
+const semver = require('semver');
 
 module.exports = {
     ionicLazy: (isTrial, isLite) => {
@@ -21,7 +22,6 @@ module.exports = {
         console.log('    angular         Use it for configuring Angular 2+ applications.\n');
         console.log('    angularjs       Use it for configuring Angularjs(1.x) applications.\n');
         console.log('    ionic           Use it for configuring Ionic 2+ applications.\n');
-        //console.log('    ionic-pro       Use it for configuring Ionic 2+ applications. Use this command if you are using Ionic pro. \n');
         console.log('    javascript      Use it for configuring JavaScript applications. Use it with frameworks like: Vue, Knockout, Ember.js...\n');
         console.log('    jquery          Use it for configuring jQuery based applications.\n');
         console.log('    react           Use it for configuring React applications.\n');
@@ -45,13 +45,22 @@ import '` + `@mobiscroll/${framework}` + (isLite ? '-lite' : '') + `/dist/css/mo
         `);
     },
     reactHelp: (isTrial, isLite, npmSource, useScss, version) => {
-        console.log(`
+        if (semver.gte(version, '5.0.0-beta')) {
+            console.log(`
+import { Eventcalendar } from '@mobiscroll/react'; /* or import any other component */
+import '` + `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
+            `)
+            
+            console.log(`\nFind more information about the usage on the ` + terminalLink('documentaion page:', 'https://docs.mobiscroll.com/v5/react/getting_started'));
+            console.log(`\nFind usage examples on the ` +  terminalLink('demo page:', 'https://demo.mobiscroll.com/react/eventcalendar/') + '\n');
+        } else {
+            console.log(`
 You can import Mobiscroll to your react component like:
 
-import ${semver.gte(version, '5.0.0-beta') ? '* as ': ''} mobiscroll from ` + `'@mobiscroll/react` + (isLite ? '-lite' : '') + `';
+import mobiscroll from ` + `'@mobiscroll/react` + (isLite ? '-lite' : '') + `';
 import '` + `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
         `);
-
+        }
     },
     startNextSteps: (folderName, runCommand) => {
         console.log('\nNEXT STEPS')

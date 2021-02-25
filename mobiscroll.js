@@ -153,8 +153,6 @@ function detectProjectFramework(packageJson, apiKey, isLite, projectType, useScs
 function config(settings, callback) {
     var packageJson = settings.packageJson;
 
-    // console.log("CONFIg \n", settings);
-
     if (!packageJson) {
         try {
             packageJson = require(settings.packageJsonLocation);
@@ -170,16 +168,12 @@ function config(settings, callback) {
 
     switch (projectType) {
         case 'angular':
-            //configAngular(currDir, packageJson, jsFileName, cssFileName, false, isLite, callback);
             settings.isIonicApp = false;
             configAngular(settings, callback);
             break;
         case 'angularjs':
             break;
         case 'ionic':
-        case 'ionic-pro':
-            //configIonic(currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, apiKey, isLazy, projectType == 'ionic-pro', isLite, callback);
-            settings.ionicPro = projectType == 'ionic-pro';
             settings.isLazy = isLazy;
             configIonic(settings, callback);
             break;
@@ -234,7 +228,6 @@ function askStyleSheetType(version, useScss, config, callback) {
     var isIonic = config.projectType === 'ionic' && config.framework !== 'react';
     var globalScssPath = path.resolve(config.currDir, 'src', isIonic ? 'global.scss' : 'styles.scss');
     var isGlobalScss = fs.existsSync(globalScssPath);
-    version = utils.shapeVersionToArray(version);
 
     if (useScss === undefined && config.packageJson) {
         var isOldIonic = config.packageJson.dependencies && config.packageJson.dependencies['ionic-angular'] !== undefined; /* ionic version 2/3*/
@@ -260,7 +253,7 @@ function askStyleSheetType(version, useScss, config, callback) {
     }
 
     // only ask the scss install if the version is larger then 4.7.0 
-    if (version[0] >= 4 && version[1] >= 7 && useScss === undefined && !skipQuestion) {
+    if (semver.gte(version, '4.7.0') && useScss === undefined && !skipQuestion) { 
         let choices = ['CSS', 'SCSS'];
         console.log('\n');
         inquirer.prompt({

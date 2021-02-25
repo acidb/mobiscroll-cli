@@ -16,7 +16,7 @@ var semver = require('semver');
 function processProxyUrl(url) {
     const proxyObj = {};
     let proxyParts = [];
-    console.log('here on top', url);
+
     if (url.indexOf('@') === -1) {
         const proxyParts = url.replace('//', '').split(':');
         proxyObj.protocol = proxyParts[0];
@@ -119,15 +119,14 @@ function writeToFile(location, data, callback) {
 function appendContentToFile(location, newData, replaceRegex, prepend, skipRegex, callback) {
     try {
         let fileData = fs.readFileSync(location).toString();
-
         if (skipRegex && skipRegex.test(fileData)) {
             if (callback) {
                 callback(null);
             }
         } else {
-            if (fileData && replaceRegex) {
+            if (fileData && replaceRegex && replaceRegex.test(fileData)) {
                 fileData = fileData.replace(replaceRegex, newData);
-                writeToFile(location, fileData);
+                writeToFile(location, fileData, callback);
             } else if (fileData && fileData.indexOf(newData) == -1) {
                 writeToFile(location, prepend ? newData + '\r\n' + fileData : fileData + '\r\n' + newData, callback);
             } else if (callback) {
@@ -425,7 +424,6 @@ module.exports = {
 
         switch (framework) {
             case 'ionic':
-            case 'ionic-pro':
                 frameworkName = packageJson && packageJson.dependencies && packageJson.dependencies['@ionic/react'] ? 'react' : 'angular';
                 break;
             case 'vue':

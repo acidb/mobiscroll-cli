@@ -31,15 +31,51 @@ function updateAngularJsonWithCss(settings) {
         }
 
         ngConfig.projects[projectName][configPath].build.options.styles = stylesArray;
-        utils.writeToFile(settings.currDir + '/angular.json', JSON.stringify(ngConfig, null, 2));
+        utils.writeToFile(settings.currDir + '/angular.json', JSON.stringify(ngConfig, null, 2), () => {
+            console.log('')
+            if (settings.useScss === false) {
+                updateGlobalScss(settings, ''); // remove previos scss config if it was present
+            }
+        });
     }
 
     utils.printFeedback('Mobiscroll configuration ready.');
 }
 
+function updateGlobalScss(settings, data, updateCss) {
+    const currDir = settings.currDir;
+    const fileName = settings.isIonicApp ? 'global.scss' : 'styles.scss';
+    const filePath = path.resolve(currDir, 'src', fileName);
+
+    if (fs.existsSync(filePath)) {
+        console.log('\n\n\nhere???', data)
+        if (data) {
+            console.log(`  Adding scss import to ${chalk.grey(fileName)}`);
+        }
+        utils.appendContentToFile(
+            filePath,
+            data,
+            /@import "[\S]+mobiscroll[\S]+\.scss";/g,
+            false,
+            '',
+            (err) => {
+                if (err) {
+                    utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`);
+                    return;
+                }
+                if (settings.useScss === true) {
+                    updateAngularJsonWithCss(settings); // remove previos css config if it was present
+                }
+            }
+        );
+    } else {
+        utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`);
+    }
+}
+
 function angularConfig(settings, callback) {
     // Modify app.module.ts add necessary modules
-    let currDir = settings.currDir;
+    const currDir = settings.currDir;
 
     if (!utils.importModules(path.resolve(currDir + '/src/app/app.module.ts'), 'app.module.ts', settings.jsFileName)) {
         // if not an angular-cli based app
@@ -47,29 +83,7 @@ function angularConfig(settings, callback) {
     }
 
     if (settings.useScss) {
-        let fileName = settings.isIonicApp ? 'global.scss' : 'styles.scss';
-        let filePath = path.resolve(currDir, 'src', fileName);
-
-        if (fs.existsSync(filePath)) {
-            console.log(`  Adding scss import to ${chalk.grey(fileName)}`);
-            utils.appendContentToFile(
-                filePath,
-                `@import "~@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.angular'  }.scss";`,
-                /@import "[\S]+mobiscroll[\S]+\.scss";/g,
-                false,
-                '',
-                (err) => {
-                    if (err) {
-                        utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`);
-                        return;
-                    }
-
-                    updateAngularJsonWithCss(settings);
-                }
-            );
-        } else {
-            utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`);
-        }
+        updateGlobalScss(settings, `@import "~@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.angular'  }.scss";`);
     } else {
         console.log(`  Adding stylesheet to ${chalk.grey('angular.json')}`);
         if (fs.existsSync(path.resolve(currDir, '.angular-cli.json'))) {
@@ -85,7 +99,10 @@ function angularConfig(settings, callback) {
                 // add angular module imports which are needed for mobiscroll
                 data = data.replace('"styles": [', `"styles": [\n        "${settings.cssFileName}",`);
 
-                utils.writeToFile(path.resolve(currDir, '.angular-cli.json'), data);
+                utils.writeToFile(path.resolve(currDir, '.angular-cli.json'), data, () => {
+                    // remove previos scss config if it was persent
+                    console.log('REmove SCSS')
+                });
 
                 utils.printFeedback('Mobiscroll configuration ready.');
             } catch (err) {

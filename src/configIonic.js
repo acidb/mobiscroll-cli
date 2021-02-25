@@ -6,34 +6,7 @@ const path = require('path');
 const helperMessages = require('./helperMessages.js');
 const inquirer = require('inquirer');
 const configAngular = require('./configAngular').configAngular;
-
-function configIonicPro(currDir, packageJson, packageJsonLocation) {
-    var mobiscrollNpmFolder = path.join(currDir, 'node_modules', '@mobiscroll', 'angular');
-
-    utils.printFeedback(`The Mobiscroll package will be referenced in the package.json as a tgz file instead of the npm package. \n\nYou will find more info here: ${chalk.grey('http://help.mobiscroll.com/core-concepts-and-using-mobiscroll/using-mobiscroll-with-ionic-pro-and-ionic-view')}`);
-
-    utils.packMobiscroll(mobiscrollNpmFolder, currDir, 'angular', false, '', (packageFileName) => {
-        ncp(path.join(mobiscrollNpmFolder, packageFileName), path.join(currDir, packageFileName), function (err) {
-            if (err) {
-                utils.printError('Could not copy generated mobiscroll package.\n\n' + err);
-                return;
-            }
-
-            console.log('\n' + chalk.green('>') + ' ' + packageFileName + ' copied to the root folder.\n');
-
-            packageJson.dependencies['@mobiscroll/angular'] = "file:./" + packageFileName;
-
-            utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
-                console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll from the generated package file. \n`);
-
-                // run npm install
-                utils.run('npm install', true).then(() => {
-                    utils.printFeedback(`Mobiscroll ionic-pro configuration ready!`);
-                });
-            });
-        });
-    });
-}
+const semver = require('semver');
 
 function updateCssCopy(settings, ionicPackage) {
     // if there is no ionic_copy defined add the copy script and inject to the package.json
@@ -135,11 +108,7 @@ function configIonic(settings, callback) {
         utils.importModules(path.resolve(currDir + '/src/app/app.module.ts'), 'app.module.ts', settings.jsFileName);
     }
 
-    if (settings.ionicPro) {
-        configIonicPro(currDir, ionicPackage, path.resolve(process.cwd(), 'package.json'), settings.apiKey);
-    } else {
-        utils.printFeedback('Mobiscroll configuration ready!');
-    }
+    utils.printFeedback('Mobiscroll configuration ready!');
 
     if (settings.isLazy) {
         helperMessages.ionicLazy(settings.apiKey, settings.isLite);
@@ -161,7 +130,6 @@ function detectReactPages(settings, callback) {
 
         if (pages.length) {
             console.log(chalk.bold(`\n\nMultiple pages detected. The mobiscroll variable must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject mobiscroll import for you?\n`));
-
             inquirer.prompt([{
                 type: 'checkbox',
                 message: 'Please select where else do you want to inject mobiscroll import? ',
@@ -175,10 +143,10 @@ function detectReactPages(settings, callback) {
                         if (fs.existsSync(filePath)) {}
                         utils.appendContentToFile(
                             filePath,
-                            `import mobiscroll from '@mobiscroll/react';`,
-                            `import mobiscroll from '@mobiscroll/react';`,
-                            true,
+                            `import ${semver.gte(settings.mobiscrollVersion, '5.0.0-beta') ? '* as' : ''} mobiscroll from '@mobiscroll/react';`,
                             /import.*'@mobiscroll\/react';/gm,
+                            true,
+                            '',
                             (err) => {
                                 if (err) {
                                     utils.printError(`Couldn't update the following file ${ answers.pages[i]}`);
