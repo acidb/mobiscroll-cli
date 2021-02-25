@@ -449,9 +449,11 @@ function handleConfig(projectType) {
             var files,
                 localCssFileName = [],
                 localJsFileName = [],
+                esmBundleAvailable = false,
                 // framework = projectType == 'ionic' ? ( packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType,
                 mbscFolderLocation = path.resolve(currDir, 'src', 'lib', 'mobiscroll'),
                 jsFileLocation = path.resolve(mbscFolderLocation, 'js'),
+                esmFileLocation = path.resolve(mbscFolderLocation, 'esm5'),
                 cssFileLocation = path.resolve(mbscFolderLocation, 'css');
 
             utils.removeUnusedPackages(projectType, packageJsonLocation, false, false, () => {
@@ -463,6 +465,9 @@ function handleConfig(projectType) {
                         return item.match(/^mobiscroll\..*\.js$/);
                     });
                 }
+
+                // check if there's an esm bundle
+                esmBundleAvailable = fs.existsSync(esmFileLocation);
 
                 // check if css files are copied to the specific location and get the css file name
                 if (fs.existsSync(cssFileLocation)) {
@@ -543,6 +548,13 @@ function handleConfig(projectType) {
                         if (noNpmPackageJson.module) {
                             noNpmPackageJson.module = noNpmPackageJson.module + localJsFileName[0];
                         }
+                        if (semver.gte(version, '5.0.0-beta6') && framework !== 'angular' && esmBundleAvailable) {
+                            noNpmPackageJson.module = 'dist/esm5/' + localJsFileName[0];
+                            if (noNpmPackageJson.files && noNpmPackageJson.files.length !== undefined) {
+                                noNpmPackageJson.files.push('dist/esm5/**');
+                            }
+                        }
+
                         if (noNpmPackageJson.types) {
                             noNpmPackageJson.types = noNpmPackageJson.types + localJsFileName[0].replace('js', 'd.ts');
                         }
