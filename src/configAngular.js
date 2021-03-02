@@ -32,14 +32,13 @@ function updateAngularJsonWithCss(settings) {
 
         ngConfig.projects[projectName][configPath].build.options.styles = stylesArray;
         utils.writeToFile(settings.currDir + '/angular.json', JSON.stringify(ngConfig, null, 2), () => {
-            console.log('')
             if (settings.useScss === false) {
-                updateGlobalScss(settings, ''); // remove previos scss config if it was present
+                updateGlobalScss(settings, ''); // remove previous scss config if it was present
             }
         });
     }
 
-    utils.printFeedback('Mobiscroll configuration ready.');
+    utils.printFeedback('Mobiscroll configuration ready. Make sure to restart your app for changes to take effect!');
 }
 
 function updateGlobalScss(settings, data, updateCss) {
@@ -48,7 +47,6 @@ function updateGlobalScss(settings, data, updateCss) {
     const filePath = path.resolve(currDir, 'src', fileName);
 
     if (fs.existsSync(filePath)) {
-        console.log('\n\n\nhere???', data)
         if (data) {
             console.log(`  Adding scss import to ${chalk.grey(fileName)}`);
         }
@@ -64,7 +62,7 @@ function updateGlobalScss(settings, data, updateCss) {
                     return;
                 }
                 if (settings.useScss === true) {
-                    updateAngularJsonWithCss(settings); // remove previos css config if it was present
+                    updateAngularJsonWithCss(settings); // remove previous css config if it was present
                 }
             }
         );
@@ -100,11 +98,12 @@ function angularConfig(settings, callback) {
                 data = data.replace('"styles": [', `"styles": [\n        "${settings.cssFileName}",`);
 
                 utils.writeToFile(path.resolve(currDir, '.angular-cli.json'), data, () => {
-                    // remove previos scss config if it was persent
-                    console.log('REmove SCSS')
+                    if (settings.useScss === false) {
+                        updateGlobalScss(settings, ''); // remove previous scss config if it was present
+                    }
                 });
 
-                utils.printFeedback('Mobiscroll configuration ready.');
+                utils.printFeedback('Mobiscroll configuration ready. Make sure to restart your app for changes to take effect!');
             } catch (err) {
                 utils.printError('There was an error during reading angular-cli.json. \n\nHere is the error message:\n\n' + err);
                 return
@@ -114,7 +113,7 @@ function angularConfig(settings, callback) {
             updateAngularJsonWithCss(settings);
         } else {
             utils.printWarning(`The file ${chalk.grey('angular.json')} could not be found. If this is not an Angular CLI app, make sure to load ${chalk.grey(settings.cssFileName)} into your app.`)
-            utils.printFeedback('Mobiscroll configuration ready.');
+            utils.printFeedback('Mobiscroll configuration ready. Make sure to restart your app for changes to take effect!');
         }
     }
 
