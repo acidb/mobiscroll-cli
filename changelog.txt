@@ -1,6 +1,14 @@
 Mobiscroll CLI changelog
 
-v 1.6.0
+v 1.7.0 - 17 Nov 2021
+
+  * New: We added support for yarn 2+. The cli takes the npm auth token from the .npmrc file and creates .yarnrc.yml to make sure the mobiscroll install gets authenticated.
+
+  * Fixed: passed down proxy url to the npm registry client.
+
+  * Fixed: Updated outdated packages.
+
+v 1.6.0 - 2 Mar 2021
 
   * New: We switched from the deprecated request library to axios for the internal requests.
 

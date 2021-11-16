@@ -11,14 +11,14 @@ const helperMessages = require('./helperMessages.js');
 const ncp = require('ncp').ncp;
 const axios = require('axios');
 var semver = require('semver');
-
+const yaml = require('js-yaml')
 
 function processProxyUrl(url) {
     const proxyObj = {};
     let proxyParts = [];
 
     if (url.indexOf('@') === -1) {
-        const proxyParts = url.replace('//', '').split(':');
+        proxyParts = url.replace('//', '').split(':');
         proxyObj.protocol = proxyParts[0];
         proxyObj.host = proxyParts[1];
 
@@ -27,8 +27,8 @@ function processProxyUrl(url) {
         }
     } else {
         proxyParts = url.split('@');
-        proxyAuth = proxyParts[0].replace('//', '').split(':');;
-        proxyHost = proxyParts[1].split(':');
+        const proxyAuth = proxyParts[0].replace('//', '').split(':');
+        const proxyHost = proxyParts[1].split(':');
 
         proxyObj.protocol = proxyAuth[0];
         proxyObj.host = proxyHost[0];
@@ -67,9 +67,15 @@ function printLog(text) {
 }
 
 function testYarn(currDir) {
+    // check if yarn command is installed and check if a yarn.lock exists in root project
     printLog('Testing yarn')
-    // check if yarn command is installade and check if a yarn.lock exists in root project
-    return runCommandSync('yarn -v', true) !== undefined && fs.existsSync(path.resolve(currDir, 'yarn.lock'));
+    const hasLockFile = fs.existsSync(path.resolve(currDir, 'yarn.lock'));
+    const yarnVersion = runCommandSync('yarn -v', true);
+    if (yarnVersion && hasLockFile ) {
+        printLog(`Yarn version: ${yarnVersion}`)
+        return yarnVersion;
+    }
+    return false;
 }
 
 function runCommand(cmd, skipWarning, skipError, skipLog) {
@@ -206,7 +212,7 @@ function getApiKey(userName, proxy, framework, callback) {
     axios(requestOptions).then((resp) => {
         callback(resp.data);
     }).catch(err => {
-        printError(`There was an error during getting the user\'s trial code. Status: ${err.response.status}, User: ${userName}. \nPlease see the error message for more information: ` + err);
+        printError(`There was an error during getting the user's trial code. Status: ${err.response && err.response.status}, User: ${userName}. \nPlease see the error message for more information: ` + err);
     });
 }
 
@@ -233,7 +239,7 @@ function checkMeteor(packageJson, currDir, framework) {
     }
 }
 
-function login(useGlobalNpmrc) {
+function login(useGlobalNpmrc, proxy) {
     // input questions
     var questions = [{
         type: 'input',
@@ -258,7 +264,7 @@ function login(useGlobalNpmrc) {
                 console.log(`  Logged in as ${answers.username}`);
                 printFeedback('Successful login!\n');
                 resolve(answers.username);
-            }).catch(err => {
+            }, proxy).catch(err => {
                 err = err.toString();
                 if (err.indexOf("Could not find user with the specified username or password") !== -1 || err.indexOf("Incorrect username or password") !== -1) {
                     printWarning(`We couldn’t log you in. This might be either because your account does not exist or you mistyped your login information. You can update your credentials ` + terminalLink('from your account', 'https://mobiscroll.com/account') + '.');
@@ -373,7 +379,7 @@ module.exports = {
                 return userName;
             }
             console.log(`  Logging in to the Mobiscroll NPM registry...`);
-            return login(useGlobalNpmrc);
+            return login(useGlobalNpmrc, proxy);
         }, (err) => {
             console.log('Login error' + err);
         }).then((userName) => {
@@ -442,16 +448,66 @@ module.exports = {
         }
 
         getMobiscrollVersion(proxy, mainVersion, (version) => {
-            let useYarn = testYarn(currDir);
+            const useYarn = testYarn(currDir);
+            const isYarn2 = useYarn && semver.gte(useYarn, '2.0.0');
             if (mainVersion) {
                 installVersion = version;
+            }
+           
+            if (isYarn2) {
+                // in case of yarn2 we need to copy the auth token form the .npmrc file to the .yarnrc.yml
+                let data;
+                const npmrcPath = path.resolve(currDir, '.npmrc');
+                const ymlPath = path.resolve(currDir, '.yarnrc.yml');
+                
+
+                try {
+                    printLog(`Updating`)
+                    if (fs.existsSync(ymlPath)) {
+                        const ymlFile = fs.readFileSync(ymlPath, 'utf8');
+                        data = yaml.load(ymlFile);
+                    }
+                    const isTokenAvailable = data && data.npmScopes && data.npmScopes.mobiscroll && data.npmScopes.mobiscroll.npmAuthToken;
+
+                    if (!isTokenAvailable) {
+                        // if no mobiscroll token is available, then get it form the .npmrc file and update/create the .yarnrc.yml
+                        let AUTH_TOKEN = '';
+                        data = {};
+                        if (fs.existsSync(npmrcPath)) {
+                            const npmrcData = fs.readFileSync(npmrcPath, 'utf8').toString(); 
+                            const tokenRow = npmrcData.match(/\/\/npm.mobiscroll.com\/:_authToken=(.*)=$/mi);
+
+                            if (tokenRow.length > 1) {
+                                AUTH_TOKEN = tokenRow[1];
+                            }
+                        }
+
+                        if (!data.npmScopes) {
+                            data.npmScopes = {};
+                        }
+
+                        if (!data.npmScopes.mobiscroll) {
+                            data.npmScopes.mobiscroll = {};
+                        }
+
+                        data.npmScopes.mobiscroll.npmRegistryServer = 'https://npm.mobiscroll.com';
+                        data.npmScopes.mobiscroll.npmAuthToken = AUTH_TOKEN;
+                        fs.writeFileSync(ymlPath, yaml.dump(data));
+                    }
+                } catch (err) {
+                    printError('Couldn\'t copy the npm auth token from the .npmrc to the .yarnrc.yml file. \n\nHere is the error message:\n\n' + err);
+                }
             }
 
             let installCmd = useYarn ? 'yarn add' : 'npm install';
             if (isTrial) {
-                command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
+                if (isYarn2) {
+                    command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}`; // todo test --update-checksums
+                } else {
+                    command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
+                }
             } else {
-                command = `${installCmd} @mobiscroll/${pkgName}@${ installVersion || version } --save`;
+                command = `${installCmd} @mobiscroll/${pkgName}@${ installVersion || version } ${isYarn2 ? '' : ' --save'}`;
             }
 
             // Skip node warnings
@@ -463,7 +519,7 @@ module.exports = {
             }).catch((reason) => {
                 printError('Could not install Mobiscroll.\n\n' + reason);
             });
-        })
+        });
     },
     packMobiscroll: (packLocation, currDir, framework, useYarn, version, callback) => {
         process.chdir(packLocation); // change directory to node modules folder

@@ -29,9 +29,10 @@
     "commander": "^2.19.0",
     "figlet": "^1.2.1",
     "git-clone": "^0.1.0",
-    "inquirer": "^6.2.0",
+    "inquirer": "^8.2.0",
+    "js-yaml": "^4.1.0",
     "ncp": "^2.0.0",
-    "npm-registry-client": "^8.6.0",
+    "npm-registry-client": "^8.5.0",
     "semver": "^6.3.0",
     "terminal-link": "^1.2.0"
   },
