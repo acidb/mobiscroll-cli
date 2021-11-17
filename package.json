@@ -1,6 +1,6 @@
 {
   "name": "@mobiscroll/cli",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Mobiscroll command line configuration tool",
   "homepage": "https://mobiscroll.com/",
   "license": "Apache-2.0",
