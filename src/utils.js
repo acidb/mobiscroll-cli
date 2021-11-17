@@ -462,7 +462,6 @@ module.exports = {
                 
 
                 try {
-                    printLog(`Updating`)
                     if (fs.existsSync(ymlPath)) {
                         const ymlFile = fs.readFileSync(ymlPath, 'utf8');
                         data = yaml.load(ymlFile);
@@ -470,7 +469,8 @@ module.exports = {
                     const isTokenAvailable = data && data.npmScopes && data.npmScopes.mobiscroll && data.npmScopes.mobiscroll.npmAuthToken;
 
                     if (!isTokenAvailable) {
-                        // if no mobiscroll token is available, then get it form the .npmrc file and update/create the .yarnrc.yml
+                        // if no mobiscroll token is available, then get it form the .npmrc file and update/create the .yarnrc.yml with the necessary settings
+                        printLog('Updating .yarnrc.yml file with npm auth token')
                         let AUTH_TOKEN = '';
                         data = {};
                         if (fs.existsSync(npmrcPath)) {
