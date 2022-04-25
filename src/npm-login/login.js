@@ -1,5 +1,4 @@
 var RegClient = require('npm-registry-client');
-var client = new RegClient({});
 var fs = require('fs');
 var path = require('path');
 
@@ -29,7 +28,7 @@ if (!Array.prototype.findIndex) {
 // jshint freeze:true
 
 module.exports = {
-    processArguments: function (npmUser, npmPass, npmEmail, npmRegistry, npmScope, quotes, configPath) {
+    processArguments: function (npmUser, npmPass, npmEmail, npmRegistry, npmScope, quotes, configPath, proxyUrl) {
         var registry = npmRegistry || 'https://registry.npmjs.org';
         var homePath = process.env.HOME ? process.env.HOME : process.env.USERPROFILE;
         var finalPath = configPath ? configPath : path.join(homePath, '.npmrc');
@@ -41,13 +40,19 @@ module.exports = {
             registry: registry,
             scope: npmScope,
             quotes: hasQuotes,
-            configPath: finalPath
+            configPath: finalPath,
+            proxy: proxyUrl
         };
 
         return args;
     },
 
     login: function (args, callback) {
+        var client = new RegClient({
+            proxy: args.proxy ? {
+                http: args.proxy
+            } : undefined
+        });
         client.adduser(args.registry, {
             auth: {
                 username: args.user,

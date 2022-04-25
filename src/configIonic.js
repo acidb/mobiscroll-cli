@@ -6,7 +6,6 @@ const path = require('path');
 const helperMessages = require('./helperMessages.js');
 const inquirer = require('inquirer');
 const configAngular = require('./configAngular').configAngular;
-const semver = require('semver');
 
 function updateCssCopy(settings, ionicPackage) {
     // if there is no ionic_copy defined add the copy script and inject to the package.json
@@ -119,54 +118,57 @@ function configIonic(settings, callback) {
     }
 }
 
-function detectReactPages(settings, callback) {
-    let pages = [],
-        pagesPath = path.resolve(settings.currDir, 'src', 'pages');
+function detectReactPages(settings/*, callback*/) {
+    // let pages = [],
+    const pagesPath = path.resolve(settings.currDir, 'src', 'pages');
 
     if (fs.existsSync(pagesPath)) {
-        pages = fs.readdirSync(pagesPath).filter((f) => {
-            return path.extname(f) == '.tsx';
-        })
+        // pages = fs.readdirSync(pagesPath).filter((f) => {
+        //     return path.extname(f) == '.tsx';
+        // })
 
-        if (pages.length) {
-            console.log(chalk.bold(`\n\nMultiple pages detected. The mobiscroll variable must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject mobiscroll import for you?\n`));
-            inquirer.prompt([{
-                type: 'checkbox',
-                message: 'Please select where else do you want to inject mobiscroll import? ',
-                name: 'pages',
-                choices: pages
-            }]).then(function (answers) {
-                if (answers.pages.length) {
-                    console.log('\n');
-                    for (let i = 0; i < answers.pages.length; ++i) {
-                        let filePath = path.resolve(pagesPath, answers.pages[i]);
-                        if (fs.existsSync(filePath)) {}
-                        utils.appendContentToFile(
-                            filePath,
-                            `import ${semver.gte(settings.mobiscrollVersion, '5.0.0-beta') ? '* as' : ''} mobiscroll from '@mobiscroll/react';`,
-                            /import.*'@mobiscroll\/react';/gm,
-                            true,
-                            '',
-                            (err) => {
-                                if (err) {
-                                    utils.printError(`Couldn't update the following file ${ answers.pages[i]}`);
-                                    return;
-                                }
-                            }
-                        )
-                    }
+        console.log(chalk.bold(`\n\nMultiple pages detected. Mobiscroll components must be imported into every page separately where you want to use the components. You can import the component the following way:`));
 
-                    utils.printFeedback('Mobiscroll injected successfully to the selected pages.');
+        helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
+        // if (pages.length) {
+        //     console.log(chalk.bold(`\n\nMultiple pages detected. Mobiscroll components must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject Eventcalendar import for you?\n`));
+        //     inquirer.prompt([{
+        //         type: 'checkbox',
+        //         message: 'Please select where else do you want to inject mobiscroll import? ',
+        //         name: 'pages',
+        //         choices: pages
+        //     }]).then(function (answers) {
+        //         if (answers.pages.length) {
+        //             console.log('\n');
+        //             for (let i = 0; i < answers.pages.length; ++i) {
+        //                 let filePath = path.resolve(pagesPath, answers.pages[i]);
+        //                 if (fs.existsSync(filePath)) {}
+        //                 utils.appendContentToFile(
+        //                     filePath,
+        //                     `import ${semver.gte(settings.mobiscrollVersion, '5.0.0-beta') ? '* as' : ''} mobiscroll from '@mobiscroll/react';`,
+        //                     /import.*'@mobiscroll\/react';/gm,
+        //                     true,
+        //                     '',
+        //                     (err) => {
+        //                         if (err) {
+        //                             utils.printError(`Couldn't update the following file ${ answers.pages[i]}`);
+        //                             return;
+        //                         }
+        //                     }
+        //                 )
+        //             }
 
-                    if (callback) {
-                        callback();
-                    }
-                }
+        //             utils.printFeedback('Mobiscroll injected successfully to the selected pages.');
 
-            });
+        //             if (callback) {
+        //                 callback();
+        //             }
+        //         }
 
-            return true;
-        }
+        //     });
+
+        //     return true;
+        // }
     }
 
 }

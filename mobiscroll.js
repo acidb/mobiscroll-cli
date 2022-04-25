@@ -621,7 +621,7 @@ function handleConfig(projectType) {
 }
 
 function handleLogin() {
-    utils.login(useGlobalNpmrc);
+    utils.login(useGlobalNpmrc, proxyUrl);
 }
 
 function handleLogout() {
