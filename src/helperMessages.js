@@ -50,9 +50,9 @@ import '` + `@mobiscroll/${framework}` + (isLite ? '-lite' : '') + `/dist/css/mo
 import { Eventcalendar } from '@mobiscroll/react'; /* or import any other component */
 import '` + `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
             `)
-            
-            console.log(`\nFind more information about the usage on the ` + terminalLink('documentaion page:', 'https://docs.mobiscroll.com/v5/react/getting_started'));
-            console.log(`\nFind usage examples on the ` +  terminalLink('demo page:', 'https://demo.mobiscroll.com/react/eventcalendar/') + '\n');
+
+            console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', 'https://docs.mobiscroll.com/v5/react/getting_started'));
+            console.log(`\nFind usage examples on the ` + terminalLink('demo page:', 'https://demo.mobiscroll.com/react/eventcalendar/') + '\n');
         } else {
             console.log(`
 You can import Mobiscroll to your react component like:
