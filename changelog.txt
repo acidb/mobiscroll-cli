@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.7.1 - 11 May 2022
+
+  * Fixed: We fixed the `--proxy` parameter to pass it down to the `npm` and `yarn` calls, so the config command runs, even if proxy options are not set in the npm/yarn config, or in the system environment variables.
+
 v 1.7.0 - 17 Nov 2021
 
   * New: We added support for yarn 2+. The cli takes the npm auth token from the .npmrc file and creates .yarnrc.yml to make sure the mobiscroll install gets authenticated.

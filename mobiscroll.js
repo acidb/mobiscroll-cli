@@ -32,9 +32,13 @@ var startIoncVesrion = '';
 
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
 
-function checkUpdate() {
+function checkUpdate(proxy) {
+    let proxyParam = '';
+    if (proxy) {
+        proxyParam = ' --proxy ' + proxy;
+    }
     return new Promise((resolve) => {
-        run('npm show @mobiscroll/cli version', true, true, true).then((npmCliVersion) => { // get the mobiscroll cli version from npm
+        run('npm show @mobiscroll/cli version' + proxyParam, true, true, true).then((npmCliVersion) => { // get the mobiscroll cli version from npm
 
             if (npmCliVersion) {
                 npmCliVersion = npmCliVersion.trim();
@@ -48,7 +52,7 @@ function checkUpdate() {
                         default: 'y'
                     }).then(answer => {
                         if (answer.update.toLowerCase() == 'y') {
-                            run('npm install -g @mobiscroll/cli@latest').then(() => {
+                            run('npm install -g @mobiscroll/cli@latest' + proxyParam).then(() => {
                                 printFeedback(`Updated Mobiscroll CLI to ${npmCliVersion}! \n\nPlease re-run your command!\n`);
                                 process.exit();
                             });
@@ -253,7 +257,7 @@ function askStyleSheetType(version, useScss, config, callback) {
     }
 
     // only ask the scss install if the version is larger then 4.7.0 
-    if (semver.gte(version, '4.7.0') && useScss === undefined && !skipQuestion) { 
+    if (semver.gte(version, '4.7.0') && useScss === undefined && !skipQuestion) {
         let choices = ['CSS', 'SCSS'];
         console.log('\n');
         inquirer.prompt({
@@ -339,11 +343,11 @@ function createProject(type, name) {
                 utils.testInstalledCLI('create-react-app --version', 'npm install -g create-react-app', 'npm start', name, type);
             });
             break;
-            // case 'vue':
-            //     startProject('', type, name, () => {
-            //         utils.testInstalledCLI('vue -V', 'npm install -g @vue/cli', 'npm run serve', name, type);
-            //     });
-            //     break;
+        // case 'vue':
+        //     startProject('', type, name, () => {
+        //         utils.testInstalledCLI('vue -V', 'npm install -g @vue/cli', 'npm run serve', name, type);
+        //     });
+        //     break;
         default:
             printWarning('No valid project type was specified. Currently the following project types are supported: [ angular, ionic, ionic-angular, ionic-react, react ]');
             break;
@@ -373,10 +377,10 @@ function handleConfig(projectType) {
         return;
     }
 
-    checkUpdate().then(() => {
+    checkUpdate(proxyUrl).then(() => {
         var framework = projectType,
-            jsFileName = `@mobiscroll/angular${ isLite ? '-lite' : '' }`,
-            cssFileName = `../node_modules/@mobiscroll/angular${ isLite ? '-lite' : '' }/dist/css/mobiscroll.min.css`,
+            jsFileName = `@mobiscroll/angular${isLite ? '-lite' : ''}`,
+            cssFileName = `../node_modules/@mobiscroll/angular${isLite ? '-lite' : ''}/dist/css/mobiscroll.min.css`,
             currDir = process.cwd(), // get the directory where the mobiscroll command was executed
             packageJsonLocation = path.resolve(currDir, 'package.json'),
             packageJson = '';
@@ -478,7 +482,7 @@ function handleConfig(projectType) {
                 }
 
                 if (!localJsFileName.length || !localCssFileName.length) {
-                    printWarning(`No mobiscroll js/css files were found in your project's src/lib/mobiscroll folder. \n\nPlease make sure to extract the downloaded Mobiscroll package, then grab the ${ framework == 'angular' ? 'lib folder and copy it into src folder of your app!' : 'js and css folders and copy it into src/lib/mobiscroll folder of your app. If there is no such folder available, you can create it.' }`);
+                    printWarning(`No mobiscroll js/css files were found in your project's src/lib/mobiscroll folder. \n\nPlease make sure to extract the downloaded Mobiscroll package, then grab the ${framework == 'angular' ? 'lib folder and copy it into src folder of your app!' : 'js and css folders and copy it into src/lib/mobiscroll folder of your app. If there is no such folder available, you can create it.'}`);
                     return;
                 }
 
@@ -593,7 +597,7 @@ function handleConfig(projectType) {
                                     }
 
                                     utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
-                                        console.log(`${chalk.green('>')  + chalk.grey(' package.json')} modified to load mobiscroll from the generated package file. \n`);
+                                        console.log(`${chalk.green('>') + chalk.grey(' package.json')} modified to load mobiscroll from the generated package file. \n`);
 
                                         // run npm install
                                         utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : 'npm install'), true).then(() => {

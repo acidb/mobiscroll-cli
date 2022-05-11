@@ -37,7 +37,7 @@ function processProxyUrl(url) {
             proxyObj.port = proxyHost[1];
         }
 
-        if(proxyAuth.length >= 3) {
+        if (proxyAuth.length >= 3) {
             proxyObj.auth = {
                 username: proxyAuth[1],
                 password: proxyAuth[2]
@@ -71,7 +71,7 @@ function testYarn(currDir) {
     printLog('Testing yarn')
     const hasLockFile = fs.existsSync(path.resolve(currDir, 'yarn.lock'));
     const yarnVersion = runCommandSync('yarn -v', true);
-    if (yarnVersion && hasLockFile ) {
+    if (yarnVersion && hasLockFile) {
         printLog(`Yarn version: ${yarnVersion}`)
         return yarnVersion;
     }
@@ -260,11 +260,11 @@ function login(useGlobalNpmrc, proxy) {
     return new Promise((resolve, reject) => {
         inquirer.prompt(questions).then((answers) => {
             // Email address is not used by the Mobiscroll NPM registry
-            npmLogin(answers.username, answers.password, 'any@any.com', mbscNpmUrl, '@mobiscroll', null, (useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc'))).then(() => {
+            npmLogin(answers.username, answers.password, 'any@any.com', mbscNpmUrl, '@mobiscroll', null, (useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc')), proxy).then(() => {
                 console.log(`  Logged in as ${answers.username}`);
                 printFeedback('Successful login!\n');
                 resolve(answers.username);
-            }, proxy).catch(err => {
+            }).catch(err => {
                 err = err.toString();
                 if (err.indexOf("Could not find user with the specified username or password") !== -1 || err.indexOf("Incorrect username or password") !== -1) {
                     printWarning(`We couldn’t log you in. This might be either because your account does not exist or you mistyped your login information. You can update your credentials ` + terminalLink('from your account', 'https://mobiscroll.com/account') + '.');
@@ -325,7 +325,7 @@ module.exports = {
     },
     installMobiscrollLite: function (framework, version, callback) {
         framework = (framework.indexOf('ionic') > -1 ? 'angular' : framework);
-        runCommand(`npm install @mobiscroll/${framework}-lite@${ version || 'latest' } --save`, true).then(() => {
+        runCommand(`npm install @mobiscroll/${framework}-lite@${version || 'latest'} --save`, true).then(() => {
             printFeedback(`The lite version of Mobiscroll for ${framework} installed.`);
             callback();
         });
@@ -372,7 +372,7 @@ module.exports = {
     checkMbscNpmLogin: (isTrial, useGlobalNpmrc, proxy, framework, installVersion, callback) => {
         printFeedback('Checking logged in status...');
         // check if the user is already logged in
-        runCommand('npm whoami --registry=' + mbscNpmUrl, false, true).then((userName) => {
+        runCommand('npm whoami --registry=' + mbscNpmUrl + (proxy ? ' --proxy ' + proxy : ''), false, true).then((userName) => {
             if (userName) {
                 userName = userName.trim();
                 console.log(`  Logged in as ${userName}`);
@@ -453,13 +453,13 @@ module.exports = {
             if (mainVersion) {
                 installVersion = version;
             }
-           
+
             if (isYarn2) {
                 // in case of yarn2 we need to copy the auth token form the .npmrc file to the .yarnrc.yml
                 let data;
                 const npmrcPath = path.resolve(currDir, '.npmrc');
                 const ymlPath = path.resolve(currDir, '.yarnrc.yml');
-                
+
 
                 try {
                     if (fs.existsSync(ymlPath)) {
@@ -474,7 +474,7 @@ module.exports = {
                         let AUTH_TOKEN = '';
                         data = {};
                         if (fs.existsSync(npmrcPath)) {
-                            const npmrcData = fs.readFileSync(npmrcPath, 'utf8').toString(); 
+                            const npmrcData = fs.readFileSync(npmrcPath, 'utf8').toString();
                             const tokenRow = npmrcData.match(/\/\/npm.mobiscroll.com\/:_authToken=(.*)=$/mi);
 
                             if (tokenRow.length > 1) {
@@ -507,7 +507,11 @@ module.exports = {
                     command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
                 }
             } else {
-                command = `${installCmd} @mobiscroll/${pkgName}@${ installVersion || version } ${isYarn2 ? '' : ' --save'}`;
+                command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+            }
+
+            if (proxy) {
+                command += ' --proxy ' + proxy;
             }
 
             // Skip node warnings
@@ -525,7 +529,7 @@ module.exports = {
         process.chdir(packLocation); // change directory to node modules folder
         console.log(`${chalk.green('>')} changed current directory to ${packLocation}. \n`);
 
-        runCommand(`${ useYarn ? 'yarn pack' : 'npm pack'}`, true).then(() => { // run npm pack which will generate the mobiscroll package
+        runCommand(`${useYarn ? 'yarn pack' : 'npm pack'}`, true).then(() => { // run npm pack which will generate the mobiscroll package
             fs.readdir(packLocation, function (err, files) {
                 if (err) {
                     printError('Could not access to the directory files.\n\n' + err);
@@ -558,14 +562,14 @@ module.exports = {
 
                     // Remove previous module load
                     // if (checkForRoute) {
-                        const importRegex = /import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/;
-                        if (importRegex.test(data)) {
-                            data = data.replace(importRegex, '');
-                            data = data.replace(/[ \t]*MbscModule,[ \t\r]*\s?/, '');
-                        }
+                    const importRegex = /import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/;
+                    if (importRegex.test(data)) {
+                        data = data.replace(importRegex, '');
+                        data = data.replace(/[ \t]*MbscModule,[ \t\r]*\s?/, '');
+                    }
 
-                        // Add angular module imports which are needed for mobiscroll
-                        data = importModule('MbscModule', mbscFileName, data);
+                    // Add angular module imports which are needed for mobiscroll
+                    data = importModule('MbscModule', mbscFileName, data);
                     // }
                     data = importModule('FormsModule', '@angular/forms', data);
 
