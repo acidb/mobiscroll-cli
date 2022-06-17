@@ -475,7 +475,7 @@ module.exports = {
                         data = {};
                         if (fs.existsSync(npmrcPath)) {
                             const npmrcData = fs.readFileSync(npmrcPath, 'utf8').toString();
-                            const tokenRow = npmrcData.match(/\/\/npm.mobiscroll.com\/:_authToken=(.*)=$/mi);
+                            const tokenRow = npmrcData.match(/\/\/npm.mobiscroll.com\/:_authToken=(.*)/mi);
 
                             if (tokenRow.length > 1) {
                                 AUTH_TOKEN = tokenRow[1];

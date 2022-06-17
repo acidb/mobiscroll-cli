@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.7.2 - 17 Jun 2022
+
+  * Fixed: We fixed the yarn 2+ config where on some cases the npm auth token copy from the .npmrc gave error.
+
 v 1.7.1 - 11 May 2022
 
   * Fixed: We fixed the `--proxy` parameter to pass it down to the `npm` and `yarn` calls, so the config command runs, even if proxy options are not set in the npm/yarn config, or in the system environment variables.
