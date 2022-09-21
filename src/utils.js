@@ -43,7 +43,6 @@ function processProxyUrl(url) {
                 password: proxyAuth[2]
             }
         }
-
     }
 
     return proxyObj;
@@ -260,18 +259,19 @@ function login(useGlobalNpmrc, proxy) {
     return new Promise((resolve, reject) => {
         inquirer.prompt(questions).then((answers) => {
             // Email address is not used by the Mobiscroll NPM registry
-            npmLogin(answers.username, answers.password, 'any@any.com', mbscNpmUrl, '@mobiscroll', null, (useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc')), proxy).then(() => {
+            npmLogin(answers.username, answers.password, 'any@any.com', mbscNpmUrl, '@mobiscroll', null, (useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc')), proxy && processProxyUrl(proxy)).then(() => {
                 console.log(`  Logged in as ${answers.username}`);
                 printFeedback('Successful login!\n');
                 resolve(answers.username);
-            }).catch(err => {
-                err = err.toString();
+            }).catch(error => {
+                const err = error.message;
                 if (err.indexOf("Could not find user with the specified username or password") !== -1 || err.indexOf("Incorrect username or password") !== -1) {
                     printWarning(`We couldn’t log you in. This might be either because your account does not exist or you mistyped your login information. You can update your credentials ` + terminalLink('from your account', 'https://mobiscroll.com/account') + '.');
                     printWarning(`If you don’t have an account yet, you can start a free trial from https://mobiscroll.com/starttrial`);
                     console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
                     process.exit();
                 }
+
                 printError('npm login failed.\n\n' + err);
                 reject(err);
             });

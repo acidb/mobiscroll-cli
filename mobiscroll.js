@@ -12,7 +12,6 @@ const helperMessages = require('./src/helperMessages.js');
 const ncp = require('ncp').ncp;
 const figlet = require('figlet');
 const os = require('os');
-const clone = require('git-clone');
 const semver = require('semver');
 
 var isNpmSource = true;
@@ -200,8 +199,7 @@ function config(settings, callback) {
 
 function cloneProject(url, type, framework, name, newAppLocation, gitOptions, callback) {
     utils.printLog(`Cloning ${type} starter app from git: ${url}`);
-
-    clone(url, './' + name, gitOptions, () => {
+    utils.run('git clone ' + url + ' ' + name, true).then(() => {    
         utils.printLog(`Repository cloned successfully.`);
         process.chdir(newAppLocation); // change directory to node modules folder
         console.log(`Installing dependencies may take several minutes:\n`);
@@ -213,9 +211,10 @@ function cloneProject(url, type, framework, name, newAppLocation, gitOptions, ca
                     currDir: newAppLocation,
                     userName,
                     useTrial,
-                    mobiscrollVersion,
-                    proxyUrl
+                    mobiscrollVersion: 4, // force  v4 installation until v5 version of starters available
+                    proxyUrl,
                 };
+                
                 utils.installMobiscroll(configObject, () => {
                     if (callback) {
                         callback();
@@ -223,6 +222,8 @@ function cloneProject(url, type, framework, name, newAppLocation, gitOptions, ca
                 });
             })
         });
+    }).catch((err) => {
+        utils.printError('Could not clone starter project from git.\n\n' + err);
     })
 }
 

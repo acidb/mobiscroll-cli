@@ -1,5 +1,11 @@
 Mobiscroll CLI changelog
 
+v 1.7.3 - 22 Sep 2022
+
+  * Fixed: solved deprecation warnings by removing the npm-registry-client dependency and replaced with a local solution.
+
+  * Fixed: solved the vulnerability error by removing the git-clone package which was causing it and replacing with a local solution.
+
 v 1.7.2 - 17 Jun 2022
 
   * Fixed: We fixed the yarn 2+ config where on some cases the npm auth token copy from the .npmrc gave error.
