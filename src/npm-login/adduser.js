@@ -23,10 +23,7 @@ function addUser (registryUrl, auth, proxy, cb) {
   registryUrl = new URL('-/user/org.couchdb.user:' + encodeURIComponent(username), registryUrl);
 
   axios.put(registryUrl.toString(), data, requestOptions).then(response => {
-    const statusCode = response.status;
-    if (statusCode === 201) {
-      cb(null, response.data, response.data, response)
-    }
+      cb(null, response.data)
   }).catch(error => {
     let err = error;
     if (error.response) {
