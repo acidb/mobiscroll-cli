@@ -18,6 +18,7 @@ var isNpmSource = true;
 var isTrial = false;
 var isLite = false;
 var isLazy = false;
+var legacyPeerFlag = false;
 var run = utils.run;
 var printFeedback = utils.printFeedback;
 //var printError = utils.printError;
@@ -121,9 +122,9 @@ function handleNpmInstall() {
     isNpmSource = false;
 }
 
-// function handleLazy() {
-//     isLazy = true;
-// }
+function handleLegacyPeerFlags() {
+    legacyPeerFlag = true;
+}
 
 function handleMobiscrollVersion(vers) {
     mobiscrollVersion = vers;
@@ -436,7 +437,8 @@ function handleConfig(projectType) {
                         useTrial,
                         mobiscrollVersion,
                         proxyUrl,
-                        framework
+                        framework,
+                        legacyPeerFlag
                     }
 
                     // Install mobiscroll npm package
@@ -654,7 +656,8 @@ program
     .option('--version [version]', `Pass the Mobiscroll version which you want to install. Supports the following formats: ${chalk.gray('--version=4.7.1')} or ${chalk.gray('--version=5')}\n`, handleMobiscrollVersion)
     .option('--proxy [proxy]', `Pass a proxy URL which will be passed to the internal requests. Supports the following formats: ${chalk.gray('{protocol}://{host}:{port} example: --proxy=http://myproxy.com:1122')} or with auth details ${chalk.gray('{protocol}://{user}:{password}@{host}:{port} example: --proxy=http://myuser:mypass@myproxy.com:1122')}`, handleProxy)
     .option('--scss', 'The project will be configured with scss styles instead of css.', handleScss)
-    .option('--css', 'The project will be configured with css styles instead of scss.', handleCss);
+    .option('--css', 'The project will be configured with css styles instead of scss.', handleCss)
+    .option('--legacy-peer-deps', `Pass the ${chalk.gray('--legacy-peer-deps')} flag to internally executed npm install command.`, handleLegacyPeerFlags)
 
 program
     .command('login')

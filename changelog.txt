@@ -1,5 +1,13 @@
 Mobiscroll CLI changelog
 
+v 1.8.0 - 6 Dec 2022
+
+  * New: We added the `--legacy-peer-deps` flag that will be transmitted to internally executed npm install command.
+
+  * Fixed:  We fixed the yarn 2+ config where the content of the .yarnrc.yml file was overwritten.
+
+  * Fixed: We adjusted the scss import in case of Angular config to work with Angular 15.
+
 v 1.7.3 - 22 Sep 2022
 
   * Fixed: solved deprecation warnings by removing the npm-registry-client dependency and replaced with a local solution.

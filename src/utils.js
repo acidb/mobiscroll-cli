@@ -146,7 +146,7 @@ function appendContentToFile(location, newData, replaceRegex, prepend, skipRegex
 function importModule(moduleName, location, data) {
     if (data.indexOf(moduleName) == -1) { // check if module is not loaded
         data = "import { " + moduleName + " } from '" + location + "';\n" + data;
-        data = data.replace('imports: [', 'imports: [ \n' + '    ' + moduleName + ', ');
+        data = data.replace('imports: [', 'imports: [ \n' + '    ' + moduleName + ',');
     }
     return data;
 }
@@ -425,6 +425,7 @@ module.exports = {
             installVersion = config.mobiscrollVersion,
             proxy = config.proxyUrl,
             packageJson = config.packageJson,
+            npmFlag = config.legacyPeerFlag,
             frameworkName = '',
             mainVersion;
 
@@ -472,7 +473,7 @@ module.exports = {
                         // if no mobiscroll token is available, then get it form the .npmrc file and update/create the .yarnrc.yml with the necessary settings
                         printLog('Updating .yarnrc.yml file with npm auth token')
                         let AUTH_TOKEN = '';
-                        data = {};
+                        data = data || {};
                         if (fs.existsSync(npmrcPath)) {
                             const npmrcData = fs.readFileSync(npmrcPath, 'utf8').toString();
                             const tokenRow = npmrcData.match(/\/\/npm.mobiscroll.com\/:_authToken=(.*)/mi);
@@ -512,6 +513,10 @@ module.exports = {
 
             if (proxy) {
                 command += ' --proxy ' + proxy;
+            }
+
+            if (npmFlag) {
+                command += ' --legacy-peer-deps';
             }
 
             // Skip node warnings

@@ -45,6 +45,15 @@ function updateGlobalScss(settings, data, updateCss) {
     const currDir = settings.currDir;
     const fileName = settings.isIonicApp ? 'global.scss' : 'styles.scss';
     const filePath = path.resolve(currDir, 'src', fileName);
+    // const sassLibLocation =  path.resolve(currDir, 'node_modules', 'sass', 'package.json');
+    // const sassLibPackageJson = fs.existsSync(sassLibLocation) && fs.readFileSync(sassLibLocation).toString();
+
+    // if (sassLibPackageJson) {
+    //     const sassVersion = JSON.parse(sassLibPackageJson).version;
+    //     if(semver.gte(sassVersion, '1.23.0')) {
+    //         data = data.replace('@import', '@use');
+    //     }
+    // }
 
     if (fs.existsSync(filePath)) {
         if (data) {
@@ -81,7 +90,7 @@ function angularConfig(settings, callback) {
     }
 
     if (settings.useScss) {
-        updateGlobalScss(settings, `@import "~@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.angular'  }.scss";`);
+        updateGlobalScss(settings, `@import "${ settings.angularVersion && semver.gte(settings.angularVersion, '15.0.0') ? '' : '~'}@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.angular'  }.scss";`);
     } else {
         console.log(`  Adding stylesheet to ${chalk.grey('angular.json')}`);
         if (fs.existsSync(path.resolve(currDir, '.angular-cli.json'))) {
@@ -124,6 +133,8 @@ function angularConfig(settings, callback) {
 
 module.exports = {
     configAngular: function (settings, callback) {
+        const angularVers = settings.packageJson.dependencies['@angular/common'];
+        const angularVersion = angularVers && angularVers.replace(/^[^\d]/, '');
         if (!settings.isIonicApp) {
             utils.printFeedback('Configuring Angular app...');
         }
@@ -131,10 +142,10 @@ module.exports = {
         if (!utils.checkTypescriptVersion(settings.packageJson)) {
             return;
         }
+        
+        settings.angularVersion = angularVersion;
 
-        var angularVersion = utils.shapeVersionToArray(settings.packageJson.dependencies['@angular/common']);
-
-        if (angularVersion[0] >= 6 && settings.mobiscrollVersion && semver.lt(settings.mobiscrollVersion, '4.8.2')) { // check if angular 6 or older than v4.8.2
+        if (angularVersion && semver.gte(angularVersion, '6.0.0') && settings.mobiscrollVersion && semver.lt(settings.mobiscrollVersion, '4.8.2')) { // check if angular 6 or older than v4.8.2
             if (settings.packageJson.dependencies['rxjs-compat']) {
                 utils.printFeedback('rxjs-compat package detected');
                 angularConfig(settings, callback);
