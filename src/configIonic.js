@@ -123,52 +123,8 @@ function detectReactPages(settings/*, callback*/) {
     const pagesPath = path.resolve(settings.currDir, 'src', 'pages');
 
     if (fs.existsSync(pagesPath)) {
-        // pages = fs.readdirSync(pagesPath).filter((f) => {
-        //     return path.extname(f) == '.tsx';
-        // })
-
         console.log(chalk.bold(`\n\nMultiple pages detected. Mobiscroll components must be imported into every page separately where you want to use the components. You can import the component the following way:`));
-
         helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
-        // if (pages.length) {
-        //     console.log(chalk.bold(`\n\nMultiple pages detected. Mobiscroll components must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject Eventcalendar import for you?\n`));
-        //     inquirer.prompt([{
-        //         type: 'checkbox',
-        //         message: 'Please select where else do you want to inject mobiscroll import? ',
-        //         name: 'pages',
-        //         choices: pages
-        //     }]).then(function (answers) {
-        //         if (answers.pages.length) {
-        //             console.log('\n');
-        //             for (let i = 0; i < answers.pages.length; ++i) {
-        //                 let filePath = path.resolve(pagesPath, answers.pages[i]);
-        //                 if (fs.existsSync(filePath)) {}
-        //                 utils.appendContentToFile(
-        //                     filePath,
-        //                     `import ${semver.gte(settings.mobiscrollVersion, '5.0.0-beta') ? '* as' : ''} mobiscroll from '@mobiscroll/react';`,
-        //                     /import.*'@mobiscroll\/react';/gm,
-        //                     true,
-        //                     '',
-        //                     (err) => {
-        //                         if (err) {
-        //                             utils.printError(`Couldn't update the following file ${ answers.pages[i]}`);
-        //                             return;
-        //                         }
-        //                     }
-        //                 )
-        //             }
-
-        //             utils.printFeedback('Mobiscroll injected successfully to the selected pages.');
-
-        //             if (callback) {
-        //                 callback();
-        //             }
-        //         }
-
-        //     });
-
-        //     return true;
-        // }
     }
 
 }
@@ -242,9 +198,26 @@ module.exports = {
             mainIonicVersion,
             ionicPackage = settings.packageJson, //require(settings.ionicPackageLocation),
             ionicVersion = ionicPackage.dependencies['ionic-angular'] || ionicPackage.dependencies['@ionic/angular'],
-            ionicReactVersion = ionicPackage.dependencies['@ionic/react'];
+            ionicReactVersion = ionicPackage.dependencies['@ionic/react'],
+            ionicVueVersion = ionicPackage.dependencies['@ionic/vue'];
 
-        if (ionicReactVersion) {
+        if (ionicVueVersion) {
+            const mainFile = path.resolve(settings.currDir, 'src', 'main.ts');
+            let mainFileData = fs.readFileSync(mainFile, 'utf8');
+
+            if (mainFileData) {
+                console.log(`  Adding css stylesheet to ${chalk.grey('main.ts')}`);
+
+                mainFileData = mainFileData.replace(/import '@mobiscroll.*css';\s?/gm, '');
+                mainFileData = mainFileData.replace(`import '@ionic/vue/css/core.css';`, `import '@ionic/vue/css/core.css';\n\rimport '@mobiscroll/vue/dist/css/${ settings.isNpmSource ?  'mobiscroll.min.css' : settings.localCssFileName  }';\n\r`);
+                utils.writeToFile(mainFile, mainFileData);
+
+                helperMessages.vueHelp(settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
+                if (callback) {
+                    callback();
+                }
+            }
+        } else if (ionicReactVersion) {
             if (settings.useScss) {
                 let fileName = 'variables.scss'
                 console.log(`  Adding scss stylesheet to ${chalk.grey(fileName)}`);
