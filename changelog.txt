@@ -1,6 +1,6 @@
 Mobiscroll CLI changelog
 
-v 1.9.0 - 3 Fev 2022
+v 1.9.0 - 3 Feb 2022
 
   * New: We added Vue.js support to the cli, the config command will install the vue.js version of Mobiscroll and provide usage examples.
 
