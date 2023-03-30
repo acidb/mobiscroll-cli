@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.9.0 - 30 Mar 2023
+
+  * New: Added Angular Ivy support for Angular version 12 and higher.
+
 v 1.8.0 - 6 Dec 2022
 
   * New: We added the `--legacy-peer-deps` flag that will be transmitted to internally executed npm install command.
