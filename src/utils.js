@@ -499,6 +499,12 @@ module.exports = {
                     printError('Couldn\'t copy the npm auth token from the .npmrc to the .yarnrc.yml file. \n\nHere is the error message:\n\n' + err);
                 }
             }
+            let isIvy = false;
+            if (framework === 'angular' && packageJson && packageJson.dependencies) {
+                angularVersionRaw = packageJson.dependencies['@angular/core'];
+                angularVersionArr = shapeVersionToArray(angularVersionRaw);
+                isIvy = angularVersionArr[0] >= 12;
+            }
 
             let installCmd = useYarn ? 'yarn add' : 'npm install';
             if (isTrial) {
@@ -508,7 +514,11 @@ module.exports = {
                     command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
                 }
             } else {
-                command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+                if (isIvy) {
+                    command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/angular-ivy@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+                } else {
+                    command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+                }
             }
 
             if (proxy) {
