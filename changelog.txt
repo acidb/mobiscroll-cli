@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.8.1 - 4 Apr 2023
+
+  * Fixed:  We fixed the yarn 2+ config where the AUTH_TOKEN was not updated in the .yarnrc.yml when a new token was generated in the .npmrc file.
+
 v 1.8.0 - 6 Dec 2022
 
   * New: We added the `--legacy-peer-deps` flag that will be transmitted to internally executed npm install command.
