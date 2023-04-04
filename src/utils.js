@@ -448,7 +448,7 @@ module.exports = {
             isIvy = angularVersionArr[0] >= 13;
         }
 
-        var pkgName = frameworkName + (isTrial ? '-trial' : '') + (isIvy ? '-ivy' : ''),
+        var pkgName = frameworkName + (isIvy ? '-ivy' : '') + (isTrial ? '-trial' : ''),
             command;
 
         if (!semver.valid(installVersion)) {
