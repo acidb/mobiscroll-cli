@@ -512,11 +512,7 @@ module.exports = {
                 if (isYarn2) {
                     command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}`; // todo test --update-checksums
                 } else {
-                    if (isIvy) {
-                        command = `${installCmd} @mobiscroll/angular@${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
-                    } else {
-                        command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
-                    }
+                    command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
                 }
             } else {
                 if (isIvy) {
