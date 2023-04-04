@@ -441,7 +441,14 @@ module.exports = {
                 break;
         }
 
-        var pkgName = frameworkName + (isTrial ? '-trial' : ''),
+        let isIvy = false;
+        if (framework === 'angular' && packageJson && packageJson.dependencies) {
+            angularVersionRaw = packageJson.dependencies['@angular/core'];
+            angularVersionArr = shapeVersionToArray(angularVersionRaw);
+            isIvy = angularVersionArr[0] >= 13;
+        }
+
+        var pkgName = frameworkName + (isTrial ? '-trial' : '') + (isIvy ? '-ivy' : ''),
             command;
 
         if (!semver.valid(installVersion)) {
@@ -499,19 +506,17 @@ module.exports = {
                     printError('Couldn\'t copy the npm auth token from the .npmrc to the .yarnrc.yml file. \n\nHere is the error message:\n\n' + err);
                 }
             }
-            let isIvy = false;
-            if (framework === 'angular' && packageJson && packageJson.dependencies) {
-                angularVersionRaw = packageJson.dependencies['@angular/core'];
-                angularVersionArr = shapeVersionToArray(angularVersionRaw);
-                isIvy = angularVersionArr[0] >= 12;
-            }
 
             let installCmd = useYarn ? 'yarn add' : 'npm install';
             if (isTrial) {
                 if (isYarn2) {
                     command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}`; // todo test --update-checksums
                 } else {
-                    command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
+                    if (isIvy) {
+                        command = `${installCmd} @mobiscroll/angular@${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
+                    } else {
+                        command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
+                    }
                 }
             } else {
                 if (isIvy) {
