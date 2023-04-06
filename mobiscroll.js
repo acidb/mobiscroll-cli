@@ -200,7 +200,7 @@ function config(settings, callback) {
 
 function cloneProject(url, type, framework, name, newAppLocation, gitOptions, callback) {
     utils.printLog(`Cloning ${type} starter app from git: ${url}`);
-    utils.run('git clone ' + url + ' ' + name, true).then(() => {    
+    utils.run('git clone ' + url + ' ' + name, true).then(() => {
         utils.printLog(`Repository cloned successfully.`);
         process.chdir(newAppLocation); // change directory to node modules folder
         console.log(`Installing dependencies may take several minutes:\n`);
@@ -215,7 +215,7 @@ function cloneProject(url, type, framework, name, newAppLocation, gitOptions, ca
                     mobiscrollVersion: 4, // force  v4 installation until v5 version of starters available
                     proxyUrl,
                 };
-                
+
                 utils.installMobiscroll(configObject, () => {
                     if (callback) {
                         callback();
@@ -258,7 +258,7 @@ function askStyleSheetType(version, useScss, config, callback) {
         }
     }
 
-    // only ask the scss install if the version is larger then 4.7.0 
+    // only ask the scss install if the version is larger then 4.7.0
     if (semver.gte(version, '4.7.0') && useScss === undefined && !skipQuestion) {
         let choices = ['CSS', 'SCSS'];
         console.log('\n');
@@ -490,7 +490,7 @@ function handleConfig(projectType) {
                 }
 
                 var jsFileContent = (fs.readFileSync(path.resolve(jsFileLocation, localJsFileName.toString()).toString())).toString();
-                var version = (/version:\s?['"]([a-z0-9.-]+)['"]/gmi.exec(jsFileContent))[1];
+                var version = (/\{version:\s?['"]([a-z0-9.-]+)['"]\}/gmi.exec(jsFileContent))[1];
                 let packageFolder = path.resolve(currDir, 'src', 'lib', 'mobiscroll-package');
                 let distFolder = path.resolve(packageFolder, 'dist');
 
