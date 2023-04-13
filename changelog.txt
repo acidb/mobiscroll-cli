@@ -1,5 +1,13 @@
 Mobiscroll CLI changelog
 
+v 1.10.0 - 13 Apr 2023
+
+  * New: We added support for Angular standalone components.
+
+  * New: We added support for Ionic 7 Angular applications which are using standalone Angular components by default.
+
+  * Fixed: We prevented the Angular Ivy package installation for previos unsupported versions.
+
 v 1.9.0 - 30 Mar 2023
 
   * New: Added Angular Ivy support for Angular version 13 and higher.

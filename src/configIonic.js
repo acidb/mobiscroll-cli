@@ -110,7 +110,7 @@ function configIonic(settings, callback) {
     utils.printFeedback('Mobiscroll configuration ready!');
 
     if (settings.isLazy) {
-        helperMessages.ionicLazy(settings.apiKey, settings.isLite);
+        helperMessages.angularLazy(settings.apiKey, settings.isLite, settings.isStandalone);
     }
 
     if (callback) {
@@ -173,8 +173,7 @@ function detectReactPages(settings/*, callback*/) {
 
 }
 
-function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, callback) {
-
+function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, isStandaloneApp, callback) {
     var modulePages = [],
         ngAppPath = path.resolve(currDir, (ionicVersion >= 4 ? 'src/app' : 'src/pages'));
 
@@ -184,10 +183,9 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
         var ngModulesDir = fs.readdirSync(ngAppPath).filter((f) => {
             return fs.lstatSync(path.resolve(ngAppPath, f)).isDirectory();
         })
-
         // check for *.module.ts files 
         for (var i = 0; i < ngModulesDir.length; ++i) {
-            let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf('.module.ts') !== -1);
+            let checkModule = fs.readdirSync(path.resolve(ngAppPath, ngModulesDir[i])).filter(f => f.indexOf(isStandaloneApp ? 'page.ts' : '.module.ts') !== -1);
             if (checkModule.length) {
                 for (let m = 0; m < checkModule.length; ++m) {
                     modulePages.push({
@@ -196,11 +194,13 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
                 }
             }
         }
-
+        
         if (modulePages.length) {
-            console.log(chalk.bold(`\n\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`));
-            console.log(`The ${chalk.grey('MbscModule')} is already injected to the ${chalk.grey('app.module.ts')}.\n`)
-
+            if (isStandaloneApp) {
+                console.log(chalk.bold(`\n\nMultiple pages detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every page separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`));
+            } else {
+                console.log(chalk.bold(`\n\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`));
+            }
             inquirer.prompt([{
                 type: 'checkbox',
                 message: 'Please select where else do you want to inject the MbscModule? ',
@@ -211,7 +211,7 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
                     console.log('\n');
                     for (let i = 0; i < answers.pages.length; ++i) {
                         let pageInfo = answers.pages[i].split(' - ');
-                        utils.importModules(path.resolve(ngAppPath, pageInfo[0], pageInfo[1]), pageInfo[1], jsFileName);
+                        utils.importModules(path.resolve(ngAppPath, pageInfo[0], pageInfo[1]), pageInfo[1], jsFileName, isStandaloneApp);
                     }
 
                     utils.printFeedback('MbscModule injected successfully to the selected modules.');
@@ -221,7 +221,7 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, ca
                     }
                 }
 
-                helperMessages.ionicLazy(apiKey, isLite);
+                helperMessages.angularLazy(apiKey, isLite, isStandaloneApp);
             });
 
             return true;
@@ -243,6 +243,9 @@ module.exports = {
             ionicPackage = settings.packageJson, //require(settings.ionicPackageLocation),
             ionicVersion = ionicPackage.dependencies['ionic-angular'] || ionicPackage.dependencies['@ionic/angular'],
             ionicReactVersion = ionicPackage.dependencies['@ionic/react'];
+
+        const isStandaloneApp = utils.checkAngularStandaloneComponent(settings);
+        settings.isStandalone = isStandaloneApp;
 
         if (ionicReactVersion) {
             if (settings.useScss) {
@@ -309,13 +312,14 @@ module.exports = {
 
             if (ionicVersion && mainIonicVersion >= 4) {
                 settings.isIonicApp = true;
+
                 configAngular(settings, () => {
-                    detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, callback);
+                    detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, isStandaloneApp, callback);
                 });
             } else {
                 //configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, () => {
                 configIonic(settings, () => {
-                    detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, callback);
+                    detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, false, callback);
                 });
             }
         }

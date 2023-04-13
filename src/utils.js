@@ -143,10 +143,10 @@ function appendContentToFile(location, newData, replaceRegex, prepend, skipRegex
     }
 }
 
-function importModule(moduleName, location, data) {
+function importModule(moduleName, location, data, isStandalone) {
     if (data.indexOf(moduleName) == -1) { // check if module is not loaded
         data = "import { " + moduleName + " } from '" + location + "';\n" + data;
-        data = data.replace('imports: [', 'imports: [ \n' + '    ' + moduleName + ',');
+        data = data.replace('imports: [', 'imports: [ ' +  ( isStandalone ? '' : ' \n    ') + moduleName + ', ');
     }
     return data;
 }
@@ -236,6 +236,19 @@ function checkMeteor(packageJson, currDir, framework) {
             printLog('No font files found. Skipping copy...');
         }
     }
+}
+
+function checkAngularStandaloneComponent(settings) {
+    const currDir = settings.currDir;
+    const componentFile = path.resolve(currDir + '/src/app/app.component.ts');
+    
+    if (fs.existsSync(componentFile)) {
+        let data = fs.readFileSync(componentFile, 'utf8').toString();
+        const standaloneRegex = /standalone:[\s]?true/gmi;
+        return standaloneRegex.test(data)
+    }
+
+    return false;
 }
 
 function login(useGlobalNpmrc, proxy) {
@@ -442,14 +455,11 @@ module.exports = {
         }
 
         let isIvy = false;
-        if (framework === 'angular' && packageJson && packageJson.dependencies) {
+        if (frameworkName === 'angular' && packageJson && packageJson.dependencies) { 
             angularVersionRaw = packageJson.dependencies['@angular/core'];
             angularVersionArr = shapeVersionToArray(angularVersionRaw);
             isIvy = angularVersionArr[0] >= 13;
         }
-
-        var pkgName = frameworkName + (isIvy ? '-ivy' : '') + (isTrial ? '-trial' : ''),
-            command;
 
         if (!semver.valid(installVersion)) {
             mainVersion = installVersion;
@@ -461,6 +471,11 @@ module.exports = {
             if (mainVersion) {
                 installVersion = version;
             }
+
+            isIvy = isIvy && semver.gte(installVersion || version, '5.23.0');
+
+            let pkgName = frameworkName + (isIvy ? '-ivy' : '') + (isTrial ? '-trial' : ''),
+            command;
 
             if (isYarn2) {
                 // in case of yarn2 we need to copy the auth token form the .npmrc file to the .yarnrc.yml
@@ -566,7 +581,7 @@ module.exports = {
             })
         });
     },
-    importModules: (moduleLocation, moduleName, mbscFileName) => {
+    importModules: (moduleLocation, moduleName, mbscFileName, isStandaloneComponent) => {
         console.log(`  Adding module loading scripts to ${chalk.grey(moduleName)}`);
 
         // Modify *.module.ts add necessary modules
@@ -574,7 +589,7 @@ module.exports = {
             try {
                 let data = fs.readFileSync(moduleLocation, 'utf8').toString();
 
-                if (data.indexOf('MbscModule.forRoot') === -1) {
+                if (data.indexOf('MbscModule.forRoot') === -1 || isStandaloneComponent) {
                     // let checkForRoute = data.indexOf('MbscModule.forRoot') === -1;
 
                     // Remove previous module load
@@ -586,9 +601,9 @@ module.exports = {
                     }
 
                     // Add angular module imports which are needed for mobiscroll
-                    data = importModule('MbscModule', mbscFileName, data);
+                    data = importModule('MbscModule', mbscFileName, data, isStandaloneComponent);
                     // }
-                    data = importModule('FormsModule', '@angular/forms', data);
+                    data = importModule('FormsModule', '@angular/forms', data, isStandaloneComponent);
 
                     // Remove previous api key if present
                     data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
@@ -600,10 +615,6 @@ module.exports = {
                 printError('There was an error during reading app.module.ts. \n\nHere is the error message:\n\n' + err);
                 return;
             }
-        } else if (moduleName == 'app.module.ts') {
-            printWarning(`No app.module.ts file found. You are probably running this command in a non Angular-cli based application. Please visit the following page for further instructions:`);
-            console.log(terminalLink('Mobiscroll Angular Docs - Quick install', 'https://docs.mobiscroll.com/angular/quick-install'))
-            return false;
         } else {
             console.log(`  Could not find module in the following location: ${chalk.grey(moduleLocation)}`);
             return false;
@@ -626,5 +637,6 @@ module.exports = {
     checkMeteor,
     login,
     testYarn,
-    appendContentToFile
+    appendContentToFile,
+    checkAngularStandaloneComponent
 };
