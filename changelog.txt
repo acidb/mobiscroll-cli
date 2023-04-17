@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.10.1 - 17 Apr 2023
+
+  * Fixed: We fixed a bug that prevented the version 4 library installation with the -no-npm flag in Angular projects
+
 v 1.10.0 - 13 Apr 2023
 
   * New: We added support for Angular standalone components.

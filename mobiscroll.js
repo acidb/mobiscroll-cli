@@ -490,7 +490,11 @@ function handleConfig(projectType) {
                 }
 
                 var jsFileContent = (fs.readFileSync(path.resolve(jsFileLocation, localJsFileName.toString()).toString())).toString();
-                var version = (/\{version:\s?['"]([a-z0-9.-]+)['"]\}/gmi.exec(jsFileContent))[1];
+                let versionResult = (/\{version:\s?['"]([a-z0-9.-]+)['"]\}/gmi.exec(jsFileContent)); // regex for version 5
+                if (versionResult === null) { // it's version 4
+                    versionResult = (/version:\s?['"]([a-z0-9.-]+)['"]/gmi.exec(jsFileContent));
+                }
+                const version = versionResult[1];
                 let packageFolder = path.resolve(currDir, 'src', 'lib', 'mobiscroll-package');
                 let distFolder = path.resolve(packageFolder, 'dist');
 
