@@ -31,7 +31,6 @@ module.exports = {
         console.log('\n\n  Installs Mobiscroll resources from npm and includes the necessary dependencies.');
         console.log('\n  Types:\n');
         console.log('    angular         Use it for configuring Angular 2+ applications.\n');
-        console.log('    angularjs       Use it for configuring Angularjs(1.x) applications.\n');
         console.log('    ionic           Use it for configuring Ionic 2+ applications.\n');
         console.log('    javascript      Use it for configuring JavaScript applications. Use it with frameworks like: Knockout, Ember.js...\n');
         console.log('    jquery          Use it for configuring jQuery based applications.\n');
@@ -44,17 +43,17 @@ module.exports = {
         console.log('    ionic           Creates an ionic application. (Based on Ionic 3 application.)\n');
         console.log(`    ionic-angular   Creates an ionic-angular application. (Based on Ionic 5 angular application. For Ionic 4 based application use ${chalk.grey('--ionic-version=4')} flag.)\n`);
         console.log('    ionic-react     Creates an ionic-react application. (Based on Ionic 5 react application.)\n');
-        console.log('    react           Creates a react applications.(Based on Create React App application.)\n');
+        console.log('    react           Creates a react application. (Based on Create React App application.)\n');
     },
     vueHelp: (npmSource, useScss, version) => {
         console.log(`
 
-import { Eventcalendar } from '@mobiscroll/vue'; /* or import any other component */
+import { MbscEventcalendar } from '@mobiscroll/vue'; /* or import any other component */
 import '` + `@mobiscroll/vue/dist/css/mobiscroll.${npmSource ? '' : 'vue.'}${useScss ? 'scss' : 'min.css'}';
         `);
 
-        console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', 'https://docs.mobiscroll.com/vue/getting_started'));
-        console.log(`\nFind usage examples on the ` + terminalLink('demo page:', 'https://demo.mobiscroll.com/react/eventcalendar/') + '\n');
+        console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', 'https://mobiscroll.com/docs/vue/getting-started/overview'));
+        console.log(`\nFind usage examples on the ` + terminalLink('demo page:', 'https://demo.mobiscroll.com/vue/eventcalendar/') + '\n');
     },
     reactHelp: (isTrial, isLite, npmSource, useScss, version) => {
         if (semver.gte(version, '5.0.0-beta')) {
