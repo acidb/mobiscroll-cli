@@ -2,7 +2,9 @@ const utils = require('./utils.js');
 const fs = require('fs');
 const chalk = require('chalk');
 const path = require('path');
-var semver = require('semver');
+const semver = require('semver');
+const helperMessages = require('./helperMessages.js');
+const printWarning = utils.printWarning;
 
 function updateAngularJsonWithCss(settings) {
     var stylesArray,
@@ -83,11 +85,25 @@ function updateGlobalScss(settings, data, updateCss) {
 function angularConfig(settings, callback) {
     // Modify app.module.ts add necessary modules
     const currDir = settings.currDir;
+    let isStandalone = settings.isStandalone;
 
-    if (!utils.importModules(path.resolve(currDir + '/src/app/app.module.ts'), 'app.module.ts', settings.jsFileName)) {
-        // if not an angular-cli based app
-        return;
+    if (!settings.isStandalone) { // if true config ionic already checked it
+        // check if the app.component.ts is standalone
+        const componentFile = path.resolve(currDir + '/src/app/app.component.ts');
+        isStandalone = utils.checkAngularStandaloneComponent(settings);
+
+        if (isStandalone) {
+            utils.importModules(componentFile, 'app.component.ts', settings.jsFileName, isStandalone);
+            helperMessages.angularLazy(false, false, isStandalone)
+        }
     }
+
+    if (!isStandalone && !utils.importModules(path.resolve(currDir + '/src/app/app.module.ts'), 'app.module.ts', settings.jsFileName)) {
+        // if not an angular-cli based app
+        printWarning(`No app.module.ts file found. You are probably running this command in a non Angular-cli based application. Please visit the following page for further instructions:`);
+        console.log(terminalLink('Mobiscroll Angular Docs - Quick install', 'https://docs.mobiscroll.com/angular/quick-install'))
+        return;
+    } else 
 
     if (settings.useScss) {
         updateGlobalScss(settings, `@import "${ settings.angularVersion && semver.gte(settings.angularVersion, '15.0.0') ? '' : '~'}@mobiscroll/angular/dist/css/mobiscroll${ settings.isNpmSource ?  '' : '.angular'  }.scss";`);

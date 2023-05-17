@@ -3,18 +3,29 @@ const terminalLink = require('terminal-link');
 const semver = require('semver');
 
 module.exports = {
-    ionicLazy: (isTrial, isLite) => {
-        console.log(`\nYou can manually include the ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} to your  ${chalk.grey('*.module.ts')} file the following way:\n`);
+    angularLazy: (isTrial, isLite, isStandalone) => {
+        console.log(`\nYou can manually include the ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} to your ${isStandalone ? 'component' : chalk.grey('*.module.ts') + ' file'} the following way:\n`);
         console.log("    import { MbscModule } from '@mobiscroll/angular" + (isLite ? '-lite' : '') + "';");
         console.log("    import { FormsModule } from '@angular/forms';\n");
-        console.log("    @NgModule({");
-        console.log("        imports: [");
-        console.log("            // leave the other imports as they are");
-        console.log("            // ... ");
-        console.log("            MbscModule, // add the mobiscroll module");
-        console.log("            FormsModule // add the forms module");
-        console.log("        ],");
-        console.log("        declarations: // ...\n");
+
+        if(isStandalone) {
+            console.log(`
+    @Component({
+        standalone: true,
+        // add the mobiscroll and form modules
+        imports: [ MbscModule, FormsModule, /* leave the other imports as they are */],
+        // ...
+    `);
+        } else {
+            console.log("    @NgModule({");
+            console.log("        imports: [");
+            console.log("            // leave the other imports as they are");
+            console.log("            // ... ");
+            console.log("            MbscModule, // add the mobiscroll module");
+            console.log("            FormsModule // add the forms module");
+            console.log("        ],");
+            console.log("        declarations: // ...\n");
+         }
     },
     configHelp: () => {
         console.log('\n\n  Installs Mobiscroll resources from npm and includes the necessary dependencies.');
