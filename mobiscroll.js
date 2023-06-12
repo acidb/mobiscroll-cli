@@ -140,11 +140,6 @@ function handleGlobalInstall() {
 
 function detectProjectFramework(packageJson, apiKey, isLite, projectType, useScss, version) {
     if (packageJson.dependencies) {
-        if (packageJson.dependencies.vue) {
-            helperMessages.vueHelp(projectType, apiKey, isLite, useScss, version);
-            return 'vue';
-        }
-
         if (packageJson.dependencies.react) {
             helperMessages.reactHelp(apiKey, isLite, isNpmSource, useScss, version);
             return "react";
@@ -167,7 +162,6 @@ function config(settings, callback) {
     }
 
     let projectType = settings.projectType;
-    // settings.packageJson = packageJson;
     utils.checkMeteor(packageJson, settings.currDir, projectType);
 
     switch (projectType) {
@@ -187,6 +181,12 @@ function config(settings, callback) {
                 callback();
             }
             break;
+        case 'vue':
+            helperMessages.vueHelp(settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
+            if (callback) {
+                callback();
+            }
+        break;
         case 'jquery':
         case 'javascript':
             detectProjectFramework(settings.packageJson, settings.apiKey, settings.isLite, projectType, settings.useScss, settings.mobiscrollVersion);
@@ -195,7 +195,6 @@ function config(settings, callback) {
             }
             break;
     }
-
 }
 
 function cloneProject(url, type, framework, name, newAppLocation, gitOptions, callback) {
@@ -375,7 +374,7 @@ function handleStart(type, name) {
 
 function handleConfig(projectType) {
     if (!projectType) {
-        printWarning('Please specify the project type. [ionic, angular, angularjs, react, javascript, jquery] \n\nFor more information please run the ' + chalk.gray('mobiscroll config --help') + ' command.');
+        printWarning('Please specify the project type. [ionic, angular, javascript, jquery, react, vue] \n\nFor more information please run the ' + chalk.gray('mobiscroll config --help') + ' command.');
         return;
     }
 
@@ -397,7 +396,11 @@ function handleConfig(projectType) {
             try {
                 packageJson = require(packageJsonLocation);
             } finally {
-                framework = projectType == 'ionic' ? (packageJson.dependencies['@ionic/react'] ? 'react' : 'angular') : projectType;
+                const dependencies = packageJson.dependencies;
+                framework = projectType == 'ionic' ? 
+                    (dependencies['@ionic/react'] ? 'react' : (dependencies['@ionic/vue'] ? 'vue' : 'angular'))
+                    : 
+                    projectType;
             }
         }
 

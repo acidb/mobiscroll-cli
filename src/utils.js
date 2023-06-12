@@ -444,10 +444,8 @@ module.exports = {
 
         switch (framework) {
             case 'ionic':
-                frameworkName = packageJson && packageJson.dependencies && packageJson.dependencies['@ionic/react'] ? 'react' : 'angular';
-                break;
-            case 'vue':
-                frameworkName = 'javascript';
+                const dependencies = packageJson && packageJson.dependencies;
+                frameworkName = dependencies && dependencies['@ionic/react'] ? 'react' : dependencies['@ionic/vue'] ? 'vue' : 'angular';
                 break;
             default:
                 frameworkName = framework;
@@ -464,7 +462,7 @@ module.exports = {
         if (!semver.valid(installVersion)) {
             mainVersion = installVersion;
         }
-
+    
         getMobiscrollVersion(proxy, mainVersion, (version) => {
             const useYarn = testYarn(currDir);
             const isYarn2 = useYarn && semver.gte(useYarn, '2.0.0');
