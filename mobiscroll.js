@@ -438,7 +438,8 @@ function handleConfig(projectType) {
                         mobiscrollVersion,
                         proxyUrl,
                         framework,
-                        legacyPeerFlag
+                        legacyPeerFlag,
+                        license: data.License
                     }
 
                     // Install mobiscroll npm package
