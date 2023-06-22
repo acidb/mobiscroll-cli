@@ -241,7 +241,7 @@ function checkMeteor(packageJson, currDir, framework) {
 function checkAngularStandaloneComponent(settings) {
     const currDir = settings.currDir;
     const componentFile = path.resolve(currDir + '/src/app/app.component.ts');
-    
+
     if (fs.existsSync(componentFile)) {
         let data = fs.readFileSync(componentFile, 'utf8').toString();
         const standaloneRegex = /standalone:[\s]?true/gmi;
@@ -441,6 +441,7 @@ module.exports = {
             npmFlag = config.legacyPeerFlag,
             frameworkName = '',
             mainVersion;
+        const package = config.package;
 
         switch (framework) {
             case 'ionic':
@@ -452,8 +453,9 @@ module.exports = {
                 break;
         }
 
+
         let isIvy = false;
-        if (frameworkName === 'angular' && packageJson && packageJson.dependencies) { 
+        if (frameworkName === 'angular' && packageJson && packageJson.dependencies) {
             angularVersionRaw = packageJson.dependencies['@angular/core'];
             angularVersionArr = shapeVersionToArray(angularVersionRaw);
             isIvy = angularVersionArr[0] >= 13;
@@ -462,7 +464,7 @@ module.exports = {
         if (!semver.valid(installVersion)) {
             mainVersion = installVersion;
         }
-    
+
         getMobiscrollVersion(proxy, mainVersion, (version) => {
             const useYarn = testYarn(currDir);
             const isYarn2 = useYarn && semver.gte(useYarn, '2.0.0');
@@ -472,7 +474,7 @@ module.exports = {
 
             isIvy = isIvy && semver.gte(installVersion || version, '5.23.0');
 
-            let pkgName = frameworkName + (isIvy ? '-ivy' : '') + (isTrial ? '-trial' : ''),
+            let pkgName = package + (isIvy ? '-ivy' : '') + (isTrial ? '-trial' : ''),
             command;
 
             if (isYarn2) {
@@ -530,7 +532,7 @@ module.exports = {
                 }
             } else {
                 if (isIvy) {
-                    command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/angular-ivy@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+                    command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
                 } else {
                     command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
                 }
