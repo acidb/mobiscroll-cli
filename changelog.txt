@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.12.0 - 22 Jun 2023
+
+  * New: We added support for Date & time picking packages from npm. The config command will handle the license type and install the appropriate package.
+
 v 1.11.0 - 17 May 2023
 
   * New: We added Vue.js support to the cli, the config command will install the vue.js version of Mobiscroll and provide usage examples.
