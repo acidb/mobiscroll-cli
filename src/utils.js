@@ -441,6 +441,7 @@ module.exports = {
             npmFlag = config.legacyPeerFlag,
             frameworkName = '',
             mainVersion;
+        const package = config.package;
 
         switch (framework) {
             case 'ionic':
@@ -452,7 +453,6 @@ module.exports = {
                 break;
         }
 
-        const package = (config.license === 'datepicker' ? 'datepicker-' : '') + frameworkName;
 
         let isIvy = false;
         if (frameworkName === 'angular' && packageJson && packageJson.dependencies) {
@@ -464,7 +464,7 @@ module.exports = {
         if (!semver.valid(installVersion)) {
             mainVersion = installVersion;
         }
-    
+
         getMobiscrollVersion(proxy, mainVersion, (version) => {
             const useYarn = testYarn(currDir);
             const isYarn2 = useYarn && semver.gte(useYarn, '2.0.0');
@@ -532,7 +532,7 @@ module.exports = {
                 }
             } else {
                 if (isIvy) {
-                    command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/angular-ivy@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+                    command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
                 } else {
                     command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
                 }

@@ -397,9 +397,9 @@ function handleConfig(projectType) {
                 packageJson = require(packageJsonLocation);
             } finally {
                 const dependencies = packageJson.dependencies;
-                framework = projectType == 'ionic' ? 
+                framework = projectType == 'ionic' ?
                     (dependencies['@ionic/react'] ? 'react' : (dependencies['@ionic/vue'] ? 'vue' : 'angular'))
-                    : 
+                    :
                     projectType;
             }
         }
@@ -442,7 +442,7 @@ function handleConfig(projectType) {
                         proxyUrl,
                         framework,
                         legacyPeerFlag,
-                        license: data.License
+                        package: data.Package
                     }
 
                     // Install mobiscroll npm package
