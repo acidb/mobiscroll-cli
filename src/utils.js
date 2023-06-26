@@ -263,7 +263,8 @@ function login(useGlobalNpmrc, proxy) {
     }, {
         type: 'password',
         name: 'password',
-        message: 'Mobiscroll password:',
+        mask: '*',
+        message: 'Mobiscroll Password/Secret:',
         validate: function validatePassword(passw) {
             return passw !== '';
         }
