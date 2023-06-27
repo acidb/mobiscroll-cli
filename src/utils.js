@@ -146,7 +146,7 @@ function appendContentToFile(location, newData, replaceRegex, prepend, skipRegex
 function importModule(moduleName, location, data, isStandalone) {
     if (data.indexOf(moduleName) == -1) { // check if module is not loaded
         data = "import { " + moduleName + " } from '" + location + "';\n" + data;
-        data = data.replace('imports: [', 'imports: [ ' +  ( isStandalone ? '' : ' \n    ') + moduleName + ', ');
+        data = data.replace('imports: [', 'imports: [ ' + (isStandalone ? '' : ' \n    ') + moduleName + ', ');
     }
     return data;
 }
@@ -436,21 +436,6 @@ module.exports = {
                             process.exit();
                         }
                     })
-                // } else if (data.HasAccess) {
-                //     if (data.NpmUser || data.NpmUserNoWarn) {
-                //         printFeedback(`Proceeding...`);
-                //         callback(data.userName, data.LatestVersion && !isTrial ? (semver.gt('3.2.4', (semver.valid(instVersion) ? instVersion : semver.coerce(instVersion)))) : true, data);
-                //     } else {
-                //         if (data.NpmUserSet) {
-                //             printWarning(`You are not logged in with the NPM User that was set up for your team. Please use the credentials for the NPM user.\n\nYou can check out the credentials on your licences page at:\n${chalk.gray('https://mobiscroll.com/account/licenses')}`);
-                //             login(useGlobalNpmrc, proxy).then((userName) => {
-                //                 getApiKey(userName, proxy, framework, installHandler)
-                //             }).catch((err) => console.log('Login error ' + err));
-                //         } else {
-                //             printWarning(`Looks like you don't have an NPM User set up. Please head over to the account page to set up the npm user credentials at: ${chalk.gray('https://mobiscroll.com/account/licenses#npm-user-setup')}`);
-                //             callback(data.userName, data.LatestVersion && !isTrial ? (semver.gt('3.2.4', (semver.valid(instVersion) ? instVersion : semver.coerce(instVersion)))) : true, data);
-                //         }
-                //     }
                 } else {
                     if (data.HasAccess) {
                         if (!data.NpmUser && !data.NpmUserNoWarn) {
@@ -517,7 +502,7 @@ module.exports = {
             isIvy = isIvy && semver.gte(installVersion || version, '5.23.0');
 
             let pkgName = package + (isIvy ? '-ivy' : '') + (isTrial ? '-trial' : ''),
-            command;
+                command;
 
             if (isYarn2) {
                 // in case of yarn2 we need to copy the auth token form the .npmrc file to the .yarnrc.yml
