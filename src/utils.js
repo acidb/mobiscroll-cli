@@ -209,6 +209,8 @@ function getApiKey(userName, proxy, framework, callback) {
     }
 
     axios(requestOptions).then((resp) => {
+        // pass the userName through the data
+        resp.data.userName = userName;
         callback(resp.data);
     }).catch(err => {
         printError(`There was an error during getting the user's trial code. Status: ${err.response && err.response.status}, User: ${userName}. \nPlease see the error message for more information: ` + err);
@@ -273,22 +275,24 @@ function login(useGlobalNpmrc, proxy) {
     return new Promise((resolve, reject) => {
         inquirer.prompt(questions).then((answers) => {
             // Email address is not used by the Mobiscroll NPM registry
-            npmLogin(answers.username, answers.password, 'any@any.com', mbscNpmUrl, '@mobiscroll', null, (useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc')), proxy && processProxyUrl(proxy)).then(() => {
-                console.log(`  Logged in as ${answers.username}`);
-                printFeedback('Successful login!\n');
-                resolve(answers.username);
-            }).catch(error => {
-                const err = error.message;
-                if (err.indexOf("Could not find user with the specified username or password") !== -1 || err.indexOf("Incorrect username or password") !== -1) {
-                    printWarning(`We couldn’t log you in. This might be either because your account does not exist or you mistyped your login information. You can update your credentials ` + terminalLink('from your account', 'https://mobiscroll.com/account') + '.');
-                    printWarning(`If you don’t have an account yet, you can start a free trial from https://mobiscroll.com/starttrial`);
-                    console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
-                    process.exit();
-                }
+            npmLogin(answers.username, answers.password, 'any@any.com', mbscNpmUrl, '@mobiscroll', null,
+                (useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc')),
+                proxy && processProxyUrl(proxy)).then(() => {
+                    console.log(`  Logged in as ${answers.username}`);
+                    printFeedback('Successful login!\n');
+                    resolve(answers.username);
+                }).catch(error => {
+                    const err = error.message;
+                    if (err.indexOf("Could not find user with the specified username or password") !== -1 || err.indexOf("Incorrect username or password") !== -1) {
+                        printWarning(`We couldn’t log you in. This might be either because your account does not exist or you mistyped your login information. You can update your credentials ` + terminalLink('from your account', 'https://mobiscroll.com/account') + '.');
+                        printWarning(`If you don’t have an account yet, you can start a free trial from https://mobiscroll.com/starttrial`);
+                        console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
+                        process.exit();
+                    }
 
-                printError('npm login failed.\n\n' + err);
-                reject(err);
-            });
+                    printError('npm login failed.\n\n' + err);
+                    reject(err);
+                });
         }).catch(err => {
             reject(err);
         });
@@ -397,10 +401,10 @@ module.exports = {
         }, (err) => {
             console.log('Login error' + err);
         }).then((userName) => {
-            getApiKey(userName, proxy, framework, (data) => {
-                if (!installVersion) {
-                    installVersion = data.LatestVersion;
-                }
+            getApiKey(userName, proxy, framework, installHandler);
+
+            function installHandler(data) {
+                const instVersion = installVersion || data.LatestVersion;
 
                 if (data.HasAccess === false && data.License !== '') {
 
@@ -427,15 +431,45 @@ module.exports = {
                         default: 'N',
                     }).then(answer => {
                         if (answer.confirm.toLowerCase() == 'y') {
-                            callback(userName, true, data);
+                            callback(data.userName, true, data);
                         } else {
                             process.exit();
                         }
                     })
+                // } else if (data.HasAccess) {
+                //     if (data.NpmUser || data.NpmUserNoWarn) {
+                //         printFeedback(`Proceeding...`);
+                //         callback(data.userName, data.LatestVersion && !isTrial ? (semver.gt('3.2.4', (semver.valid(instVersion) ? instVersion : semver.coerce(instVersion)))) : true, data);
+                //     } else {
+                //         if (data.NpmUserSet) {
+                //             printWarning(`You are not logged in with the NPM User that was set up for your team. Please use the credentials for the NPM user.\n\nYou can check out the credentials on your licences page at:\n${chalk.gray('https://mobiscroll.com/account/licenses')}`);
+                //             login(useGlobalNpmrc, proxy).then((userName) => {
+                //                 getApiKey(userName, proxy, framework, installHandler)
+                //             }).catch((err) => console.log('Login error ' + err));
+                //         } else {
+                //             printWarning(`Looks like you don't have an NPM User set up. Please head over to the account page to set up the npm user credentials at: ${chalk.gray('https://mobiscroll.com/account/licenses#npm-user-setup')}`);
+                //             callback(data.userName, data.LatestVersion && !isTrial ? (semver.gt('3.2.4', (semver.valid(instVersion) ? instVersion : semver.coerce(instVersion)))) : true, data);
+                //         }
+                //     }
                 } else {
-                    callback(userName, data.LatestVersion && !isTrial ? (semver.gt('3.2.4', (semver.valid(installVersion) ? installVersion : semver.coerce(installVersion)))) : true, data);
+                    if (data.HasAccess) {
+                        if (!data.NpmUser && !data.NpmUserNoWarn) {
+                            if (data.NpmUserSet) {
+                                printWarning(`You are not logged in with the NPM User that was set up for your team. Please use the credentials for the NPM user.`);
+                                printWarning(`You can check out the credentials of the NPM User on your licences page at: ${chalk.gray('https://mobiscroll.com/account/licenses')}`);
+                                login(useGlobalNpmrc, proxy).then((userName) => {
+                                    getApiKey(userName, proxy, framework, installHandler)
+                                }).catch((err) => console.log('Login error ' + err));
+                                return;
+                            } else {
+                                printWarning(`Looks like you don't have an NPM User set up. Please head over to the account page to set up the npm user credentials at: ${chalk.gray('https://mobiscroll.com/account/licenses#npm-user-setup')}`);
+                            }
+                        }
+                    }
+                    callback(userName, data.LatestVersion && !isTrial ? (semver.gt('3.2.4', (semver.valid(instVersion) ? instVersion : semver.coerce(instVersion)))) : true, data);
                 }
-            });
+
+            }
         });
     },
 
