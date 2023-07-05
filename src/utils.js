@@ -266,7 +266,7 @@ function login(useGlobalNpmrc, proxy) {
         type: 'password',
         name: 'password',
         mask: '*',
-        message: 'Mobiscroll Password/Secret:',
+        message: 'Mobiscroll password/secret:',
         validate: function validatePassword(passw) {
             return passw !== '';
         }
@@ -412,10 +412,9 @@ module.exports = {
                         printWarning(`Looks like you don't have a license with active maitenance to install the ${chalk.gray('@mobiscroll/' + framework)} package from NPM. If you wish to use NPM installs, you need to have an active maintenance.`);
                         printWarning(`You can check your current licenses and renew your maintenance at: ${chalk.gray('https://mobiscroll.com/account/licenses')}`);
                     } else {
-                        printWarning(`Looks like you don't have a compatible license to install the ${chalk.gray('@mobiscroll/' + framework)} package from NPM. This means you either have a Component license or this framework is not supported by your license.`)
+                        printWarning(`Looks like you don't have a compatible license to install the ${chalk.gray('@mobiscroll/' + framework)} package from NPM or you don't have an active maintenance. This means you either have a Component license or this framework is not supported by your license. Beside that you also need an active maintenance to install from NPM.`);
                         printWarning(`You can check your current licenses and maintenance at: ${chalk.gray('https://mobiscroll.com/account/licenses')}`);
                     }
-
 
                     if (data.License === 'component') {
                         printWarning(`With a Component license the CLI can't install from NPM. Go to ${chalk.gray('https://download.mobiscroll.com')}, manually download the package, copy it into your project and run the same command with the ${chalk.gray('--no-npm')} flag.`);
@@ -440,14 +439,14 @@ module.exports = {
                     if (data.HasAccess) {
                         if (!data.NpmUser && !data.NpmUserNoWarn) {
                             if (data.NpmUserSet) {
-                                printWarning(`You are not logged in with the NPM User that was set up for your team. Please use the credentials for the NPM user.`);
+                                printWarning(`You are not logged in with the NPM user that was set up for your team. Please use the credentials for the NPM user.`);
                                 printWarning(`You can check out the credentials of the NPM User on your licences page at: ${chalk.gray('https://mobiscroll.com/account/licenses')}`);
                                 login(useGlobalNpmrc, proxy).then((userName) => {
                                     getApiKey(userName, proxy, framework, installHandler)
                                 }).catch((err) => console.log('Login error ' + err));
                                 return;
                             } else {
-                                printWarning(`Looks like you don't have an NPM User set up. Please head over to the account page to set up the npm user credentials at: ${chalk.gray('https://mobiscroll.com/account/licenses#npm-user-setup')}`);
+                                printWarning(`Looks like you don't have an NPM user set up. Please head over to the account page to set up the npm user credentials at: ${chalk.gray('https://mobiscroll.com/account/licenses#npm-user-setup')}`);
                             }
                         }
                     }
