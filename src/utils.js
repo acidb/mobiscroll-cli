@@ -48,6 +48,10 @@ function processProxyUrl(url) {
     return proxyObj;
 }
 
+function printNpmWarning(warning, text) {
+    console.log('\nnpm ' + chalk.bgYellow.black('WARN') + ' '+ chalk.magenta(warning || '') + ' ' + chalk.bold.yellow(text));
+}
+
 function printWarning(text) {
     console.log('\n' + chalk.bold.yellow(text));
 }
@@ -409,11 +413,9 @@ module.exports = {
                 if (data.HasAccess === false && data.License !== '') {
 
                     if (data.License === 'complete') {
-                        printWarning(`Looks like you don't have a license with active maitenance to install the ${chalk.gray('@mobiscroll/' + framework)} package from NPM. If you wish to use NPM installs, you need to have an active maintenance.`);
-                        printWarning(`You can check your current licenses and renew your maintenance at: ${chalk.gray('https://mobiscroll.com/account/licenses')}`);
+                        printWarning(`Looks like your maitenance agreement expired. You can check and renew your maintenance from your account at: ${chalk.gray('https://mobiscroll.com/account/licenses')}`);
                     } else {
-                        printWarning(`Looks like you don't have a compatible license to install the ${chalk.gray('@mobiscroll/' + framework)} package from NPM or you don't have an active maintenance. This means you either have a Component license or this framework is not supported by your license. Beside that you also need an active maintenance to install from NPM.`);
-                        printWarning(`You can check your current licenses and maintenance at: ${chalk.gray('https://mobiscroll.com/account/licenses')}`);
+                        printWarning(`Looks like you don't have access to ${chalk.gray('@mobiscroll/' + framework)} or your maintenance agreement is expired. Make sure to double check your license and/or renew your maintenance agreement from your account: ${chalk.gray('https://mobiscroll.com/account/licenses')}`);
                     }
 
                     if (data.License === 'component') {
@@ -421,7 +423,7 @@ module.exports = {
                         printWarning(`If you wish to use NPM installs, you can always upgrade to the Framework or Complete license.`);
                     }
 
-                    printWarning(`Feel free to get in touch or let us know if there is any trouble at support@mobiscroll.com \n`);
+                    printWarning(`In case there's any trouble, submit a support ticket from: ${chalk.gray('https://mobiscroll.com/account/supporttickets')}`);
 
                     inquirer.prompt({
                         type: 'input',
@@ -446,7 +448,7 @@ module.exports = {
                                 }).catch((err) => console.log('Login error ' + err));
                                 return;
                             } else {
-                                printWarning(`Looks like you don't have an NPM user set up. Please head over to the account page to set up the npm user credentials at: ${chalk.gray('https://mobiscroll.com/account/licenses#npm-user-setup')}`);
+                                printNpmWarning('no team access', `Looks like you don't have team NPM access configured. Please head on over to your account page to set it up: ${chalk.gray('https://mobiscroll.com/account/licenses#npm-user-setup')}\n`);
                             }
                         }
                     }
