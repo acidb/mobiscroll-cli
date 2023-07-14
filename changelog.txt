@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.13.0 - 14 Jul 2023
+
+  * New: We added support for team npm users to allow sharing credentials between members of the same development team.
+
 v 1.12.0 - 22 Jun 2023
 
   * New: We added support for Date & time picking packages from npm. The config command will handle the license type and install the appropriate package.
