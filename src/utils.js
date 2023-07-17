@@ -448,7 +448,7 @@ module.exports = {
                                 }).catch((err) => console.log('Login error ' + err));
                                 return;
                             } else {
-                                printNpmWarning('no team access', `Looks like you don't have team NPM access configured. Please head on over to your account page to set it up: ${chalk.gray('https://mobiscroll.com/account/licenses#npm-user-setup')}\n`);
+                                printNpmWarning('team access not set up', `Looks like you don't have team NPM access configured. Please head on over to your account page to set it up: ${chalk.gray('https://mobiscroll.com/account/licenses#npm-user-setup')}\n`);
                             }
                         }
                     }
