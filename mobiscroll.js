@@ -611,7 +611,8 @@ function handleConfig(projectType) {
                                         console.log(`${chalk.green('>') + chalk.grey(' package.json')} modified to load mobiscroll from the generated package file. \n`);
 
                                         // run npm install
-                                        utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : 'npm install'), true).then(() => {
+                                        let npm_install_command = legacyPeerFlag ? 'npm install --legacy-peer-deps' : 'npm install';
+                                        utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : npm_install_command), true).then(() => {
                                             cssFileName = (projectType == 'ionic' ? (packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
                                             configObject.cssFileName = cssFileName;
 
