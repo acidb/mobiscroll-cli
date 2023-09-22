@@ -3,6 +3,8 @@ const chalk = require('chalk');
 const exec = require('child_process').exec;
 const execSync = require('child_process').execSync;
 const mbscNpmUrl = 'https://npm.mobiscroll.com';
+const mbscApiUrlBase = 'https://api.mobiscroll.com';
+const dataRowRegex = /\/\/npm.mobiscroll.com\/:_authToken=(.*)/mi;
 const terminalLink = require('terminal-link');
 const inquirer = require('inquirer');
 const path = require('path');
@@ -157,7 +159,7 @@ function importModule(moduleName, location, data, isStandalone) {
 
 function getMobiscrollVersion(proxy, version, callback) {
     var requestOptions = {
-        url: 'https://api.mobiscroll.com/api/getmobiscrollversion' + (version ? ('/' + version) : '')
+        url: mbscApiUrlBase + '/api/getmobiscrollversion' + (version ? ('/' + version) : '')
     }
 
     if (proxy) {
@@ -201,7 +203,7 @@ function deleteFolderRecursive(path) {
 
 function getApiKey(userName, proxy, framework, callback) {
     var requestOptions = {
-        url: 'https://api.mobiscroll.com/api/access/' + userName + '/' + framework,
+        url: mbscApiUrlBase + '/api/access/' + userName + '/' + framework,
         // json: true,
         headers: {
             'User-Agent': 'request'
@@ -527,7 +529,7 @@ module.exports = {
                         data = data || {};
                         if (isNpmrcAvailable) {
                             const npmrcData = fs.readFileSync(npmrcPath, 'utf8').toString();
-                            const tokenRow = npmrcData.match(/\/\/npm.mobiscroll.com\/:_authToken=(.*)/mi);
+                            const tokenRow = npmrcData.match(dataRowRegex);
 
                             if (tokenRow.length > 1) {
                                 AUTH_TOKEN = tokenRow[1];
@@ -542,7 +544,7 @@ module.exports = {
                             data.npmScopes.mobiscroll = {};
                         }
 
-                        data.npmScopes.mobiscroll.npmRegistryServer = 'https://npm.mobiscroll.com';
+                        data.npmScopes.mobiscroll.npmRegistryServer = mbscNpmUrl;
                         data.npmScopes.mobiscroll.npmAuthToken = AUTH_TOKEN;
                         fs.writeFileSync(ymlPath, yaml.dump(data));
                     }
