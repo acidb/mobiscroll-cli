@@ -71,6 +71,14 @@ function printLog(text) {
     console.log(`${chalk.green('>')} ` + text + '\n');
 }
 
+function testPnpm(currDir) {
+    const hasLockFile = fs.existsSync(path.resolve(currDir, 'pnpm-lock.yaml'));
+    if (hasLockFile) {
+        printFeedback('Pnpm detected.')
+    }
+    return hasLockFile;
+}
+
 function testYarn(currDir) {
     // check if yarn command is installed and check if a yarn.lock exists in root project
     printLog('Testing yarn')
@@ -496,7 +504,8 @@ module.exports = {
         }
 
         getMobiscrollVersion(proxy, mainVersion, (version) => {
-            const useYarn = testYarn(currDir);
+            const usePnpm = testPnpm(currDir);
+            const useYarn = !usePnpm && testYarn(currDir);
             const isYarn2 = useYarn && semver.gte(useYarn, '2.0.0');
             if (mainVersion) {
                 installVersion = version;
@@ -553,13 +562,9 @@ module.exports = {
                 }
             }
 
-            let installCmd = useYarn ? 'yarn add' : 'npm install';
+            let installCmd = usePnpm ? 'pnpm add' : useYarn ? 'yarn add' : 'npm install';
             if (isTrial) {
-                if (isYarn2) {
-                    command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}`; // todo test --update-checksums
-                } else {
-                    command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save`;
-                }
+                command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}`; // todo test --update-checksums
             } else {
                 if (isIvy) {
                     command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
@@ -577,14 +582,26 @@ module.exports = {
             }
 
             // Skip node warnings
-            printFeedback(`Installing packages via ${useYarn ? 'yarn' : 'npm'}...`);
-            runCommand(command, true).then((out) => {
-                // let version = /@mobiscroll\/[a-z]+@([0-9a-z.-]+)/gmi.exec(out)[1]; // TODO handle when the npm install didn't return the package name and the version
-                printFeedback(`Mobiscroll for ${framework} installed.`);
-                callback(installVersion || version);
-            }).catch((reason) => {
-                printError('Could not install Mobiscroll.\n\n' + reason);
-            });
+            if (usePnpm) {
+                printFeedback('Updating registry configuration for Mobiscroll...');
+                runCommand('pnpm install', true)
+                    .then(addPackage)
+                    .catch((reason) => {
+                        printError('Could not run pnpm install.\n\n' + reason);
+                    });
+            } else {
+                addPackage();
+            }
+            function addPackage() {
+                printFeedback(`Installing packages via ${usePnpm ? 'pnpm' : useYarn ? 'yarn' : 'npm'}...`);
+                runCommand(command, true).then((out) => {
+                    // let version = /@mobiscroll\/[a-z]+@([0-9a-z.-]+)/gmi.exec(out)[1]; // TODO handle when the npm install didn't return the package name and the version
+                    printFeedback(`Mobiscroll for ${framework} installed.`);
+                    callback(installVersion || version);
+                }).catch((reason) => {
+                    printError('Could not install Mobiscroll.\n\n' + reason);
+                });
+            }
         });
     },
     packMobiscroll: (packLocation, currDir, framework, useYarn, version, callback) => {
