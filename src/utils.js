@@ -51,7 +51,7 @@ function processProxyUrl(url) {
 }
 
 function printNpmWarning(warning, text) {
-    console.log('\nnpm ' + chalk.bgYellow.black('WARN') + ' '+ chalk.magenta(warning || '') + ' ' + chalk.bold.yellow(text));
+    console.log('\nnpm ' + chalk.bgYellow.black('WARN') + ' ' + chalk.magenta(warning || '') + ' ' + chalk.bold.yellow(text));
 }
 
 function printWarning(text) {
