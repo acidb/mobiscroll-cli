@@ -3,6 +3,8 @@ const chalk = require('chalk');
 const exec = require('child_process').exec;
 const execSync = require('child_process').execSync;
 const mbscNpmUrl = 'https://npm.mobiscroll.com';
+const mbscApiUrlBase = 'https://api.mobiscroll.com';
+const dataRowRegex = /\/\/npm.mobiscroll.com\/:_authToken=(.*)/mi;
 const terminalLink = require('terminal-link');
 const inquirer = require('inquirer');
 const path = require('path');
@@ -49,7 +51,7 @@ function processProxyUrl(url) {
 }
 
 function printNpmWarning(warning, text) {
-    console.log('\nnpm ' + chalk.bgYellow.black('WARN') + ' '+ chalk.magenta(warning || '') + ' ' + chalk.bold.yellow(text));
+    console.log('\nnpm ' + chalk.bgYellow.black('WARN') + ' ' + chalk.magenta(warning || '') + ' ' + chalk.bold.yellow(text));
 }
 
 function printWarning(text) {
@@ -67,6 +69,14 @@ function printFeedback(text) {
 
 function printLog(text) {
     console.log(`${chalk.green('>')} ` + text + '\n');
+}
+
+function testPnpm(currDir) {
+    const hasLockFile = fs.existsSync(path.resolve(currDir, 'pnpm-lock.yaml'));
+    if (hasLockFile) {
+        printFeedback('Pnpm detected.')
+    }
+    return hasLockFile;
 }
 
 function testYarn(currDir) {
@@ -157,7 +167,7 @@ function importModule(moduleName, location, data, isStandalone) {
 
 function getMobiscrollVersion(proxy, version, callback) {
     var requestOptions = {
-        url: 'https://api.mobiscroll.com/api/getmobiscrollversion' + (version ? ('/' + version) : '')
+        url: mbscApiUrlBase + '/api/getmobiscrollversion' + (version ? ('/' + version) : '')
     }
 
     if (proxy) {
@@ -201,7 +211,7 @@ function deleteFolderRecursive(path) {
 
 function getApiKey(userName, proxy, framework, callback) {
     var requestOptions = {
-        url: 'https://api.mobiscroll.com/api/access/' + userName + '/' + framework,
+        url: mbscApiUrlBase + '/api/access/' + userName + '/' + framework,
         // json: true,
         headers: {
             'User-Agent': 'request'
@@ -494,7 +504,8 @@ module.exports = {
         }
 
         getMobiscrollVersion(proxy, mainVersion, (version) => {
-            const useYarn = testYarn(currDir);
+            const usePnpm = testPnpm(currDir);
+            const useYarn = !usePnpm && testYarn(currDir);
             const isYarn2 = useYarn && semver.gte(useYarn, '2.0.0');
             if (mainVersion) {
                 installVersion = version;
@@ -527,7 +538,7 @@ module.exports = {
                         data = data || {};
                         if (isNpmrcAvailable) {
                             const npmrcData = fs.readFileSync(npmrcPath, 'utf8').toString();
-                            const tokenRow = npmrcData.match(/\/\/npm.mobiscroll.com\/:_authToken=(.*)/mi);
+                            const tokenRow = npmrcData.match(dataRowRegex);
 
                             if (tokenRow.length > 1) {
                                 AUTH_TOKEN = tokenRow[1];
@@ -542,7 +553,7 @@ module.exports = {
                             data.npmScopes.mobiscroll = {};
                         }
 
-                        data.npmScopes.mobiscroll.npmRegistryServer = 'https://npm.mobiscroll.com';
+                        data.npmScopes.mobiscroll.npmRegistryServer = mbscNpmUrl;
                         data.npmScopes.mobiscroll.npmAuthToken = AUTH_TOKEN;
                         fs.writeFileSync(ymlPath, yaml.dump(data));
                     }
@@ -551,13 +562,9 @@ module.exports = {
                 }
             }
 
-            let installCmd = useYarn ? 'yarn add' : 'npm install';
+            let installCmd = usePnpm ? 'pnpm add' : useYarn ? 'yarn add' : 'npm install';
             if (isTrial) {
-                if (isYarn2) {
-                    command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}`; // todo test --update-checksums
-                } else {
-                    command = `${installCmd} ${mbscNpmUrl}/@mobiscroll/${pkgName}/-/${pkgName}-${installVersion || version}.tgz --save --registry=${mbscNpmUrl}`;
-                }
+                command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}`; // todo test --update-checksums
             } else {
                 if (isIvy) {
                     command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
@@ -575,14 +582,26 @@ module.exports = {
             }
 
             // Skip node warnings
-            printFeedback(`Installing packages via ${useYarn ? 'yarn' : 'npm'}...`);
-            runCommand(command, true).then((out) => {
-                // let version = /@mobiscroll\/[a-z]+@([0-9a-z.-]+)/gmi.exec(out)[1]; // TODO handle when the npm install didn't return the package name and the version
-                printFeedback(`Mobiscroll for ${framework} installed.`);
-                callback(installVersion || version);
-            }).catch((reason) => {
-                printError('Could not install Mobiscroll.\n\n' + reason);
-            });
+            if (usePnpm) {
+                printFeedback('Updating registry configuration for Mobiscroll...');
+                runCommand('pnpm install', true)
+                    .then(addPackage)
+                    .catch((reason) => {
+                        printError('Could not run pnpm install.\n\n' + reason);
+                    });
+            } else {
+                addPackage();
+            }
+            function addPackage() {
+                printFeedback(`Installing packages via ${usePnpm ? 'pnpm' : useYarn ? 'yarn' : 'npm'}...`);
+                runCommand(command, true).then((out) => {
+                    // let version = /@mobiscroll\/[a-z]+@([0-9a-z.-]+)/gmi.exec(out)[1]; // TODO handle when the npm install didn't return the package name and the version
+                    printFeedback(`Mobiscroll for ${framework} installed.`);
+                    callback(installVersion || version);
+                }).catch((reason) => {
+                    printError('Could not install Mobiscroll.\n\n' + reason);
+                });
+            }
         });
     },
     packMobiscroll: (packLocation, currDir, framework, useYarn, version, callback) => {
