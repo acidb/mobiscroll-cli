@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.14.0 - 25 Sep 2023
+
+  * New: We added support for pnpm repositories.
+
 v 1.13.0 - 14 Jul 2023
 
   * New: We added support for team npm users to allow sharing credentials between members of the same development team.
