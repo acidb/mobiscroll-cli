@@ -1,5 +1,13 @@
 Mobiscroll CLI changelog
 
+v 1.14.1 - 26 Sep 2023
+
+  * Fixed: We added missing `--legacy-peer-deps` flag in case of `no-npm` install.
+
+  * Fixed: We fixed yarn support in case of the login/logout commands, the AUTH_TOKEN was not updated in the .yarnrc.yml.
+
+  * Fixed: We fixed the logout command which was not working correctly when the npm login was used.
+
 v 1.14.0 - 25 Sep 2023
 
   * New: We added support for pnpm repositories.

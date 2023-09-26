@@ -14,6 +14,7 @@ const ncp = require('ncp').ncp;
 const axios = require('axios');
 var semver = require('semver');
 const yaml = require('js-yaml')
+const os = require('os');
 
 function processProxyUrl(url) {
     const proxyObj = {};
@@ -79,13 +80,14 @@ function testPnpm(currDir) {
     return hasLockFile;
 }
 
-function testYarn(currDir) {
+function testYarn(currDir, silent) {
     // check if yarn command is installed and check if a yarn.lock exists in root project
-    printLog('Testing yarn')
     const hasLockFile = fs.existsSync(path.resolve(currDir, 'yarn.lock'));
     const yarnVersion = runCommandSync('yarn -v', true);
     if (yarnVersion && hasLockFile) {
-        printLog(`Yarn version: ${yarnVersion}`)
+        if (!silent) {
+            printLog(`Yarn version: ${yarnVersion}`)
+        }
         return yarnVersion;
     }
     return false;
@@ -267,6 +269,63 @@ function checkAngularStandaloneComponent(settings) {
     return false;
 }
 
+function updateAuthTokenInYarnrc(currDir, deleteToken) {
+    // in case of yarn2 we need to copy the auth token form the .npmrc file to the .yarnrc.yml
+    let data;
+    const npmrcPath = path.resolve(currDir, '.npmrc');
+    const ymlPath = path.resolve(currDir, '.yarnrc.yml');
+
+    try {
+        if (fs.existsSync(ymlPath)) {
+            const ymlFile = fs.readFileSync(ymlPath, 'utf8');
+            data = yaml.load(ymlFile);
+        }
+        const isTokenAvailable = data && data.npmScopes && data.npmScopes.mobiscroll && data.npmScopes.mobiscroll.npmAuthToken;
+        const isNpmrcAvailable = fs.existsSync(npmrcPath);
+
+        // update the yarnrc.yml with the aut token
+        if (!deleteToken && (!isTokenAvailable || isNpmrcAvailable)) {
+            // if no mobiscroll token is available, then get it form the .npmrc file and update/create the .yarnrc.yml with the necessary settings
+            printLog('Updating .yarnrc.yml file with npm auth token')
+            let AUTH_TOKEN = '';
+            data = data || {};
+            if (isNpmrcAvailable) {
+                const npmrcData = fs.readFileSync(npmrcPath, 'utf8').toString();
+                const tokenRow = npmrcData.match(dataRowRegex);
+
+                if (tokenRow && tokenRow.length > 1) {
+                    AUTH_TOKEN = tokenRow[1];
+                }
+            }
+
+            if (!data.npmScopes) {
+                data.npmScopes = {};
+            }
+
+            if (!data.npmScopes.mobiscroll) {
+                data.npmScopes.mobiscroll = {};
+            }
+
+            data.npmScopes.mobiscroll.npmRegistryServer = mbscNpmUrl;
+            data.npmScopes.mobiscroll.npmAuthToken = AUTH_TOKEN;
+            fs.writeFileSync(ymlPath, yaml.dump(data));
+        }
+
+        // remove mobiscroll auth token from the yarnrc.yml
+        if (deleteToken && isTokenAvailable) {
+            delete data.npmScopes.mobiscroll;
+            if (Object.keys(data.npmScopes).length === 0) {
+                delete data.npmScopes;
+            }
+            fs.writeFileSync(ymlPath, yaml.dump(data));
+            printLog('Removing npm auth token from .yarnrc.yml file')
+        }
+
+    } catch (err) {
+        printError('Couldn\'t copy the npm auth token from the .npmrc to the .yarnrc.yml file. \n\nHere is the error message:\n\n' + err);
+    }
+}
+
 function login(useGlobalNpmrc, proxy) {
     // input questions
     var questions = [{
@@ -294,6 +353,13 @@ function login(useGlobalNpmrc, proxy) {
                 proxy && processProxyUrl(proxy)).then(() => {
                     console.log(`  Logged in as ${answers.username}`);
                     printFeedback('Successful login!\n');
+                    const currDir = useGlobalNpmrc ? os.homedir() : process.cwd()
+                    const usePnpm = testPnpm(currDir);
+                    const useYarn = !usePnpm && testYarn(currDir, true);
+
+                    if (useYarn && semver.gte(useYarn, '2.0.0')) {
+                       updateAuthTokenInYarnrc(currDir);
+                    }
                     resolve(answers.username);
                 }).catch(error => {
                     const err = error.message;
@@ -517,49 +583,7 @@ module.exports = {
                 command;
 
             if (isYarn2) {
-                // in case of yarn2 we need to copy the auth token form the .npmrc file to the .yarnrc.yml
-                let data;
-                const npmrcPath = path.resolve(currDir, '.npmrc');
-                const ymlPath = path.resolve(currDir, '.yarnrc.yml');
-
-
-                try {
-                    if (fs.existsSync(ymlPath)) {
-                        const ymlFile = fs.readFileSync(ymlPath, 'utf8');
-                        data = yaml.load(ymlFile);
-                    }
-                    const isTokenAvailable = data && data.npmScopes && data.npmScopes.mobiscroll && data.npmScopes.mobiscroll.npmAuthToken;
-                    const isNpmrcAvailable = fs.existsSync(npmrcPath);
-
-                    if (!isTokenAvailable || isNpmrcAvailable) {
-                        // if no mobiscroll token is available, then get it form the .npmrc file and update/create the .yarnrc.yml with the necessary settings
-                        printLog('Updating .yarnrc.yml file with npm auth token')
-                        let AUTH_TOKEN = '';
-                        data = data || {};
-                        if (isNpmrcAvailable) {
-                            const npmrcData = fs.readFileSync(npmrcPath, 'utf8').toString();
-                            const tokenRow = npmrcData.match(dataRowRegex);
-
-                            if (tokenRow.length > 1) {
-                                AUTH_TOKEN = tokenRow[1];
-                            }
-                        }
-
-                        if (!data.npmScopes) {
-                            data.npmScopes = {};
-                        }
-
-                        if (!data.npmScopes.mobiscroll) {
-                            data.npmScopes.mobiscroll = {};
-                        }
-
-                        data.npmScopes.mobiscroll.npmRegistryServer = mbscNpmUrl;
-                        data.npmScopes.mobiscroll.npmAuthToken = AUTH_TOKEN;
-                        fs.writeFileSync(ymlPath, yaml.dump(data));
-                    }
-                } catch (err) {
-                    printError('Couldn\'t copy the npm auth token from the .npmrc to the .yarnrc.yml file. \n\nHere is the error message:\n\n' + err);
-                }
+                updateAuthTokenInYarnrc(currDir);
             }
 
             let installCmd = usePnpm ? 'pnpm add' : useYarn ? 'yarn add' : 'npm install';
@@ -685,5 +709,6 @@ module.exports = {
     login,
     testYarn,
     appendContentToFile,
-    checkAngularStandaloneComponent
+    checkAngularStandaloneComponent,
+    updateAuthTokenInYarnrc
 };

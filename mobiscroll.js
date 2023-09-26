@@ -81,16 +81,28 @@ function notLoggedInFeedback() {
     }
 }
 
-function removeTokenFromNpmrc(path) {
-    if (fs.existsSync(path)) {
-        let content = (fs.readFileSync(path)).toString();
+function removeTokenFromNpmrc(currDir) {
+    const npmrcPath = path.resolve(currDir, '.npmrc');
+    const yarnRcPath = path.resolve(currDir, '.yarnrc.yml');
+    if (fs.existsSync(npmrcPath)) {
+        let content = (fs.readFileSync(npmrcPath)).toString();
         if (content.length > 5) {
-            content = content.replace(/@mobiscroll:registry=https:\/\/npm\.mobiscroll\.com\s+(\S+)$/gmi, '');
-            utils.writeToFile(path, content, () => {
+            // there is difference in the format of the auth token
+            const regexNpmFormat = /\/\/npm\.mobiscroll\.com\/:_authToken=.+\s\S+npm.mobiscroll.com\//gmi;
+            const regexCliFormat = /@mobiscroll:registry=https:\/\/npm\.mobiscroll\.com(\/?)\s+(\S+)$/gmi
+            content = content
+                .replace(regexCliFormat, '')
+                .replace(regexNpmFormat, '');
+           
+            utils.writeToFile(npmrcPath, content, () => {
                 printFeedback('Successful logout!\n');
             });
         } else {
             notLoggedInFeedback();
+        }
+
+        if(fs.existsSync(yarnRcPath)) {
+            utils.updateAuthTokenInYarnrc(currDir, true);
         }
     } else {
         console.log(`No${useGlobalNpmrc ? ' global' : ' local'} .npmrc file found.`);
@@ -611,7 +623,8 @@ function handleConfig(projectType) {
                                         console.log(`${chalk.green('>') + chalk.grey(' package.json')} modified to load mobiscroll from the generated package file. \n`);
 
                                         // run npm install
-                                        utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : 'npm install'), true).then(() => {
+                                        const npmInstallCmd = 'npm install' + (legacyPeerFlag ? ' --legacy-peer-deps' : '');
+                                        utils.run((useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : npmInstallCmd), true).then(() => {
                                             cssFileName = (projectType == 'ionic' ? (packageJson.dependencies['@ionic/angular'] ? `./node_modules/@mobiscroll/${framework}/dist/css/` : 'lib/mobiscroll/css/') : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
                                             configObject.cssFileName = cssFileName;
 
@@ -640,7 +653,7 @@ function handleLogin() {
 }
 
 function handleLogout() {
-    removeTokenFromNpmrc(path.resolve((useGlobalNpmrc ? os.homedir() : process.cwd()), '.npmrc'));
+    removeTokenFromNpmrc(path.resolve((useGlobalNpmrc ? os.homedir() : process.cwd())));
 }
 
 // options
