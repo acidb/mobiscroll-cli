@@ -63,10 +63,7 @@ import '` +
         `
     );
 
-    console.log(
-      `\nFind more information about the usage on the ` +
-        terminalLink('documentation page:', 'https://mobiscroll.com/docs/vue/getting-started/overview')
-    );
+    console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', 'https://mobiscroll.com/docs/vue'));
     console.log(`\nFind usage examples on the ` + terminalLink('demo page:', 'https://demo.mobiscroll.com/vue/eventcalendar/') + '\n');
   },
   reactHelp: (isTrial, isLite, npmSource, useScss, version) => {
@@ -80,8 +77,7 @@ import '` +
       );
 
       console.log(
-        `\nFind more information about the usage on the ` +
-          terminalLink('documentation page:', 'https://docs.mobiscroll.com/v5/react/getting_started')
+        `\nFind more information about the usage on the ` + terminalLink('documentation page:', 'https://docs.mobiscroll.com/react')
       );
       console.log(`\nFind usage examples on the ` + terminalLink('demo page:', 'https://demo.mobiscroll.com/react/eventcalendar/') + '\n');
     } else {
