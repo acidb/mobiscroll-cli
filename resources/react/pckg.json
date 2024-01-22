@@ -1,42 +1,46 @@
 {
-    "name": "@mobiscroll/react",
-    "version": "",
-    "description": "React UI library for progressive web and hybrid apps",
-    "homepage": "https://mobiscroll.com/",
-    "license": "Apache-2.0",
-    "keywords": [
-        "mobile web",
-        "hybrid apps",
-        "javascript",
-        "mobiscroll",
-        "javascript library",
-        "react",
-        "component library",
-        "ui components",
-        "ui kit"
-    ],
-    "author": {
-        "name": "Mobiscroll",
-        "url": "https://mobiscroll.com/"
+  "name": "@mobiscroll/react",
+  "version": "",
+  "description": "React UI library for progressive web and hybrid apps",
+  "homepage": "https://mobiscroll.com/",
+  "license": "Apache-2.0",
+  "keywords": [
+    "mobile web",
+    "hybrid apps",
+    "javascript",
+    "mobiscroll",
+    "javascript library",
+    "react",
+    "component library",
+    "ui components",
+    "ui kit"
+  ],
+  "author": {
+    "name": "Mobiscroll",
+    "url": "https://mobiscroll.com/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acidb/mobiscroll.git"
+  },
+  "bugs": {
+    "url": "https://github.com/acidb/mobiscroll/issues"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/esm5/mobiscroll.react.min.js",
+      "default": "./dist/js/mobiscroll.react.min.js"
     },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/acidb/mobiscroll.git"
-    },
-    "bugs": {
-        "url": "https://github.com/acidb/mobiscroll/issues"
-    },
-    "typings": "dist/src/js/frameworks/react.d.ts",
-    "main": "dist/js/",
-    "style": "dist/css/",
-    "files": [
-        "dist/js/**",
-        "dist/css/**",
-        "dist/src/**"
-    ],
-    "peerDependencies": {
-        "react": ">=15.3.0",
-        "react-dom": ">=15.3.0",
-        "prop-types": ">=15.5.0"
-    }
+    "./dist/css/*": "./dist/css/*",
+    "./dist/src/*": "./dist/src/*"
+  },
+  "typings": "dist/src/js/frameworks/react.d.ts",
+  "main": "dist/js/",
+  "style": "dist/css/",
+  "files": ["dist/js/**", "dist/css/**", "dist/src/**"],
+  "peerDependencies": {
+    "react": ">=15.3.0",
+    "react-dom": ">=15.3.0",
+    "prop-types": ">=15.5.0"
+  }
 }

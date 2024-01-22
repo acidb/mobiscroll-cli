@@ -1,41 +1,44 @@
 {
-    "name": "@mobiscroll/angular",
-    "version": "",
-    "description": "Angular UI library for progressive web and hybrid apps",
-    "homepage": "https://mobiscroll.com/",
-    "license": "Apache-2.0",
-    "keywords": [
-        "mobile web",
-        "hybrid apps",
-        "javascript",
-        "mobiscroll",
-        "javascript library",
-        "angular",
-        "component library",
-        "ui components",
-        "ui kit",
-        "ionic plugin"
-    ],
-    "author": {
-        "name": "Mobiscroll",
-        "url": "https://mobiscroll.com/"
+  "name": "@mobiscroll/angular",
+  "version": "",
+  "description": "Angular UI library for progressive web and hybrid apps",
+  "homepage": "https://mobiscroll.com/",
+  "license": "Apache-2.0",
+  "keywords": [
+    "mobile web",
+    "hybrid apps",
+    "javascript",
+    "mobiscroll",
+    "javascript library",
+    "angular",
+    "component library",
+    "ui components",
+    "ui kit",
+    "ionic plugin"
+  ],
+  "author": {
+    "name": "Mobiscroll",
+    "url": "https://mobiscroll.com/"
+  },
+  "bugs": {
+    "url": "https://github.com/acidb/mobiscroll/issues"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/esm5/mobiscroll.angular.min.js",
+      "default": "./dist/js/mobiscroll.angular.min.js"
     },
-    "bugs": {
-        "url": "https://github.com/acidb/mobiscroll/issues"
-    },
-    "main": "dist/js/",
-    "module": "dist/esm5/",
-    "types": "dist/js/",
-    "style": "dist/css/",
-    "files": [
-        "dist/css/**",
-        "dist/esm5/**",
-        "dist/js/**",
-        "dist/src/**"
-    ],
-    "peerDependencies": {
-        "@angular/core": ">=2.0.0",
-        "@angular/common": ">=2.0.0",
-        "@angular/forms": ">=2.0.0"
-    }
+    "./dist/css/*": "./dist/css/*",
+    "./dist/js/*": "./dist/js/*"
+  },
+  "main": "dist/js/",
+  "module": "dist/esm5/",
+  "types": "dist/js/",
+  "style": "dist/css/",
+  "files": ["dist/css/**", "dist/esm5/**", "dist/js/**", "dist/src/**"],
+  "peerDependencies": {
+    "@angular/core": ">=2.0.0",
+    "@angular/common": ">=2.0.0",
+    "@angular/forms": ">=2.0.0"
+  }
 }

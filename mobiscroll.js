@@ -649,46 +649,50 @@ function handleConfig(projectType) {
                 utils.printLog('Removing old Mobiscroll version.');
                 // write the new package.json
                 utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
-                  // pack with npm pack
-                  utils.packMobiscroll(packageFolder, currDir, framework, useYarn, mobiscrollVersion, (packageName) => {
-                    var packageJson = '';
-                    try {
-                      packageJson = require(packageJsonLocation);
-                    } catch (err) {
-                      utils.printError('Could not open package.json file.\n\n' + err);
-                    }
+                  utils.writeToFile(path.resolve(packageFolder, 'dist/esm5/package.json'), '{ "type": "module" }', () => {
+                    // pack with npm pack
+                    utils.packMobiscroll(packageFolder, currDir, framework, useYarn, mobiscrollVersion, (packageName) => {
+                      var packageJson = '';
+                      try {
+                        packageJson = require(packageJsonLocation);
+                      } catch (err) {
+                        utils.printError('Could not open package.json file.\n\n' + err);
+                      }
 
-                    if (useYarn) {
-                      // workaround delete yarn cache tmp folder manually. Issue (https://github.com/yarnpkg/yarn/issues/5357)
-                      let yarnCacheLocation = utils.runSync('yarn cache dir');
-                      utils.deleteFolder(path.resolve(yarnCacheLocation.trim(), '.tmp'));
-                      utils.runSync(`yarn cache clean @mobiscroll/${framework}`);
-                    } else {
-                      packageJson.dependencies[`@mobiscroll/${framework}`] = 'file:./src/lib/mobiscroll-package/' + packageName;
-                    }
+                      if (useYarn) {
+                        // workaround delete yarn cache tmp folder manually. Issue (https://github.com/yarnpkg/yarn/issues/5357)
+                        let yarnCacheLocation = utils.runSync('yarn cache dir');
+                        utils.deleteFolder(path.resolve(yarnCacheLocation.trim(), '.tmp'));
+                        utils.runSync(`yarn cache clean @mobiscroll/${framework}`);
+                      } else {
+                        packageJson.dependencies[`@mobiscroll/${framework}`] = 'file:./src/lib/mobiscroll-package/' + packageName;
+                      }
 
-                    utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
-                      console.log(
-                        `${chalk.green('>') + chalk.grey(' package.json')} modified to load mobiscroll from the generated package file. \n`
-                      );
+                      utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
+                        console.log(
+                          `${
+                            chalk.green('>') + chalk.grey(' package.json')
+                          } modified to load mobiscroll from the generated package file. \n`
+                        );
 
-                      // run npm install
-                      const npmInstallCmd = 'npm install' + (legacyPeerFlag ? ' --legacy-peer-deps' : '');
-                      utils.run(useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : npmInstallCmd, true).then(() => {
-                        cssFileName =
-                          (projectType == 'ionic'
-                            ? packageJson.dependencies['@ionic/angular']
-                              ? `./node_modules/@mobiscroll/${framework}/dist/css/`
-                              : 'lib/mobiscroll/css/'
-                            : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
-                        configObject.cssFileName = cssFileName;
+                        // run npm install
+                        const npmInstallCmd = 'npm install' + (legacyPeerFlag ? ' --legacy-peer-deps' : '');
+                        utils.run(useYarn ? 'yarn add file:./src/lib/mobiscroll-package/' + packageName : npmInstallCmd, true).then(() => {
+                          cssFileName =
+                            (projectType == 'ionic'
+                              ? packageJson.dependencies['@ionic/angular']
+                                ? `./node_modules/@mobiscroll/${framework}/dist/css/`
+                                : 'lib/mobiscroll/css/'
+                              : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
+                          configObject.cssFileName = cssFileName;
 
-                        //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, false, () => {
-                        config(configObject, () => {
-                          console.log(`\n${chalk.green('>')} Removing unused mobiscroll files.`);
-                          fs.unlinkSync(path.resolve(packageFolder, 'package.json')); // delete the package.json in dist
-                          utils.deleteFolder(mbscFolderLocation); // delete source folder
-                          utils.deleteFolder(distFolder); // delete created dist
+                          //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, false, () => {
+                          config(configObject, () => {
+                            console.log(`\n${chalk.green('>')} Removing unused mobiscroll files.`);
+                            fs.unlinkSync(path.resolve(packageFolder, 'package.json')); // delete the package.json in dist
+                            utils.deleteFolder(mbscFolderLocation); // delete source folder
+                            utils.deleteFolder(distFolder); // delete created dist
+                          });
                         });
                       });
                     });
