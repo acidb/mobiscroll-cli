@@ -621,11 +621,8 @@ function handleConfig(projectType) {
                 }
               }
 
-              if (isAngular && packageJson && packageJson.dependencies && utils.getMainAngularVersion(packageJson) < 16) {
-                esmBundleAvailable = false;
-              }
-
-              if (!esmBundleAvailable) {
+              if (!esmBundleAvailable ||
+                isAngular && packageJson && packageJson.dependencies && utils.getMainAngularVersion(packageJson) < 16) {
                 delete noNpmPackageJson.exports;
               }
 
