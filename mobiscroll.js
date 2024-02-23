@@ -279,7 +279,7 @@ function askStyleSheetType(version, useScss, config, callback) {
         skipQuestion = true;
         localScss = true;
       } else {
-        skipQuestion = !isGlobalScss; // only ask if the angular project was set up wiht scss
+        skipQuestion = !isGlobalScss; // only ask if the angular project was set up with scss
         localScss = false;
         if (isIonic && fs.existsSync(path.resolve(config.currDir, 'angular.json'))) {
           checkStyleLoaded = fs.readFileSync(path.resolve(config.currDir, 'angular.json'), 'utf8').toString();
@@ -630,6 +630,10 @@ function handleConfig(projectType) {
                 }
               }
 
+              if (!esmBundleAvailable) {
+                delete noNpmPackageJson.exports;
+              }
+
               if (noNpmPackageJson.types) {
                 noNpmPackageJson.types = noNpmPackageJson.types + localJsFileName[0].replace('js', 'd.ts');
               }
@@ -649,7 +653,7 @@ function handleConfig(projectType) {
                 utils.printLog('Removing old Mobiscroll version.');
                 // write the new package.json
                 utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
-                  utils.writeToFile(path.resolve(packageFolder, 'dist/esm5/package.json'), '{ "type": "module" }', () => {
+                  function pack() {
                     // pack with npm pack
                     utils.packMobiscroll(packageFolder, currDir, framework, useYarn, mobiscrollVersion, (packageName) => {
                       var packageJson = '';
@@ -696,7 +700,13 @@ function handleConfig(projectType) {
                         });
                       });
                     });
-                  });
+                  }
+
+                  if (esmBundleAvailable) {
+                    utils.writeToFile(path.resolve(packageFolder, 'dist/esm5/package.json'), '{ "type": "module" }', pack);
+                  } else {
+                    pack();
+                  }
                 });
               });
             });
