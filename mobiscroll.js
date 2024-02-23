@@ -577,13 +577,14 @@ function handleConfig(projectType) {
           };
 
           askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
+            const isAngular = framework == 'angular';
             configObject.useScss = isScssSelected;
 
             if (configObject.useScss) {
               let scssFileLocation = path.resolve(cssFileLocation, `mobiscroll.${framework}.scss`);
               let fileData = fs.readFileSync(scssFileLocation).toString();
 
-              if (fileData && framework === 'angular') {
+              if (fileData && isAngular) {
                 fileData = fileData.replace("$mbsc-font-path: '' !default;", "$mbsc-font-path: '~@mobiscroll/angular/dist/css/' !default;");
                 utils.writeToFile(scssFileLocation, fileData);
               }
@@ -613,11 +614,15 @@ function handleConfig(projectType) {
               if (noNpmPackageJson.module) {
                 noNpmPackageJson.module = noNpmPackageJson.module + localJsFileName[0];
               }
-              if (semver.gte(version, '5.0.0-beta6') && framework !== 'angular' && esmBundleAvailable) {
+              if (semver.gte(version, '5.0.0-beta6') && !isAngular && esmBundleAvailable) {
                 noNpmPackageJson.module = 'dist/esm5/' + localJsFileName[0];
                 if (noNpmPackageJson.files && noNpmPackageJson.files.length !== undefined) {
                   noNpmPackageJson.files.push('dist/esm5/**');
                 }
+              }
+
+              if (isAngular && packageJson && packageJson.dependencies && utils.getMainAngularVersion(packageJson) < 16) {
+                esmBundleAvailable = false;
               }
 
               if (!esmBundleAvailable) {
@@ -631,7 +636,7 @@ function handleConfig(projectType) {
                 noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
               }
 
-              if (semver.gte(version, '5.0.0-beta') && framework !== 'angular') {
+              if (semver.gte(version, '5.0.0-beta') && !isAngular) {
                 // typing location is different in v5 except angular
                 noNpmPackageJson.typings = 'dist/src/' + framework + '/bundle.d.ts';
               }

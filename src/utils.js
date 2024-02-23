@@ -449,6 +449,12 @@ function testInstalledCLI(checkCmd, installCmd, helpCmd, name, type) {
   });
 }
 
+function getMainAngularVersion(packageJson) {
+  const angularVersionRaw = packageJson.dependencies['@angular/core'];
+  const angularVersionArr = shapeVersionToArray(angularVersionRaw);
+  return angularVersionArr[0];
+}
+
 module.exports = {
   checkTypescriptVersion: (packageJson) => {
     var version = (packageJson.devDependencies ? packageJson.devDependencies.typescript : '') || packageJson.dependencies.typescript;
@@ -650,9 +656,7 @@ module.exports = {
 
     let isIvy = false;
     if (frameworkName === 'angular' && packageJson && packageJson.dependencies) {
-      angularVersionRaw = packageJson.dependencies['@angular/core'];
-      angularVersionArr = shapeVersionToArray(angularVersionRaw);
-      isIvy = angularVersionArr[0] >= 13;
+      isIvy = getMainAngularVersion(packageJson) >= 13;
     }
 
     if (!semver.valid(installVersion)) {
@@ -803,4 +807,5 @@ module.exports = {
   appendContentToFile,
   checkAngularStandaloneComponent,
   updateAuthTokenInYarnrc,
+  getMainAngularVersion
 };
