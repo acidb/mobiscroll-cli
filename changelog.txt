@@ -1,5 +1,11 @@
 Mobiscroll CLI changelog
 
+v 1.14.4 - 22 Feb 2024
+
+  * Fixed: We improved on the angular MbscModule injection and fixed the extra trailing spaces.
+
+  * Fixed: We fixed the angular style sheet loading order in the angular.json file.
+
 v 1.14.3 - 22 Feb 2024
 
   * Fixed: We fixed an error appearing and the improved on the helper message when the config command was executed in an application where the cli couldn't identify the necessary modules/components files.

@@ -35,7 +35,7 @@ function updateAngularJsonWithCss(settings) {
     ); // remove previously installed mobiscroll styles
 
     if (!settings.useScss) {
-      stylesArray.push(cssFile);
+      stylesArray = [cssFile, ...stylesArray];
     }
 
     ngConfig.projects[projectName][configPath].build.options.styles = stylesArray;

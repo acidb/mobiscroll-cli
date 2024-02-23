@@ -165,10 +165,10 @@ function appendContentToFile(location, newData, replaceRegex, prepend, skipRegex
 }
 
 function importModule(moduleName, location, data, isStandalone) {
-  if (data.indexOf(moduleName) == -1) {
+  if (data.indexOf(moduleName) === -1) {
     // check if module is not loaded
     data = 'import { ' + moduleName + " } from '" + location + "';\n" + data;
-    data = data.replace('imports: [', 'imports: [ ' + (isStandalone ? '' : ' \n    ') + moduleName + ', ');
+    data = data.replace('imports: [', 'imports: [' + (isStandalone ? moduleName + ', ' : '\n    ' + moduleName + ','));
   }
   return data;
 }
@@ -753,24 +753,11 @@ module.exports = {
       try {
         let data = fs.readFileSync(moduleLocation, 'utf8').toString();
 
-        if (data.indexOf('MbscModule.forRoot') === -1 || isStandaloneComponent) {
-          // let checkForRoute = data.indexOf('MbscModule.forRoot') === -1;
-
-          // Remove previous module load
-          // if (checkForRoute) {
-          const importRegex = /import \{ MbscModule(?:, mobiscroll)? \} from '[^']*';\s*/;
-          if (importRegex.test(data)) {
-            data = data.replace(importRegex, '');
-            data = data.replace(/[ \t]*MbscModule,[ \t\r]*\s?/, '');
-          }
+        if (data.indexOf("MbscModule") === -1) {
 
           // Add angular module imports which are needed for mobiscroll
-          data = importModule('MbscModule', mbscFileName, data, isStandaloneComponent);
-          // }
           data = importModule('FormsModule', '@angular/forms', data, isStandaloneComponent);
-
-          // Remove previous api key if present
-          data = data.replace(/mobiscroll.apiKey = ['"][a-z0-9]{8}['"];\n\n?/, '');
+          data = importModule('MbscModule', mbscFileName, data, isStandaloneComponent); 
 
           writeToFile(moduleLocation, data);
         }
