@@ -4,6 +4,7 @@ const chalk = require('chalk');
 const path = require('path');
 const semver = require('semver');
 const helperMessages = require('./helperMessages.js');
+const terminalLink = require('terminal-link');
 const printWarning = utils.printWarning;
 
 function updateAngularJsonWithCss(settings) {
@@ -98,17 +99,21 @@ function angularConfig(settings, callback) {
   }
 
   if (!isStandalone && !utils.importModules(path.resolve(currDir + '/src/app/app.module.ts'), 'app.module.ts', settings.jsFileName)) {
+    const cssFile = settings.cssFileName.replace('../', './');
     // if not an angular-cli based app
     printWarning(
-      `No app.module.ts file found. You are probably running this command in a non Angular-cli based application. Please visit the following page for further instructions:`
+      `Couldn't identify the necessary modules/components where Mobiscroll resources should be included. In this case, manual inclusion is required. Please follow the instructions below:\n`
     );
-    console.log(terminalLink('Mobiscroll Angular Docs - Quick install', 'https://docs.mobiscroll.com/angular/quick-install'));
+
+    helperMessages.angularLazy(false, false, false, true);
+    console.log("\n 2. Include the stylesheet into your application from the following location: " + chalk.grey(cssFile) + '\n');
+    console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', `https://mobiscroll.com/docs/angular`));
+    console.log(`\nFind usage examples on the ` + terminalLink('Demo page:', 'https://demo.mobiscroll.com/angular/eventcalendar/') + '\n');
     return;
   } else if (settings.useScss) {
     updateGlobalScss(
       settings,
-      `@import "${
-        settings.angularVersion && semver.gte(settings.angularVersion, '15.0.0') ? '' : '~'
+      `@import "${settings.angularVersion && semver.gte(settings.angularVersion, '15.0.0') ? '' : '~'
       }@mobiscroll/angular/dist/css/mobiscroll${settings.isNpmSource ? '' : '.angular'}.scss";`
     );
   } else {
@@ -122,7 +127,6 @@ function angularConfig(settings, callback) {
         data = data.replace(/"\.\.\/node_modules\/mobiscroll-angular\/dist\/css\/mobiscroll\.min\.css",\s*/, '');
         data = data.replace(/"\.\.\/node_modules\/@mobiscroll\/angular\/dist\/css\/.+.css",\s*/, '');
         data = data.replace(/"lib\/mobiscroll\/css\/mobiscroll\..*\.css",\s*/, '');
-
         // add angular module imports which are needed for mobiscroll
         data = data.replace('"styles": [', `"styles": [\n        "${settings.cssFileName}",`);
 

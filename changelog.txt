@@ -1,5 +1,19 @@
 Mobiscroll CLI changelog
 
+v 1.14.3 - 22 Feb 2024
+
+  * Fixed: We fixed an error appearing and the improved on the helper message when the config command was executed in an application where the cli couldn't identify the necessary modules/components files.
+
+  * Fixed: We fixed the logout command which was not working in some cases.
+
+  * Fixed: We added the missing helper message in case of jquery and javascript config.
+
+v 1.14.2 - 23 Jan 2024
+
+  * Fixed: We fixed the package generated with the --no-npm flag to work with native Node.js imports.
+
+  * Fixed: We fixed the documentation link for Vue.
+
 v 1.14.1 - 26 Sep 2023
 
   * Fixed: We added missing `--legacy-peer-deps` flag in case of `no-npm` install.

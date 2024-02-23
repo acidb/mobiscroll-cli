@@ -101,7 +101,7 @@ function removeTokenFromNpmrc(currDir) {
     let content = fs.readFileSync(npmrcPath).toString();
     if (content.length > 5) {
       // there is difference in the format of the auth token
-      const regexNpmFormat = /\/\/npm\.mobiscroll\.com\/:_authToken=.+\s\S+npm.mobiscroll.com\//gim;
+      const regexNpmFormat = /\/\/npm\.mobiscroll\.com\/:_authToken=.+\s\S+npm.mobiscroll.com\/?/gim;
       const regexCliFormat = /@mobiscroll:registry=https:\/\/npm\.mobiscroll\.com(\/?)\s+(\S+)$/gim;
       content = content.replace(regexCliFormat, '').replace(regexNpmFormat, '');
 
@@ -161,17 +161,6 @@ function handleGlobalInstall() {
   useGlobalNpmrc = true;
 }
 
-function detectProjectFramework(packageJson, apiKey, isLite, projectType, useScss, version) {
-  if (packageJson.dependencies) {
-    if (packageJson.dependencies.react) {
-      helperMessages.reactHelp(apiKey, isLite, isNpmSource, useScss, version);
-      return 'react';
-    }
-  }
-  // TODO return guide to the default installation
-  return;
-}
-
 function config(settings, callback) {
   var packageJson = settings.packageJson;
 
@@ -211,15 +200,13 @@ function config(settings, callback) {
       }
       break;
     case 'jquery':
+      helperMessages.jsHelp('jquery');
+      if (callback) {
+        callback();
+      }
+      break;
     case 'javascript':
-      detectProjectFramework(
-        settings.packageJson,
-        settings.apiKey,
-        settings.isLite,
-        projectType,
-        settings.useScss,
-        settings.mobiscrollVersion
-      );
+      helperMessages.jsHelp('javascript');
       if (callback) {
         callback();
       }
@@ -288,6 +275,10 @@ function askStyleSheetType(version, useScss, config, callback) {
         }
       }
     }
+  }
+
+  if (config.projectType === 'jquery' || config.projectType === 'javascript') {
+    skipQuestion = true;
   }
 
   // only ask the scss install if the version is larger then 4.7.0
@@ -423,8 +414,8 @@ function handleConfig(projectType) {
   if (!projectType) {
     printWarning(
       'Please specify the project type. [ionic, angular, javascript, jquery, react, vue] \n\nFor more information please run the ' +
-        chalk.gray('mobiscroll config --help') +
-        ' command.'
+      chalk.gray('mobiscroll config --help') +
+      ' command.'
     );
     return;
   }
@@ -543,10 +534,9 @@ function handleConfig(projectType) {
 
           if (!localJsFileName.length || !localCssFileName.length) {
             printWarning(
-              `No mobiscroll js/css files were found in your project's src/lib/mobiscroll folder. \n\nPlease make sure to extract the downloaded Mobiscroll package, then grab the ${
-                framework == 'angular'
-                  ? 'lib folder and copy it into src folder of your app!'
-                  : 'js and css folders and copy it into src/lib/mobiscroll folder of your app. If there is no such folder available, you can create it.'
+              `No mobiscroll js/css files were found in your project's src/lib/mobiscroll folder. \n\nPlease make sure to extract the downloaded Mobiscroll package, then grab the ${framework == 'angular'
+                ? 'lib folder and copy it into src folder of your app!'
+                : 'js and css folders and copy it into src/lib/mobiscroll folder of your app. If there is no such folder available, you can create it.'
               }`
             );
             return;
@@ -674,8 +664,7 @@ function handleConfig(projectType) {
 
                       utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
                         console.log(
-                          `${
-                            chalk.green('>') + chalk.grey(' package.json')
+                          `${chalk.green('>') + chalk.grey(' package.json')
                           } modified to load mobiscroll from the generated package file. \n`
                         );
 

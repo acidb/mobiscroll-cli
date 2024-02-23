@@ -102,9 +102,9 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
       if (stderr && !skipError && !skipWarning) {
         printWarning(
           'There was an stderror during executing the following command ' +
-            chalk.gray(cmd) +
-            '. \n\nHere is the warning message: \n\n' +
-            stderr
+          chalk.gray(cmd) +
+          '. \n\nHere is the warning message: \n\n' +
+          stderr
         );
       }
       if (error && !skipError) {
@@ -119,7 +119,7 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
 
 function runCommandSync(cmd, skipError) {
   try {
-    return execSync(cmd).toString('utf8');
+    return execSync(cmd, { stdio: 'pipe' }).toString('utf8');
   } catch (error) {
     if (!skipError) {
       console.log('Could not run command ' + chalk.gray(cmd) + '. \n\n' + error);
@@ -241,8 +241,7 @@ function getApiKey(userName, proxy, framework, callback) {
     })
     .catch((err) => {
       printError(
-        `There was an error during getting the user's trial code. Status: ${
-          err.response && err.response.status
+        `There was an error during getting the user's trial code. Status: ${err.response && err.response.status
         }, User: ${userName}. \nPlease see the error message for more information: ` + err
       );
     });
@@ -397,8 +396,8 @@ function login(useGlobalNpmrc, proxy) {
             ) {
               printWarning(
                 `We couldn’t log you in. This might be either because your account does not exist or you mistyped your login information. You can update your credentials ` +
-                  terminalLink('from your account', 'https://mobiscroll.com/account') +
-                  '.'
+                terminalLink('from your account', 'https://mobiscroll.com/account') +
+                '.'
               );
               printWarning(`If you don’t have an account yet, you can start a free trial from https://mobiscroll.com/starttrial`);
               console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
@@ -427,9 +426,8 @@ function testInstalledCLI(checkCmd, installCmd, helpCmd, name, type) {
         .prompt({
           type: 'input',
           name: 'confirm',
-          message: `It looks like the ${
-            type + ' cli'
-          } is not installed and it is required by this starter. Would you like us to install it for you? (Y/n)`,
+          message: `It looks like the ${type + ' cli'
+            } is not installed and it is required by this starter. Would you like us to install it for you? (Y/n)`,
           default: 'Y',
         })
         .then((answer) => {
@@ -440,8 +438,7 @@ function testInstalledCLI(checkCmd, installCmd, helpCmd, name, type) {
             });
           } else {
             console.log(
-              `The ${
-                type + ' cli'
+              `The ${type + ' cli'
               } have to be installed in order to this starter work. You can install manually with the following command: ${chalk.cyan(
                 installCmd
               )}`

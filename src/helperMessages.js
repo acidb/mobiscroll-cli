@@ -3,23 +3,24 @@ const terminalLink = require('terminal-link');
 const semver = require('semver');
 
 module.exports = {
-  angularLazy: (isTrial, isLite, isStandalone) => {
+  angularLazy: (isTrial, isLite, isStandalone, isWarning) => {
+    const standaloneCode = `
+    @Component({
+        standalone: true,
+        // add the mobiscroll and form modules
+        imports: [ MbscModule, FormsModule, /* leave the other imports as they are */],
+        // ...
+    `;
+
     console.log(
-      `\nYou can manually include the ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} to your ${
-        isStandalone ? 'component' : chalk.grey('*.module.ts') + ' file'
+      `\n ${isWarning ? '1. M' : 'You can m'}anually include the ${chalk.grey('MbscModule')} and ${chalk.grey('FormsModule')} to your ${isStandalone ? 'component' : chalk.grey('*.module.ts') + ' file'
       } the following way:\n`
     );
     console.log("    import { MbscModule } from '@mobiscroll/angular" + (isLite ? '-lite' : '') + "';");
     console.log("    import { FormsModule } from '@angular/forms';\n");
 
     if (isStandalone) {
-      console.log(`
-    @Component({
-        standalone: true,
-        // add the mobiscroll and form modules
-        imports: [ MbscModule, FormsModule, /* leave the other imports as they are */],
-        // ...
-    `);
+      console.log(standaloneCode);
     } else {
       console.log('    @NgModule({');
       console.log('        imports: [');
@@ -29,6 +30,13 @@ module.exports = {
       console.log('            FormsModule // add the forms module');
       console.log('        ],');
       console.log('        declarations: // ...\n');
+
+      if (isWarning) {
+        console.log(
+          `\n  If you are using standalone components, include it in the component file the following way:\n`
+        );
+      }
+      console.log(standaloneCode);
     }
   },
   configHelp: () => {
@@ -53,13 +61,17 @@ module.exports = {
     console.log('    ionic-react     Creates an ionic-react application. (Based on Ionic 5 react application.)\n');
     console.log('    react           Creates a react application. (Based on Create React App application.)\n');
   },
+  jsHelp: (framework) => {
+    console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', `https://mobiscroll.com/docs/${framework}`));
+    console.log(`\nFind usage examples on the ` + terminalLink('demo page:', `https://demo.mobiscroll.com/${framework}/eventcalendar/`) + '\n');
+  },
   vueHelp: (npmSource, useScss, version) => {
     console.log(
       `
 
 import { MbscEventcalendar } from '@mobiscroll/vue'; /* or import any other component */
 import '` +
-        `@mobiscroll/vue/dist/css/mobiscroll.${npmSource ? '' : 'vue.'}${useScss ? 'scss' : 'min.css'}';
+      `@mobiscroll/vue/dist/css/mobiscroll.${npmSource ? '' : 'vue.'}${useScss ? 'scss' : 'min.css'}';
         `
     );
 
@@ -72,12 +84,12 @@ import '` +
         `
 import { Eventcalendar } from '@mobiscroll/react'; /* or import any other component */
 import '` +
-          `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
+        `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
             `
       );
 
       console.log(
-        `\nFind more information about the usage on the ` + terminalLink('documentation page:', 'https://docs.mobiscroll.com/react')
+        `\nFind more information about the usage on the ` + terminalLink('documentation page:', 'https://mobiscroll.com/docs/react')
       );
       console.log(`\nFind usage examples on the ` + terminalLink('demo page:', 'https://demo.mobiscroll.com/react/eventcalendar/') + '\n');
     } else {
@@ -86,11 +98,11 @@ import '` +
 You can import Mobiscroll to your react component like:
 
 import mobiscroll from ` +
-          `'@mobiscroll/react` +
-          (isLite ? '-lite' : '') +
-          `';
+        `'@mobiscroll/react` +
+        (isLite ? '-lite' : '') +
+        `';
 import '` +
-          `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
+        `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
         `
       );
     }
