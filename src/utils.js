@@ -643,10 +643,10 @@ module.exports = {
       frameworkName = '',
       mainVersion;
     const package = config.package;
+    const dependencies = packageJson && packageJson.dependencies;
 
     switch (framework) {
       case 'ionic':
-        const dependencies = packageJson && packageJson.dependencies;
         frameworkName = dependencies && dependencies['@ionic/react'] ? 'react' : dependencies['@ionic/vue'] ? 'vue' : 'angular';
         break;
       default:
@@ -655,8 +655,16 @@ module.exports = {
     }
 
     let isIvy = false;
-    if (frameworkName === 'angular' && packageJson && packageJson.dependencies) {
+    if (frameworkName === 'angular' && dependencies) {
       isIvy = getMainAngularVersion(packageJson) >= 13;
+    }
+
+    let isReactNext = false;
+  
+    if (framework === 'react' && dependencies) {
+      const reactVersionRaw = packageJson.dependencies['react'];
+      const reactVersionArr = shapeVersionToArray(reactVersionRaw);
+      isReactNext = reactVersionArr[0] >= 18;
     }
 
     if (!semver.valid(installVersion)) {
@@ -672,8 +680,9 @@ module.exports = {
       }
 
       isIvy = isIvy && semver.gte(installVersion || version, '5.23.0');
+      isReactNext = isReactNext && semver.gte(installVersion || version, '5.30.0');
 
-      let pkgName = package + (isIvy ? '-ivy' : '') + (isTrial ? '-trial' : ''),
+      let pkgName = package + (isReactNext ? '-next' : '') + (isIvy ? '-ivy' : '') + (isTrial ? '-trial' : ''),
         command;
 
       if (isYarn2) {
@@ -686,6 +695,9 @@ module.exports = {
       } else {
         if (isIvy) {
           command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+        } 
+        else if (isReactNext) {
+          command = `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
         } else {
           command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
         }

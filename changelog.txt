@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.15.0 - 21 Mar 2023
+
+  * New: Added support for installing the new react-next package for React 18 and higher.
+
 v 1.14.4 - 22 Feb 2024
 
   * Fixed: We improved on the angular MbscModule injection and fixed the extra trailing spaces.
