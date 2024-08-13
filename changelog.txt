@@ -1,6 +1,14 @@
 Mobiscroll CLI changelog
 
-v 1.15.0 - 21 Mar 2023
+v 1.16.0 - 13 Aug 2024
+
+  * New: Updated the `start` command to install the Mobiscroll v5 demos application, replacing the previous v4 starter apps.
+
+  * New: Added the `version` property to the esm5 `package.json` file within the no-npm config, enabling support for additional bundles.
+
+  * Fixed: We corrected the `mbsc-font-path` SCSS variable in Angular 13+ applications for the no-npm config.
+
+v 1.15.0 - 21 Mar 2024
 
   * New: Added support for installing the new react-next package for React 18 and higher.
 

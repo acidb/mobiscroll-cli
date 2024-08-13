@@ -50,16 +50,15 @@ module.exports = {
     console.log('    vue             Use it for configuring Vue applications.\n');
   },
   startHelp: () => {
+    console.log('\n\n  Clones the repository containing demos from the Mobiscroll website and installs the necessary dependencies.');
     console.log('\n  Types:\n');
-    console.log('    angular         Creates an Angular applications.(Based on Angular CLI application.)\n');
-    console.log('    ionic           Creates an ionic application. (Based on Ionic 3 application.)\n');
-    console.log(
-      `    ionic-angular   Creates an ionic-angular application. (Based on Ionic 5 angular application. For Ionic 4 based application use ${chalk.grey(
-        '--ionic-version=4'
-      )} flag.)\n`
-    );
-    console.log('    ionic-react     Creates an ionic-react application. (Based on Ionic 5 react application.)\n');
-    console.log('    react           Creates a react application. (Based on Create React App application.)\n');
+    console.log('    angular         Installs the Angular demo project.)\n');
+    console.log('    react           Installs the React demo project.)\n');
+    console.log('    react-ts        Installs the React typescript demo project.)\n');
+    console.log('    vue             Installs the Vue demo project.)\n');
+    console.log('    vue-ts          Installs the Vue typescript demo project.)\n');
+    console.log('    javascript      Installs the plain JavaScript demo project.)\n');
+    console.log('    jquery          Installs the jQuery demo project.)\n');
   },
   jsHelp: (framework) => {
     console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', `https://mobiscroll.com/docs/${framework}`));

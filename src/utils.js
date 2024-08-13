@@ -414,41 +414,6 @@ function login(useGlobalNpmrc, proxy) {
   });
 }
 
-function testInstalledCLI(checkCmd, installCmd, helpCmd, name, type) {
-  runCommand(checkCmd, true, true, true).then((data) => {
-    // check if the specific cli is installed ex: ionic -v
-    if (data) {
-      // if it the specific cli is installed print the next steps section
-      helperMessages.startNextSteps(name, helpCmd);
-    } else {
-      // if not installed ask permission to install
-      inquirer
-        .prompt({
-          type: 'input',
-          name: 'confirm',
-          message: `It looks like the ${type + ' cli'
-            } is not installed and it is required by this starter. Would you like us to install it for you? (Y/n)`,
-          default: 'Y',
-        })
-        .then((answer) => {
-          if (answer.confirm.toLowerCase() == 'y') {
-            runCommand(installCmd, true, true).then(() => {
-              // install the specific cli
-              helperMessages.startNextSteps(name, helpCmd);
-            });
-          } else {
-            console.log(
-              `The ${type + ' cli'
-              } have to be installed in order to this starter work. You can install manually with the following command: ${chalk.cyan(
-                installCmd
-              )}`
-            );
-          }
-        });
-    }
-  });
-}
-
 function getMainAngularVersion(packageJson) {
   const angularVersionRaw = packageJson.dependencies['@angular/core'];
   const angularVersionArr = shapeVersionToArray(angularVersionRaw);
@@ -795,7 +760,6 @@ module.exports = {
   writeToFile,
   shapeVersionToArray,
   getMobiscrollVersion,
-  testInstalledCLI,
   printFeedback,
   printWarning,
   printError,
