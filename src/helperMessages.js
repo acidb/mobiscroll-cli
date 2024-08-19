@@ -50,7 +50,7 @@ module.exports = {
     console.log('    vue             Use it for configuring Vue applications.\n');
   },
   startHelp: () => {
-    console.log('\n\n  Clones the repository containing demos from the Mobiscroll website and installs the necessary dependencies.');
+    console.log('\n\n  Clones the repository containing Mobiscroll website demos and installs all required dependencies.');
     console.log('\n  Types:\n');
     console.log('    angular         Installs the Angular demo project.)\n');
     console.log('    react           Installs the React demo project.)\n');
