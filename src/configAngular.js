@@ -67,7 +67,7 @@ function updateGlobalScss(settings, data, updateCss) {
     if (data) {
       console.log(`  Adding scss import to ${chalk.grey(fileName)}`);
     }
-    utils.appendContentToFile(filePath, data, /@import "[\S]+mobiscroll[\S]+\.scss";/g, false, '', (err) => {
+    utils.appendContentToFile(filePath, data, /@(import|use) "[\S]+mobiscroll[\S]+\.scss";/g, false, '', (err) => {
       if (err) {
         utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`);
         return;
@@ -94,7 +94,6 @@ function angularConfig(settings, callback) {
 
     if (isStandalone) {
       utils.importModules(componentFile, 'app.component.ts', settings.jsFileName, isStandalone);
-      helperMessages.angularLazy(false, false, isStandalone);
     }
   }
 
@@ -113,8 +112,12 @@ function angularConfig(settings, callback) {
   } else if (settings.useScss) {
     updateGlobalScss(
       settings,
-      `@import "${settings.angularVersion && semver.gte(settings.angularVersion, '15.0.0') ? '' : '~'
-      }@mobiscroll/angular/dist/css/mobiscroll${settings.isNpmSource ? '' : '.angular'}.scss";`
+      utils.getScssLoadStatement(
+        settings.packageJson,
+        `${settings.angularVersion && semver.gte(settings.angularVersion, '15.0.0') ? '' : '~'}@mobiscroll/angular/dist/css/mobiscroll${
+          settings.isNpmSource ? '' : '.angular'
+        }.scss`
+      )
     );
   } else {
     console.log(`  Adding stylesheet to ${chalk.grey('angular.json')}`);

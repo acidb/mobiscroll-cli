@@ -35,10 +35,13 @@ function configIonic(settings, callback) {
     utils.appendContentToFile(
       path.resolve(currDir, 'src/theme', fileName),
       `$mbsc-font-path: '../lib/mobiscroll/css/';
-@import "../../node_modules/@mobiscroll/angular/dist/css/mobiscroll${settings.isNpmSource ? '' : '.angular'}.scss";`,
+${utils.getScssLoadStatement(
+  settings.packageJson,
+  `../../node_modules/@mobiscroll/angular/dist/css/mobiscroll${settings.isNpmSource ? '' : '.angular'}.scss`
+)}`,
       '',
       false,
-      /(\$mbsc-font-path: '..\/lib\/mobiscroll\/css\/';[\s\S]+)?@import "[\S]+mobiscroll[\S]+\.scss";/gm,
+      /(\$mbsc-font-path: '..\/lib\/mobiscroll\/css\/';[\s\S]+)?@(import|use) "[\S]+mobiscroll[\S]+\.scss";/gm,
       (err) => {
         if (err) {
           utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with sass?`);
@@ -133,7 +136,14 @@ function detectReactPages(settings /*, callback*/) {
         `\n\nMultiple pages detected. Mobiscroll components must be imported into every page separately where you want to use the components. You can import the component the following way:`
       )
     );
-    helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
+    helperMessages.reactHelp(
+      settings.apiKey,
+      settings.isLite,
+      settings.isNpmSource,
+      settings.useScss,
+      settings.mobiscrollVersion,
+      utils.getSassLoader(settings.packageJson).syntax
+    );
   }
 }
 
@@ -245,7 +255,12 @@ module.exports = {
         );
         utils.writeToFile(mainFile, mainFileData);
 
-        helperMessages.vueHelp(settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
+        helperMessages.vueHelp(
+          settings.isNpmSource,
+          settings.useScss,
+          settings.mobiscrollVersion,
+          utils.getSassLoader(settings.packageJson).syntax
+        );
         if (callback) {
           callback();
         }
@@ -256,10 +271,13 @@ module.exports = {
         console.log(`  Adding scss stylesheet to ${chalk.grey(fileName)}`);
         utils.appendContentToFile(
           path.resolve(settings.currDir, 'src', 'theme', fileName),
-          `@import "@mobiscroll/react/dist/css/${
-            settings.isNpmSource ? 'mobiscroll.scss' : settings.localCssFileName.replace('min.css', 'scss')
-          }";`,
-          /@import "[\S]+mobiscroll[\S]+\.scss";/g,
+          utils.getScssLoadStatement(
+            settings.packageJson,
+            `@mobiscroll/react/dist/css/${
+              settings.isNpmSource ? 'mobiscroll.scss' : settings.localCssFileName.replace('min.css', 'scss')
+            }`
+          ),
+          /@(import|use) "[\S]+mobiscroll[\S]+\.scss";/g,
           false,
           '',
           (err) => {

@@ -420,6 +420,37 @@ function getMainAngularVersion(packageJson) {
   return angularVersionArr[0];
 }
 
+function getPackageVersion(packageJson, packageName) {
+  const dependencies = packageJson && packageJson.dependencies;
+  const devDependencies = packageJson && packageJson.devDependencies;
+  return (dependencies && dependencies[packageName]) || (devDependencies && devDependencies[packageName]) || '';
+}
+
+function getSassLoader(packageJson) {
+  const nodeSassVersion = getPackageVersion(packageJson, 'node-sass');
+  if (nodeSassVersion) {
+    return {
+      implementation: 'node-sass',
+      version: nodeSassVersion,
+      syntax: '@import',
+    };
+  }
+
+  const sassVersion = getPackageVersion(packageJson, 'sass');
+  const sassSemver = sassVersion && semver.coerce(sassVersion);
+  const shouldUseSyntax = sassSemver && semver.gte(sassSemver, '1.23.0');
+
+  return {
+    implementation: sassVersion ? 'sass' : '',
+    version: sassVersion || '',
+    syntax: shouldUseSyntax ? '@use' : '@import',
+  };
+}
+
+function getScssLoadStatement(packageJson, stylesheetPath) {
+  return `${getSassLoader(packageJson).syntax} "${stylesheetPath}";`;
+}
+
 module.exports = {
   checkTypescriptVersion: (packageJson) => {
     var version = (packageJson.devDependencies ? packageJson.devDependencies.typescript : '') || packageJson.dependencies.typescript;
@@ -770,5 +801,7 @@ module.exports = {
   appendContentToFile,
   checkAngularStandaloneComponent,
   updateAuthTokenInYarnrc,
-  getMainAngularVersion
+  getMainAngularVersion,
+  getSassLoader,
+  getScssLoadStatement
 };
