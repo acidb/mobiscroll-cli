@@ -13,6 +13,7 @@ const ncp = require('ncp').ncp;
 const figlet = require('figlet');
 const os = require('os');
 const semver = require('semver');
+const getMainAngularVersion = utils.getMainAngularVersion;
 
 var isNpmSource = true;
 var isTrial = false;
