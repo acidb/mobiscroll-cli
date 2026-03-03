@@ -24,11 +24,11 @@
     "mobiscroll": "./mobiscroll.js"
   },
   "dependencies": {
-    "axios": "^0.28.0",
+    "axios": "^1.13.6",
     "chalk": "^2.4.1",
     "commander": "^2.19.0",
     "figlet": "^1.2.1",
-    "inquirer": "^7.0.0",
+    "inquirer": "^8.1.0",
     "js-yaml": "^4.1.0",
     "ncp": "^2.0.0",
     "semver": "^6.3.0",
