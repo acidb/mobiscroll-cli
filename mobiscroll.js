@@ -188,13 +188,25 @@ function config(settings, callback) {
       configIonic(settings, callback);
       break;
     case 'react':
-      helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
+      helperMessages.reactHelp(
+        settings.apiKey,
+        settings.isLite,
+        settings.isNpmSource,
+        settings.useScss,
+        settings.mobiscrollVersion,
+        utils.getSassLoader(settings.packageJson).syntax
+      );
       if (callback) {
         callback();
       }
       break;
     case 'vue':
-      helperMessages.vueHelp(settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
+      helperMessages.vueHelp(
+        settings.isNpmSource,
+        settings.useScss,
+        settings.mobiscrollVersion,
+        utils.getSassLoader(settings.packageJson).syntax
+      );
       if (callback) {
         callback();
       }

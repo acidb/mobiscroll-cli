@@ -2,6 +2,14 @@ const chalk = require('chalk');
 const terminalLink = require('terminal-link');
 const semver = require('semver');
 
+function getStyleStatement(stylePath, useScss, scssSyntax) {
+  if (useScss) {
+    return `${scssSyntax || '@import'} '${stylePath}';`;
+  }
+
+  return `import '${stylePath}';`;
+}
+
 module.exports = {
   angularLazy: (isTrial, isLite, isStandalone, isWarning) => {
     const standaloneCode = `
@@ -65,26 +73,29 @@ module.exports = {
     console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', `https://mobiscroll.com/docs/${framework}`));
     console.log(`\nFind usage examples on the ` + terminalLink('demo page:', `https://demo.mobiscroll.com/${framework}/eventcalendar/`) + '\n');
   },
-  vueHelp: (npmSource, useScss, version) => {
+  vueHelp: (npmSource, useScss, version, scssSyntax) => {
+    const stylePath = `@mobiscroll/vue/dist/css/mobiscroll.${npmSource ? '' : 'vue.'}${useScss ? 'scss' : 'min.css'}`;
     console.log(
       `
 
 import { MbscEventcalendar } from '@mobiscroll/vue'; /* or import any other component */
-import '` +
-      `@mobiscroll/vue/dist/css/mobiscroll.${npmSource ? '' : 'vue.'}${useScss ? 'scss' : 'min.css'}';
+${getStyleStatement(stylePath, useScss, scssSyntax)}
         `
     );
 
     console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', 'https://mobiscroll.com/docs/vue'));
     console.log(`\nFind usage examples on the ` + terminalLink('demo page:', 'https://demo.mobiscroll.com/vue/eventcalendar/') + '\n');
   },
-  reactHelp: (isTrial, isLite, npmSource, useScss, version) => {
+  reactHelp: (isTrial, isLite, npmSource, useScss, version, scssSyntax) => {
+    const stylePath = `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${
+      useScss ? 'scss' : 'min.css'
+    }`;
+
     if (semver.gte(version, '5.0.0-beta')) {
       console.log(
         `
 import { Eventcalendar } from '@mobiscroll/react'; /* or import any other component */
-import '` +
-        `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
+${getStyleStatement(stylePath, useScss, scssSyntax)}
             `
       );
 
@@ -101,8 +112,7 @@ import mobiscroll from ` +
         `'@mobiscroll/react` +
         (isLite ? '-lite' : '') +
         `';
-import '` +
-        `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
+      ${getStyleStatement(stylePath, useScss, scssSyntax)}
         `
       );
     }
