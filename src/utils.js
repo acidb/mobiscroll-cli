@@ -677,8 +677,13 @@ module.exports = {
 
       isIvy = isIvy && semver.gte(installVersion || version, '5.23.0');
       isReactNext = isReactNext && semver.gte(installVersion || version, '5.30.0');
+      const isV6 = semver.gte(installVersion || version, "6.0.0");
 
-      let pkgName = package + (isReactNext ? '-next' : '') + (isIvy ? '-ivy' : '') + (isTrial ? '-trial' : ''),
+      const suffix = isV6 
+        ? !isReactNext && !isIvy && (frameworkName === "react" || frameworkName === "angular") ? "-legacy" : ""
+        : (isReactNext ? "-next" : "") + (isIvy ? "-ivy" : "");
+
+      let pkgName = package + suffix + (isTrial ? "-trial" : ""),
         command;
 
       if (isYarn2) {
