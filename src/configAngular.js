@@ -87,13 +87,28 @@ function angularConfig(settings, callback) {
   let isStandalone = settings.isStandalone;
 
   if (!settings.isStandalone) {
-    // if true config ionic already checked it
-    // check if the app.component.ts is standalone
-    const componentFile = path.resolve(currDir + '/src/app/app.component.ts');
+    // Check if the app.component.ts is standalone (if not already checked by ionic config)
     isStandalone = utils.checkAngularStandaloneComponent(settings);
 
     if (isStandalone) {
-      utils.importModules(componentFile, 'app.component.ts', settings.jsFileName, isStandalone);
+      // Try to find and update the main component file
+      const componentFiles = [
+        path.resolve(currDir, 'src/app/app.component.ts'),
+        path.resolve(currDir, 'src/app/app.ts')
+      ];
+
+      const componentFile = componentFiles.find(file => fs.existsSync(file));
+
+      if (componentFile) {
+        const fileName = path.basename(componentFile);
+        utils.importModules(componentFile, fileName, settings.jsFileName, isStandalone);
+      } else {
+        printWarning(
+          `Couldn't identify the necessary modules/components where Mobiscroll resources should be included. In this case, manual inclusion is required. Please follow the instructions below:\n`
+        );
+        helperMessages.angularLazy(false, false, false, true);
+        return;
+      }
     }
   }
 

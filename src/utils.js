@@ -272,14 +272,30 @@ function checkMeteor(packageJson, currDir, framework) {
 
 function checkAngularStandaloneComponent(settings) {
   const currDir = settings.currDir;
-  const componentFile = path.resolve(currDir + '/src/app/app.component.ts');
-
-  if (fs.existsSync(componentFile)) {
-    let data = fs.readFileSync(componentFile, 'utf8').toString();
-    const standaloneRegex = /standalone:[\s]?true/gim;
-    return standaloneRegex.test(data);
+  const mainTsPath = path.join(currDir, 'src', 'main.ts');
+  
+  if (fs.existsSync(mainTsPath)) {
+    const content = fs.readFileSync(mainTsPath, 'utf-8');
+    
+    // Standalone apps use bootstrapApplication
+    // Module-based apps use platformBrowserDynamic().bootstrapModule
+    if (content.includes('bootstrapApplication')) {
+      return true;
+    }
+    
+    if (content.includes('bootstrapModule') || content.includes('platformBrowserDynamic')) {
+      return false;
+    }
   }
-
+  
+  // Fallback: check app.component.ts for standalone: true
+  const appComponentPath = path.join(currDir, 'src', 'app', 'app.component.ts');
+  if (fs.existsSync(appComponentPath)) {
+    const componentContent = fs.readFileSync(appComponentPath, 'utf-8');
+    return componentContent.includes('standalone: true');
+  }
+  
+  // Default to false if uncertain
   return false;
 }
 
@@ -420,14 +436,35 @@ function getMainAngularVersion(packageJson) {
   return angularVersionArr[0];
 }
 
-function getPackageVersion(packageJson, packageName) {
+function getPackageVersion(packageJson, packageName, currDir) {
   const dependencies = packageJson && packageJson.dependencies;
   const devDependencies = packageJson && packageJson.devDependencies;
-  return (dependencies && dependencies[packageName]) || (devDependencies && devDependencies[packageName]) || '';
+
+  const declaredVersion =
+    (dependencies && dependencies[packageName]) ||
+    (devDependencies && devDependencies[packageName]);
+
+  if (declaredVersion) {
+    return declaredVersion;
+  }
+
+  const baseDir = currDir || process.cwd();
+  const installedPkgJson = path.resolve(baseDir, 'node_modules', packageName, 'package.json');
+
+  if (fs.existsSync(installedPkgJson)) {
+    try {
+      const installedPkg = JSON.parse(fs.readFileSync(installedPkgJson, 'utf8'));
+      return installedPkg.version || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  return '';
 }
 
-function getSassLoader(packageJson) {
-  const nodeSassVersion = getPackageVersion(packageJson, 'node-sass');
+function getSassLoader(packageJson, currDir) {
+  const nodeSassVersion = getPackageVersion(packageJson, 'node-sass', currDir);
   if (nodeSassVersion) {
     return {
       implementation: 'node-sass',
@@ -436,7 +473,7 @@ function getSassLoader(packageJson) {
     };
   }
 
-  const sassVersion = getPackageVersion(packageJson, 'sass');
+  const sassVersion = getPackageVersion(packageJson, 'sass', currDir);
   const sassSemver = sassVersion && semver.coerce(sassVersion);
   const shouldUseSyntax = sassSemver && semver.gte(sassSemver, '1.23.0');
 
@@ -447,8 +484,8 @@ function getSassLoader(packageJson) {
   };
 }
 
-function getScssLoadStatement(packageJson, stylesheetPath) {
-  return `${getSassLoader(packageJson).syntax} "${stylesheetPath}";`;
+function getScssLoadStatement(packageJson, stylesheetPath, currDir) {
+  return `${getSassLoader(packageJson, currDir).syntax} "${stylesheetPath}";`;
 }
 
 module.exports = {
