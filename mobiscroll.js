@@ -369,35 +369,37 @@ Done. Now run:
       break;
     case 'react':
       startProject('https://github.com/acidb/mobiscroll-demos-react', type, 'react', name, undefined, () => {
-        printNextSteps(name)
+        printNextSteps(name, 'npm run dev')
       });
       break;
     case 'react-ts':
         startProject('https://github.com/acidb/mobiscroll-demos-react-ts', type, 'react', name, undefined, () => {
-          printNextSteps(name)
+          printNextSteps(name, 'npm run dev')
         });
         break;
     case 'vue':
-        startProject('https://github.com/acidb/mobiscroll-demos-vue', type, name, undefined, () => {
-          printNextSteps(name)
+        startProject('https://github.com/acidb/mobiscroll-demos-vue', type, 'vue', name, undefined, () => {
+          printNextSteps(name, 'npm run dev')
         });
         break;
     case 'vue-ts':
-        startProject('https://github.com/acidb/mobiscroll-demos-vue-ts', type, name, undefined, () => {
-          printNextSteps(name)
+        startProject('https://github.com/acidb/mobiscroll-demos-vue-ts', type, 'vue', name, undefined, () => {
+          printNextSteps(name, 'npm run dev')
         });
-    case 'javscript':
-      startProject('https://github.com/acidb/mobiscroll-demos-javascript', type, name, undefined, () => {
-        printNextSteps(name)
+         break;
+    case 'javascript':
+      startProject('https://github.com/acidb/mobiscroll-demos-javascript', type, 'javascript', name, undefined, () => {
+        printNextSteps(name, 'npm run dev')
       });
+       break;
     case 'jquery':
-      startProject('https://github.com/acidb/mobiscroll-demos-jquery', type, name, undefined, () => {
-        printNextSteps(name)
+      startProject('https://github.com/acidb/mobiscroll-demos-jquery', type, 'jquery', name, undefined, () => {
+        printNextSteps(name, 'npm run dev')
       });
-      break;
+       break;
     default:
       printWarning(
-        'No valid project type was specified. Currently the following project types are supported: [ angular, ionic, ionic-angular, ionic-react, react ]'
+        'No valid project type was specified. Currently the following project types are supported: [ angular, react, vue, vue-ts, javascript, jquery ]'
       );
       break;
   }
@@ -800,13 +802,6 @@ program
   .command('start [types] [name]')
   .on('--help', helperMessages.startHelp)
   .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
-  .option(
-    '--ionic-version [version]',
-    `Pass the ionic-angular version of the starter app which you want to start. E.g ${chalk.gray(
-      'mobiscroll start ionic-angular --ionic-version=4'
-    )}`,
-    handleStartIonicVersion
-  )
   .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
   .action(handleStart);
 
