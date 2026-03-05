@@ -1,12 +1,20 @@
 Mobiscroll CLI changelog
 
-v 1.16.0 - 13 Aug 2024
+v 1.16.0 - 5 Mar 2026
 
-  * New: Updated the `start` command to install the Mobiscroll v5 demos application, replacing the previous v4 starter apps.
+  * New: Updated the `start` command to install modern Mobiscroll demo applications, replacing the legacy v4 starters.
 
-  * New: Added the `version` property to the esm5 `package.json` file within the no-npm config, enabling support for additional bundles.
+  * New: Added `version` property to esm5 `package.json` in no-npm installations to support additional bundles.
 
-  * Fixed: We corrected the `mbsc-font-path` SCSS variable in Angular 13+ applications for the no-npm config.
+  * New: Added support for Mobiscroll v6 packages.
+
+  * New: Added yarn/pnpm monorepo detection to use the correct package manager in submodules.
+
+  * Fixed: Corrected `mbsc-font-path` SCSS variable in Angular 13+ applications with no-npm config.
+
+  * Fixed: Fixed auto-configuration of CSS/SCSS and MbscModule in Angular 19+ applications.
+
+  * Fixed: Updated package dependencies to resolve npm audit warnings.
 
 v 1.15.0 - 21 Mar 2024
 

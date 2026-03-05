@@ -53,15 +53,6 @@ function updateGlobalScss(settings, data, updateCss) {
   const currDir = settings.currDir;
   const fileName = settings.isIonicApp ? 'global.scss' : 'styles.scss';
   const filePath = path.resolve(currDir, 'src', fileName);
-  // const sassLibLocation =  path.resolve(currDir, 'node_modules', 'sass', 'package.json');
-  // const sassLibPackageJson = fs.existsSync(sassLibLocation) && fs.readFileSync(sassLibLocation).toString();
-
-  // if (sassLibPackageJson) {
-  //     const sassVersion = JSON.parse(sassLibPackageJson).version;
-  //     if(semver.gte(sassVersion, '1.23.0')) {
-  //         data = data.replace('@import', '@use');
-  //     }
-  // }
 
   if (fs.existsSync(filePath)) {
     if (data) {

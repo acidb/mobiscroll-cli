@@ -73,21 +73,18 @@ function printLog(text) {
 }
 
 function testPnpm(currDir) {
-  const hasLockFile = fs.existsSync(path.resolve(currDir, 'pnpm-lock.yaml'));
-  if (hasLockFile) {
-    printFeedback('Pnpm detected.');
-  }
+  // Check if we're in a monorepo submodule and use the root's lock file
+  const checkDir = findMonorepoRoot(currDir) || currDir;
+  const hasLockFile = fs.existsSync(path.resolve(checkDir, 'pnpm-lock.yaml'));
   return hasLockFile;
 }
 
-function testYarn(currDir, silent) {
-  // check if yarn command is installed and check if a yarn.lock exists in root project
-  const hasLockFile = fs.existsSync(path.resolve(currDir, 'yarn.lock'));
+function testYarn(currDir) {
+  // Check if we're in a monorepo submodule and use the root's lock file
+  const checkDir = findMonorepoRoot(currDir) || currDir;
+  const hasLockFile = fs.existsSync(path.resolve(checkDir, 'yarn.lock'));
   const yarnVersion = runCommandSync('yarn -v', true);
   if (yarnVersion && hasLockFile) {
-    if (!silent) {
-      printLog(`Yarn version: ${yarnVersion}`);
-    }
     return yarnVersion;
   }
   return false;
@@ -397,7 +394,7 @@ function login(useGlobalNpmrc, proxy) {
             printFeedback('Successful login!\n');
             const currDir = useGlobalNpmrc ? os.homedir() : process.cwd();
             const usePnpm = testPnpm(currDir);
-            const useYarn = !usePnpm && testYarn(currDir, true);
+            const useYarn = !usePnpm && testYarn(currDir);
 
             if (useYarn && semver.gte(useYarn, '2.0.0')) {
               updateAuthTokenInYarnrc(currDir);
@@ -475,17 +472,55 @@ function getSassLoader(packageJson, currDir) {
 
   const sassVersion = getPackageVersion(packageJson, 'sass', currDir);
   const sassSemver = sassVersion && semver.coerce(sassVersion);
-  const shouldUseSyntax = sassSemver && semver.gte(sassSemver, '1.23.0');
+  const shouldUseImport = sassSemver && semver.lt(sassSemver, '1.23.0');
 
   return {
     implementation: sassVersion ? 'sass' : '',
     version: sassVersion || '',
-    syntax: shouldUseSyntax ? '@use' : '@import',
+    syntax: shouldUseImport ? '@import' : '@use',
   };
 }
 
 function getScssLoadStatement(packageJson, stylesheetPath, currDir) {
   return `${getSassLoader(packageJson, currDir).syntax} "${stylesheetPath}";`;
+}
+
+function findMonorepoRoot(currDir) {
+  const maxLevels = 5;
+  let currentDir = currDir || process.cwd();
+  
+  for (let i = 0; i < maxLevels; i++) {
+    // Check for npm/yarn workspaces
+    const pkgJsonPath = path.join(currentDir, 'package.json');
+    if (fs.existsSync(pkgJsonPath)) {
+      try {
+        const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
+        if (pkg.workspaces) {
+          return currentDir;
+        }
+      } catch (e) {
+        // Continue searching
+      }
+    }
+    
+    // Check for pnpm root markers
+    if (
+      fs.existsSync(path.join(currentDir, 'pnpm-workspace.yaml')) ||
+      fs.existsSync(path.join(currentDir, 'pnpm-lock.yaml'))
+    ) {
+      return currentDir;
+    }
+    
+    // Move up one level
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      // Reached filesystem root
+      break;
+    }
+    currentDir = parentDir;
+  }
+  
+  return null;
 }
 
 module.exports = {
@@ -712,13 +747,28 @@ module.exports = {
         installVersion = version;
       }
 
+      const packageManagerName = usePnpm ? 'pnpm' : useYarn ? `yarn (v${useYarn.trim()})` : 'npm';
+      printLog(`Detected package manager: ${packageManagerName}`);
+
       isIvy = isIvy && semver.gte(installVersion || version, '5.23.0');
       isReactNext = isReactNext && semver.gte(installVersion || version, '5.30.0');
       const isV6 = semver.gte(installVersion || version, "6.0.0");
-
-      const suffix = isV6 
-        ? !isReactNext && !isIvy && (frameworkName === "react" || frameworkName === "angular") ? "-legacy" : ""
-        : (isReactNext ? "-next" : "") + (isIvy ? "-ivy" : "");
+      // For v6+: Package name renames
+      // angular-ivy -> angular (Angular 13+)
+      // angular -> angular-legacy (Angular 9-12)
+      // react-next -> react (React 18+)
+      // react -> react-legacy (React <18)
+      let suffix = '';
+      if (isV6) {
+        if (frameworkName === 'angular') {
+          suffix = isIvy ? '' : '-legacy';
+        } else if (frameworkName === 'react') {
+          suffix = isReactNext ? '' : '-legacy';
+        }
+      } else {
+        // Pre-v6: use -ivy and -next suffixes
+        suffix = (isReactNext ? '-next' : '') + (isIvy ? '-ivy' : '');
+      }
 
       let pkgName = package + suffix + (isTrial ? "-trial" : ""),
         command;
@@ -731,13 +781,38 @@ module.exports = {
       if (isTrial) {
         command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}`; // todo test --update-checksums
       } else {
-        if (isIvy) {
-          command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
-        } 
-        else if (isReactNext) {
-          command = `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+        // For v6+: Use simple install for base packages, npm alias for legacy variants
+        // For pre-v6: Use npm alias for -ivy and -next variants
+        if (isV6) {
+          if (frameworkName === 'angular') {
+            if (isIvy) {
+              // Angular 13+: simple install
+              command = `${installCmd} @mobiscroll/angular@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+            } else {
+              // Angular 9-12: npm alias to legacy package
+              command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/angular-legacy@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+            }
+          } else if (frameworkName === 'react') {
+            if (isReactNext) {
+              // React 18+: simple install
+              command = `${installCmd} @mobiscroll/react@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+            } else {
+              // React <18: npm alias to legacy package
+              command = `${installCmd} @mobiscroll/react@npm:@mobiscroll/react-legacy@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+            }
+          } else {
+            // Other frameworks: simple install
+            command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+          }
         } else {
-          command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+          // Pre-v6: Use npm alias for -ivy and -next variants
+          if (isIvy) {
+            command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+          } else if (isReactNext) {
+            command = `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+          } else {
+            command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
+          }
         }
       }
 
@@ -845,5 +920,6 @@ module.exports = {
   updateAuthTokenInYarnrc,
   getMainAngularVersion,
   getSassLoader,
-  getScssLoadStatement
+  getScssLoadStatement,
+  findMonorepoRoot
 };
