@@ -53,21 +53,12 @@ function updateGlobalScss(settings, data, updateCss) {
   const currDir = settings.currDir;
   const fileName = settings.isIonicApp ? 'global.scss' : 'styles.scss';
   const filePath = path.resolve(currDir, 'src', fileName);
-  // const sassLibLocation =  path.resolve(currDir, 'node_modules', 'sass', 'package.json');
-  // const sassLibPackageJson = fs.existsSync(sassLibLocation) && fs.readFileSync(sassLibLocation).toString();
-
-  // if (sassLibPackageJson) {
-  //     const sassVersion = JSON.parse(sassLibPackageJson).version;
-  //     if(semver.gte(sassVersion, '1.23.0')) {
-  //         data = data.replace('@import', '@use');
-  //     }
-  // }
 
   if (fs.existsSync(filePath)) {
     if (data) {
       console.log(`  Adding scss import to ${chalk.grey(fileName)}`);
     }
-    utils.appendContentToFile(filePath, data, /@import "[\S]+mobiscroll[\S]+\.scss";/g, false, '', (err) => {
+    utils.appendContentToFile(filePath, data, /@(import|use) "[\S]+mobiscroll[\S]+\.scss";/g, false, '', (err) => {
       if (err) {
         utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`);
         return;
@@ -87,14 +78,28 @@ function angularConfig(settings, callback) {
   let isStandalone = settings.isStandalone;
 
   if (!settings.isStandalone) {
-    // if true config ionic already checked it
-    // check if the app.component.ts is standalone
-    const componentFile = path.resolve(currDir + '/src/app/app.component.ts');
+    // Check if the app.component.ts is standalone (if not already checked by ionic config)
     isStandalone = utils.checkAngularStandaloneComponent(settings);
 
     if (isStandalone) {
-      utils.importModules(componentFile, 'app.component.ts', settings.jsFileName, isStandalone);
-      helperMessages.angularLazy(false, false, isStandalone);
+      // Try to find and update the main component file
+      const componentFiles = [
+        path.resolve(currDir, 'src/app/app.component.ts'),
+        path.resolve(currDir, 'src/app/app.ts')
+      ];
+
+      const componentFile = componentFiles.find(file => fs.existsSync(file));
+
+      if (componentFile) {
+        const fileName = path.basename(componentFile);
+        utils.importModules(componentFile, fileName, settings.jsFileName, isStandalone);
+      } else {
+        printWarning(
+          `Couldn't identify the necessary modules/components where Mobiscroll resources should be included. In this case, manual inclusion is required. Please follow the instructions below:\n`
+        );
+        helperMessages.angularLazy(false, false, false, true);
+        return;
+      }
     }
   }
 
@@ -113,8 +118,12 @@ function angularConfig(settings, callback) {
   } else if (settings.useScss) {
     updateGlobalScss(
       settings,
-      `@import "${settings.angularVersion && semver.gte(settings.angularVersion, '15.0.0') ? '' : '~'
-      }@mobiscroll/angular/dist/css/mobiscroll${settings.isNpmSource ? '' : '.angular'}.scss";`
+      utils.getScssLoadStatement(
+        settings.packageJson,
+        `${settings.angularVersion && semver.gte(settings.angularVersion, '15.0.0') ? '' : '~'}@mobiscroll/angular/dist/css/mobiscroll${
+          settings.isNpmSource ? '' : '.angular'
+        }.scss`
+      )
     );
   } else {
     console.log(`  Adding stylesheet to ${chalk.grey('angular.json')}`);

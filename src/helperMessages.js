@@ -2,6 +2,14 @@ const chalk = require('chalk');
 const terminalLink = require('terminal-link');
 const semver = require('semver');
 
+function getStyleStatement(stylePath, useScss, scssSyntax) {
+  if (useScss) {
+    return `${scssSyntax || '@import'} '${stylePath}';`;
+  }
+
+  return `import '${stylePath}';`;
+}
+
 module.exports = {
   angularLazy: (isTrial, isLite, isStandalone, isWarning) => {
     const standaloneCode = `
@@ -50,41 +58,43 @@ module.exports = {
     console.log('    vue             Use it for configuring Vue applications.\n');
   },
   startHelp: () => {
+    console.log('\n\n  Clones the repository containing Mobiscroll website demos and installs all required dependencies.');
     console.log('\n  Types:\n');
-    console.log('    angular         Creates an Angular applications.(Based on Angular CLI application.)\n');
-    console.log('    ionic           Creates an ionic application. (Based on Ionic 3 application.)\n');
-    console.log(
-      `    ionic-angular   Creates an ionic-angular application. (Based on Ionic 5 angular application. For Ionic 4 based application use ${chalk.grey(
-        '--ionic-version=4'
-      )} flag.)\n`
-    );
-    console.log('    ionic-react     Creates an ionic-react application. (Based on Ionic 5 react application.)\n');
-    console.log('    react           Creates a react application. (Based on Create React App application.)\n');
+    console.log('    angular         Installs the Angular demo project.)\n');
+    console.log('    react           Installs the React demo project.)\n');
+    console.log('    react-ts        Installs the React typescript demo project.)\n');
+    console.log('    vue             Installs the Vue demo project.)\n');
+    console.log('    vue-ts          Installs the Vue typescript demo project.)\n');
+    console.log('    javascript      Installs the plain JavaScript demo project.)\n');
+    console.log('    jquery          Installs the jQuery demo project.)\n');
   },
   jsHelp: (framework) => {
     console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', `https://mobiscroll.com/docs/${framework}`));
     console.log(`\nFind usage examples on the ` + terminalLink('demo page:', `https://demo.mobiscroll.com/${framework}/eventcalendar/`) + '\n');
   },
-  vueHelp: (npmSource, useScss, version) => {
+  vueHelp: (npmSource, useScss, version, scssSyntax) => {
+    const stylePath = `@mobiscroll/vue/dist/css/mobiscroll.${npmSource ? '' : 'vue.'}${useScss ? 'scss' : 'min.css'}`;
     console.log(
       `
 
 import { MbscEventcalendar } from '@mobiscroll/vue'; /* or import any other component */
-import '` +
-      `@mobiscroll/vue/dist/css/mobiscroll.${npmSource ? '' : 'vue.'}${useScss ? 'scss' : 'min.css'}';
+${getStyleStatement(stylePath, useScss, scssSyntax)}
         `
     );
 
     console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', 'https://mobiscroll.com/docs/vue'));
     console.log(`\nFind usage examples on the ` + terminalLink('demo page:', 'https://demo.mobiscroll.com/vue/eventcalendar/') + '\n');
   },
-  reactHelp: (isTrial, isLite, npmSource, useScss, version) => {
+  reactHelp: (isTrial, isLite, npmSource, useScss, version, scssSyntax) => {
+    const stylePath = `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${
+      useScss ? 'scss' : 'min.css'
+    }`;
+
     if (semver.gte(version, '5.0.0-beta')) {
       console.log(
         `
 import { Eventcalendar } from '@mobiscroll/react'; /* or import any other component */
-import '` +
-        `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
+${getStyleStatement(stylePath, useScss, scssSyntax)}
             `
       );
 
@@ -101,8 +111,7 @@ import mobiscroll from ` +
         `'@mobiscroll/react` +
         (isLite ? '-lite' : '') +
         `';
-import '` +
-        `@mobiscroll/react${isLite ? '-lite' : ''}/dist/css/mobiscroll.${npmSource ? '' : 'react.'}${useScss ? 'scss' : 'min.css'}';
+      ${getStyleStatement(stylePath, useScss, scssSyntax)}
         `
       );
     }

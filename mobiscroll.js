@@ -13,6 +13,7 @@ const ncp = require('ncp').ncp;
 const figlet = require('figlet');
 const os = require('os');
 const semver = require('semver');
+const getMainAngularVersion = utils.getMainAngularVersion;
 
 var isNpmSource = true;
 var isTrial = false;
@@ -188,13 +189,25 @@ function config(settings, callback) {
       configIonic(settings, callback);
       break;
     case 'react':
-      helperMessages.reactHelp(settings.apiKey, settings.isLite, settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
+      helperMessages.reactHelp(
+        settings.apiKey,
+        settings.isLite,
+        settings.isNpmSource,
+        settings.useScss,
+        settings.mobiscrollVersion,
+        utils.getSassLoader(settings.packageJson).syntax
+      );
       if (callback) {
         callback();
       }
       break;
     case 'vue':
-      helperMessages.vueHelp(settings.isNpmSource, settings.useScss, settings.mobiscrollVersion);
+      helperMessages.vueHelp(
+        settings.isNpmSource,
+        settings.useScss,
+        settings.mobiscrollVersion,
+        utils.getSassLoader(settings.packageJson).syntax
+      );
       if (callback) {
         callback();
       }
@@ -215,7 +228,7 @@ function config(settings, callback) {
 }
 
 function cloneProject(url, type, framework, name, newAppLocation, gitOptions, callback) {
-  utils.printLog(`Cloning ${type} starter app from git: ${url}`);
+  utils.printLog(`Cloning ${type} demo app from git: ${url}`);
   utils
     .run('git clone ' + url + ' ' + name, true)
     .then(() => {
@@ -223,22 +236,28 @@ function cloneProject(url, type, framework, name, newAppLocation, gitOptions, ca
       process.chdir(newAppLocation); // change directory to node modules folder
       console.log(`Installing dependencies may take several minutes:\n`);
 
-      utils.run('npm install', true).then(() => {
-        utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, framework, mobiscrollVersion, (userName, useTrial) => {
-          let configObject = {
-            projectType: type,
-            currDir: newAppLocation,
-            userName,
-            useTrial,
-            mobiscrollVersion: 4, // force  v4 installation until v5 version of starters available
-            proxyUrl,
-          };
+      utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, framework, mobiscrollVersion, (userName, useTrial) => {
+        let configObject = {
+          projectType: type.replace('-ts', ''),
+          currDir: newAppLocation,
+          userName,
+          useTrial,
+          mobiscrollVersion: 5,
+          proxyUrl,
+          package: type.replace('-ts', ''),
+        };
 
-          utils.installMobiscroll(configObject, () => {
-            if (callback) {
-              callback();
-            }
-          });
+        try {
+          packageJson = require(path.resolve(newAppLocation, 'package.json'));
+          configObject.packageJson = packageJson;
+        } catch (err) {
+          utils.printError('Could not open package.json file.\n\n' + err);
+        }
+
+        utils.installMobiscroll(configObject, () => {
+          if (callback) {
+            callback();
+          }
         });
       });
     })
@@ -328,62 +347,59 @@ function startProject(url, type, framework, name, gitOptions, callback) {
           return;
         }
       });
-    //return;
   } else {
     cloneProject(url, type, framework, name, newAppLocation, gitOptions, callback);
   }
 }
 
 function createProject(type, name) {
+  const printNextSteps = (name, runCmd) => {
+    printFeedback(`
+Done. Now run:
+
+  ${chalk.gray(`cd ${name}`)}
+  ${chalk.gray(runCmd || 'npm run dev')}
+      `)
+  }
   switch (type) {
     case 'angular':
-      startProject('https://github.com/acidb/angular-starter', type, 'angular', name, {}, () => {
-        utils.testInstalledCLI('ng -v', 'npm install -g @angular/cli', 'ng serve -o', name, type);
-      });
-      break;
-    case 'ionic-angular':
-      if (startIoncVesrion && +startIoncVesrion === 4) {
-        startProject(
-          'https://github.com/acidb/ionic-angular-starter',
-          'ionic',
-          'angular',
-          name,
-          {
-            checkout: 'v4',
-          },
-          () => {
-            utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
-          }
-        );
-      } else {
-        startProject('https://github.com/acidb/ionic-angular-starter', 'ionic', 'angular', name, {}, () => {
-          utils.testInstalledCLI('ionic -v', 'npm install -g @ionic/cli', 'ionic serve', name, type);
-        });
-      }
-      break;
-    case 'ionic-react':
-      startProject('https://github.com/acidb/ionic-react-starter', 'react', 'react', name, {}, () => {
-        utils.testInstalledCLI('ionic -v', 'npm install -g @ionic/cli', 'ionic serve', name, 'react');
-      });
-      break;
-    case 'ionic':
-      startProject('https://github.com/acidb/ionic-starter', type, 'angular', name, {}, () => {
-        utils.testInstalledCLI('ionic -v', 'npm install -g ionic', 'ionic serve', name, type);
+      startProject('https://github.com/acidb/mobiscroll-demos-angular', type, 'angular', name, undefined, () => {
+        printNextSteps(name, 'ng s -o')
       });
       break;
     case 'react':
-      startProject('https://github.com/acidb/react-starter', type, 'react', name, {}, () => {
-        utils.testInstalledCLI('create-react-app --version', 'npm install -g create-react-app', 'npm start', name, type);
+      startProject('https://github.com/acidb/mobiscroll-demos-react', type, 'react', name, undefined, () => {
+        printNextSteps(name, 'npm run dev')
       });
       break;
-    // case 'vue':
-    //     startProject('', type, name, () => {
-    //         utils.testInstalledCLI('vue -V', 'npm install -g @vue/cli', 'npm run serve', name, type);
-    //     });
-    //     break;
+    case 'react-ts':
+        startProject('https://github.com/acidb/mobiscroll-demos-react-ts', type, 'react', name, undefined, () => {
+          printNextSteps(name, 'npm run dev')
+        });
+        break;
+    case 'vue':
+        startProject('https://github.com/acidb/mobiscroll-demos-vue', type, 'vue', name, undefined, () => {
+          printNextSteps(name, 'npm run dev')
+        });
+        break;
+    case 'vue-ts':
+        startProject('https://github.com/acidb/mobiscroll-demos-vue-ts', type, 'vue', name, undefined, () => {
+          printNextSteps(name, 'npm run dev')
+        });
+         break;
+    case 'javascript':
+      startProject('https://github.com/acidb/mobiscroll-demos-javascript', type, 'javascript', name, undefined, () => {
+        printNextSteps(name, 'npm run dev')
+      });
+       break;
+    case 'jquery':
+      startProject('https://github.com/acidb/mobiscroll-demos-jquery', type, 'jquery', name, undefined, () => {
+        printNextSteps(name, 'npm run dev')
+      });
+       break;
     default:
       printWarning(
-        'No valid project type was specified. Currently the following project types are supported: [ angular, ionic, ionic-angular, ionic-react, react ]'
+        'No valid project type was specified. Currently the following project types are supported: [ angular, react, vue, vue-ts, javascript, jquery ]'
       );
       break;
   }
@@ -578,6 +594,7 @@ function handleConfig(projectType) {
 
           askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
             const isAngular = framework == 'angular';
+            const mainAngularVersion = getMainAngularVersion(packageJson);
             configObject.useScss = isScssSelected;
 
             if (configObject.useScss) {
@@ -585,7 +602,7 @@ function handleConfig(projectType) {
               let fileData = fs.readFileSync(scssFileLocation).toString();
 
               if (fileData && isAngular) {
-                fileData = fileData.replace("$mbsc-font-path: '' !default;", "$mbsc-font-path: '~@mobiscroll/angular/dist/css/' !default;");
+                fileData = fileData.replace("$mbsc-font-path: '' !default;", `$mbsc-font-path: '${mainAngularVersion > 13 ? '' : '~' }@mobiscroll/angular/dist/css/' !default;`);
                 utils.writeToFile(scssFileLocation, fileData);
               }
             }
@@ -622,7 +639,7 @@ function handleConfig(projectType) {
               }
 
               if (!esmBundleAvailable ||
-                isAngular && packageJson && packageJson.dependencies && utils.getMainAngularVersion(packageJson) < 16) {
+                isAngular && packageJson && packageJson.dependencies && mainAngularVersion < 16) {
                 delete noNpmPackageJson.exports;
               }
 
@@ -694,7 +711,7 @@ function handleConfig(projectType) {
                   }
 
                   if (esmBundleAvailable) {
-                    utils.writeToFile(path.resolve(packageFolder, 'dist/esm5/package.json'), '{ "type": "module" }', pack);
+                    utils.writeToFile(path.resolve(packageFolder, 'dist/esm5/package.json'), `{ "type": "module", "version": "${version}" }`, pack);
                   } else {
                     pack();
                   }
@@ -785,13 +802,6 @@ program
   .command('start [types] [name]')
   .on('--help', helperMessages.startHelp)
   .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
-  .option(
-    '--ionic-version [version]',
-    `Pass the ionic-angular version of the starter app which you want to start. E.g ${chalk.gray(
-      'mobiscroll start ionic-angular --ionic-version=4'
-    )}`,
-    handleStartIonicVersion
-  )
   .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
   .action(handleStart);
 
