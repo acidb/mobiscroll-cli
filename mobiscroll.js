@@ -548,6 +548,9 @@ function handleConfig(projectType) {
             });
           }
 
+          // Prefer the non-legacy css file when multiple mobiscroll css files are present.
+          const selectedCssFileName = localCssFileName.find((item) => item.indexOf('.legacy.') === -1) || localCssFileName[0];
+
           if (!localJsFileName.length || !localCssFileName.length) {
             printWarning(
               `No mobiscroll js/css files were found in your project's src/lib/mobiscroll folder. \n\nPlease make sure to extract the downloaded Mobiscroll package, then grab the ${framework == 'angular'
@@ -577,7 +580,7 @@ function handleConfig(projectType) {
           }
 
           let configObject = {
-            localCssFileName: localCssFileName[0],
+            localCssFileName: selectedCssFileName,
             localJsFileName: localJsFileName[0],
             projectType,
             currDir,
@@ -647,7 +650,7 @@ function handleConfig(projectType) {
                 noNpmPackageJson.types = noNpmPackageJson.types + localJsFileName[0].replace('js', 'd.ts');
               }
               if (noNpmPackageJson.style) {
-                noNpmPackageJson.style = noNpmPackageJson.style + localCssFileName[0];
+                noNpmPackageJson.style = noNpmPackageJson.style + selectedCssFileName;
               }
 
               if (semver.gte(version, '5.0.0-beta') && !isAngular) {
@@ -695,7 +698,7 @@ function handleConfig(projectType) {
                               ? packageJson.dependencies['@ionic/angular']
                                 ? `./node_modules/@mobiscroll/${framework}/dist/css/`
                                 : 'lib/mobiscroll/css/'
-                              : `../node_modules/@mobiscroll/${framework}/dist/css/`) + localCssFileName;
+                              : `../node_modules/@mobiscroll/${framework}/dist/css/`) + selectedCssFileName;
                           configObject.cssFileName = cssFileName;
 
                           //config(projectType, currDir, packageJsonLocation, jsFileName, cssFileName, isNpmSource, false, false, () => {

@@ -1,5 +1,9 @@
 Mobiscroll CLI changelog
 
+v 1.16.1 - 18 Mar 2026
+
+  * Fixed: Fixed a v6 `--no-npm` CSS path generation issue that could produce an invalid comma-separated stylesheet entry.
+
 v 1.16.0 - 5 Mar 2026
 
   * New: Updated the `start` command to install modern Mobiscroll demo applications, replacing the legacy v4 starters.
