@@ -1,5 +1,11 @@
 Mobiscroll CLI changelog
 
+v 1.16.2 - 2 Apr 2026
+
+  * Fixed: We fixed an issue where the config command, in the case of v6 packages, failed for users with date & time licenses.
+
+  * Fixed: Updated package dependencies to resolve npm audit warnings.
+
 v 1.16.1 - 18 Mar 2026
 
   * Fixed: Fixed a v6 `--no-npm` CSS path generation issue that could produce an invalid comma-separated stylesheet entry.

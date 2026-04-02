@@ -728,8 +728,8 @@ module.exports = {
     }
 
     let isReactNext = false;
-  
-    if (framework === 'react' && dependencies) {
+
+    if (frameworkName === 'react' && dependencies) {
       const reactVersionRaw = packageJson.dependencies['react'];
       const reactVersionArr = shapeVersionToArray(reactVersionRaw);
       isReactNext = reactVersionArr[0] >= 18;
@@ -778,41 +778,32 @@ module.exports = {
       }
 
       let installCmd = usePnpm ? 'pnpm add' : useYarn ? 'yarn add' : 'npm install';
-      if (isTrial) {
-        command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}`; // todo test --update-checksums
-      } else {
-        // For v6+: Use simple install for base packages, npm alias for legacy variants
-        // For pre-v6: Use npm alias for -ivy and -next variants
-        if (isV6) {
-          if (frameworkName === 'angular') {
-            if (isIvy) {
-              // Angular 13+: simple install
-              command = `${installCmd} @mobiscroll/angular@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
-            } else {
-              // Angular 9-12: npm alias to legacy package
-              command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/angular-legacy@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
-            }
-          } else if (frameworkName === 'react') {
-            if (isReactNext) {
-              // React 18+: simple install
-              command = `${installCmd} @mobiscroll/react@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
-            } else {
-              // React <18: npm alias to legacy package
-              command = `${installCmd} @mobiscroll/react@npm:@mobiscroll/react-legacy@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
-            }
-          } else {
-            // Other frameworks: simple install
-            command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
-          }
+      const saveFlag = isYarn2 ? '' : ' --save';
+      if (isV6) {
+        // v6+: normalize package modifiers away so the alias stays framework-stable.
+        const baseAliasName = package.replace(/^datepicker-/, '').replace(/-trial$/, '').replace(/-legacy$/, '');
+        const aliasPackageName = `@mobiscroll/${baseAliasName}`;
+        const targetPackageName = `@mobiscroll/${pkgName}`;
+
+        if (aliasPackageName === targetPackageName) {
+          command = `${installCmd} ${targetPackageName}@${installVersion || version}${saveFlag}`
         } else {
-          // Pre-v6: Use npm alias for -ivy and -next variants
-          if (isIvy) {
-            command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
-          } else if (isReactNext) {
-            command = `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
-          } else {
-            command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version} ${isYarn2 ? '' : ' --save'}`;
-          }
+          command = `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${installVersion || version}${saveFlag}`;
+        }
+        command =
+          aliasPackageName === targetPackageName
+            ? `${installCmd} ${targetPackageName}@${installVersion || version}${saveFlag}`
+            : `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${installVersion || version}${saveFlag}`;
+      } else {
+        // Pre-v6: trial packages are still installed behind the framework package name.
+        if (isTrial) {
+          command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
+        } else if (isIvy) {
+          command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
+        } else if (isReactNext) {
+          command = `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
+        } else {
+          command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
         }
       }
 
