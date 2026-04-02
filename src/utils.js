@@ -786,7 +786,7 @@ module.exports = {
         const targetPackageName = `@mobiscroll/${pkgName}`;
 
         if (aliasPackageName === targetPackageName) {
-             command = `${installCmd} ${targetPackageName}@${installVersion || version}${saveFlag}`
+          command = `${installCmd} ${targetPackageName}@${installVersion || version}${saveFlag}`
         } else {
           command = `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${installVersion || version}${saveFlag}`;
         }
