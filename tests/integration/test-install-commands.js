@@ -8,6 +8,8 @@
 
 'use strict';
 
+const assert = require('assert');
+
 // ── Stub child_process (must be done before any require of utils) ──────────
 const cp = require('child_process');
 const captured = [];
@@ -69,6 +71,62 @@ async function runCase(tc) {
   }
 
   return normalize(captured[captured.length - 1]);
+}
+
+function getExpectedCommand(tc) {
+  const version = tc.version;
+  const dependencies = tc.packageJson.dependencies || {};
+
+  let frameworkName = tc.projectType;
+  if (tc.projectType === 'ionic') {
+    frameworkName = dependencies['@ionic/react'] ? 'react' : dependencies['@ionic/vue'] ? 'vue' : 'angular';
+  }
+
+  const angularVersion = dependencies['@angular/core'] || '';
+  const reactVersion = dependencies.react || '';
+  const angularMajor = Number((angularVersion.match(/\d+/) || [0])[0]);
+  const reactMajor = Number((reactVersion.match(/\d+/) || [0])[0]);
+  const isIvy = frameworkName === 'angular' && angularMajor >= 13 && version >= '5.23.0' && version < '6.0.0';
+  const isReactNext = frameworkName === 'react' && reactMajor >= 18 && version >= '5.30.0' && version < '6.0.0';
+  const isV6 = version >= '6.0.0';
+
+  let suffix = '';
+  if (isV6) {
+    if (frameworkName === 'angular') {
+      suffix = angularMajor >= 13 ? '' : '-legacy';
+    } else if (frameworkName === 'react') {
+      suffix = reactMajor >= 18 ? '' : '-legacy';
+    }
+  } else {
+    suffix = (isReactNext ? '-next' : '') + (isIvy ? '-ivy' : '');
+  }
+
+  const pkgName = tc.pkg + suffix + (tc.isTrial ? '-trial' : '');
+  const installCmd = 'npm install';
+  const saveFlag = ' --save';
+
+  if (isV6) {
+    const baseAliasName = tc.pkg.replace(/^datepicker-/, '');
+    const aliasPackageName = `@mobiscroll/${baseAliasName}`;
+    const targetPackageName = `@mobiscroll/${pkgName}`;
+    return aliasPackageName === targetPackageName
+      ? `${installCmd} ${targetPackageName}@${version}${saveFlag}`
+      : `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${version}${saveFlag}`;
+  }
+
+  if (tc.isTrial) {
+    return `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${version}${saveFlag}`;
+  }
+
+  if (isIvy) {
+    return `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${version}${saveFlag}`;
+  }
+
+  if (isReactNext) {
+    return `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${version}${saveFlag}`;
+  }
+
+  return `${installCmd} @mobiscroll/${pkgName}@${version}${saveFlag}`;
 }
 
 // ── Test matrix ────────────────────────────────────────────────────────────
@@ -215,6 +273,9 @@ async function runCase(tc) {
 
     for (const tc of group.cases) {
       const cmd = await runCase(tc);
+      const expected = normalize(getExpectedCommand(tc));
+
+      assert.strictEqual(cmd, expected, `Unexpected install command for ${tc.name}`);
 
       // Readable input summary
       const trial = tc.isTrial ? '  trial: yes' : '  trial: no ';

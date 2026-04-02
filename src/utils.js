@@ -795,8 +795,10 @@ module.exports = {
             ? `${installCmd} ${targetPackageName}@${installVersion || version}${saveFlag}`
             : `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${installVersion || version}${saveFlag}`;
       } else {
-        // Pre-v6: Use npm alias for -ivy and -next variants
-        if (isIvy) {
+        // Pre-v6: trial packages are still installed behind the framework package name.
+        if (isTrial) {
+          command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
+        } else if (isIvy) {
           command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
         } else if (isReactNext) {
           command = `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
