@@ -213,6 +213,7 @@ Rules for specific areas of the codebase — break them only with a clear reason
 - **`src/utils.js` has no framework-specific logic.** Framework branching belongs in `configAngular.js`, `configIonic.js`, or `mobiscroll.js`. Utility functions must stay framework-agnostic.
 - **`helperMessages.js` contains only output strings, no side effects.** Functions there must return or `console.log` only — no file writes, no `run()` calls.
 - **Do not change the `commander` version** without verifying option parsing behavior. The API changed significantly between v2 and v3+; the project pins v2 intentionally.
+- **Do not upgrade `inquirer` past v8.** v9+ is ESM-only and incompatible with this project's CommonJS `require()` module system. Upgrading would require migrating the entire project to ESM or introducing a bundler.
 - **Do not add new module-level mutable state to `mobiscroll.js`.** Every option already has a corresponding `handle*()` function and a `var` at the top. Adding state outside this pattern creates hidden coupling.
 - **Resource templates in `resources/` are copied verbatim into user projects.** Do not add Node.js `require()` calls or absolute paths there — they must work standalone.
 - **Test stubs must be set up before `require('./src/utils.js')`** in test files. Utils resolves `child_process` and `axios` at load time, so stubbing after the require has no effect.
