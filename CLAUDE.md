@@ -127,16 +127,9 @@ The `settings` object passed through `config()` → `configAngular()` / `configI
 
 This is the trickiest part of the codebase. Package names differ by version:
 
-| Version | Angular package | React package |
-|---|---|---|
-| v6+ (current) | `@mobiscroll/angular` (npm alias to `-legacy`) | `@mobiscroll/react` |
-| v5 Ivy | `@mobiscroll/angular-ivy` | `@mobiscroll/react-next` |
-| v5 non-Ivy | `@mobiscroll/angular` | `@mobiscroll/react` |
+**v5:** Angular uses `@mobiscroll/angular-ivy` (Angular 13+, from v5.23.0) or `@mobiscroll/angular` (Angular 9–12). React uses `@mobiscroll/react-next` (React 18+, from v5.30.0) or `@mobiscroll/react`.
 
-For v6+, npm aliases are used:
-```
-@mobiscroll/angular@npm:@mobiscroll/angular-legacy@<version>
-```
+**v6+:** The `-ivy` and `-next` variants became the "main" packages, and the old names got a `-legacy` suffix. So `angular-ivy` → `angular`, `angular` → `angular-legacy`, `react-next` → `react`, `react` → `react-legacy`. When the legacy variant is needed, an npm alias is used so the import name in the project stays stable (e.g. `@mobiscroll/angular@npm:@mobiscroll/angular-legacy@<version>`).
 
 The `installMobiscroll()` function in `src/utils.js` contains the full branching logic for building install commands. The integration tests in `tests/integration/test-install-commands.js` cover all combinations — always run them after touching install logic.
 

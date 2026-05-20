@@ -230,12 +230,9 @@ mobiscroll.js  ──parse flags──►  settings object
 
 This is the most complex part of the codebase. Package names differ by Mobiscroll version:
 
-| Version | Angular | React |
-|---|---|---|
-| **v6+** (current) | `@mobiscroll/angular@npm:@mobiscroll/angular-legacy@<ver>` | `@mobiscroll/react` |
-| **v5 with Ivy** (Angular 13+) | `@mobiscroll/angular-ivy` | `@mobiscroll/react-next` (React 18+) |
-| **v5 pre-Ivy** | `@mobiscroll/angular` | `@mobiscroll/react` |
-| **v4** | `@mobiscroll/angular` | `@mobiscroll/react` |
+**v5:** Angular uses `@mobiscroll/angular-ivy` (Angular 13+, from v5.23.0) or `@mobiscroll/angular` (Angular 9–12). React uses `@mobiscroll/react-next` (React 18+, from v5.30.0) or `@mobiscroll/react`.
+
+**v6+:** The `-ivy` and `-next` variants became the "main" packages, and the old names got a `-legacy` suffix. So `angular-ivy` → `angular`, `angular` → `angular-legacy`, `react-next` → `react`, `react` → `react-legacy`. When the legacy variant is needed, an npm alias is used so the import name in the project stays stable (e.g. `@mobiscroll/angular@npm:@mobiscroll/angular-legacy@<version>`).
 
 Trial and lite variants append `-trial` or `-lite` to the package name.
 
