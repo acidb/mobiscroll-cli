@@ -70,7 +70,7 @@ node tests/integration/test-install-commands.js
 npm publish
 ```
 
-Before publishing: bump the version in `package.json` and update `changelog.txt`.
+Before publishing: bump the version in `package.json` and update `CHANGELOG.md`.
 
 ---
 

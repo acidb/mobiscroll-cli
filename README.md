@@ -1,31 +1,58 @@
-Mobiscroll CLI
-==============
+# Mobiscroll CLI
 
-Installation
-------------
+[![npm version](https://img.shields.io/npm/v/@mobiscroll/cli.svg)](https://www.npmjs.com/package/@mobiscroll/cli)
+[![license](https://img.shields.io/npm/l/@mobiscroll/cli.svg)](./LICENSE)
 
-    npm install -g @mobiscroll/cli
+A command-line tool for installing and configuring [Mobiscroll](https://mobiscroll.com/) UI components in your project.
 
-Usage
------
+## What is it?
 
-    For detailed usage information please run the `mobiscroll --help` command or visit the [CLI docs page](https://docs.mobiscroll.com/cli).
+The Mobiscroll CLI automates the setup work that would otherwise be done by hand: authenticating with the Mobiscroll npm registry, installing the right package for your framework and license, and wiring up framework-specific configuration (module imports, `angular.json`, stylesheets, etc.).
 
+It supports:
 
-Dev usage
----------
+- **Angular**
+- **Ionic** (Angular, React, or Vue)
+- **React**
+- **Vue** 3+
+- **JavaScript**
+- **jQuery**
 
-  - run `npm install` in the root folder for installing dependencies 
-  
-  - For trying out the cli locally run the `npm install -g` command in the root folder. This command will install the package globally on your system. (You might need to uninstall the previous version if there are intallation conflicts between npm and local variants. Use: `npm uninstall -g @mobiscroll/cli`)
-  
-Publishing
-----------
+## Installation
 
-  - write new changelog in the `changelog.txt` also move this to the website as well
-  
-  - make sure to change the version number in the `package.json` file
-  
-  - log in with the mobiscroll npm user
-  
-  - run `npm publish` for publishing the new version
+```bash
+npm install -g @mobiscroll/cli
+```
+
+## Usage
+
+```bash
+mobiscroll config <type>
+```
+
+Installs and configures Mobiscroll for the given framework (`angular`, `ionic`, `react`, `vue`, `jquery`, or `javascript`) in the current project.
+
+```bash
+mobiscroll login
+mobiscroll logout
+```
+
+Manages your Mobiscroll npm registry credentials.
+
+```bash
+mobiscroll start <type> [name]
+```
+
+Clones a Mobiscroll demo project to get you up and running quickly.
+
+For the full command and flag reference, run:
+
+```bash
+mobiscroll --help
+```
+
+or visit the [CLI docs page](https://mobiscroll.com/docs/core-concepts/cli).
+
+## License
+
+Apache-2.0

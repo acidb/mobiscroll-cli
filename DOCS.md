@@ -70,7 +70,7 @@ npx eslint mobiscroll.js src/
 mobiscroll-cli/
 ├── mobiscroll.js               # Entry point — CLI parsing, command handlers
 ├── package.json
-├── changelog.txt               # Human-readable version history
+├── CHANGELOG.md                # Human-readable version history
 ├── src/
 │   ├── utils.js                # All shared helpers: install commands, API calls, file I/O, auth
 │   ├── configAngular.js        # Angular file modifications (app.module.ts, angular.json, SCSS)
@@ -328,7 +328,7 @@ node tests/integration/test-install-commands.js
 ## Release process
 
 1. Make your changes on a branch and open a PR for review
-2. Update `changelog.txt` with the version number and a bullet list of changes
+2. Update `CHANGELOG.md` with the version number and a bullet list of changes
 3. Bump the version in `package.json` (follow semver: patch for fixes, minor for new features)
 4. Merge to main
 5. Publish:
