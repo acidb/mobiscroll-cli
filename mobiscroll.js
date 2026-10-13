@@ -661,7 +661,7 @@ function handleConfig(projectType) {
               let useYarn = utils.testYarn(currDir);
 
               // remove previously installed mobiscroll package (fix npm caching the local package)
-              utils.run(`${useYarn ? 'yarn remove' : 'npm uninstall'} @mobiscroll/${framework} --save`, true, true, true).then(() => {
+              utils.run(`${useYarn ? 'yarn remove' : 'npm uninstall'} @mobiscroll/${framework}`, true, true, true).then(() => {
                 utils.printLog('Removing old Mobiscroll version.');
                 // write the new package.json
                 utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {

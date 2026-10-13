@@ -195,7 +195,7 @@ module.exports = {
         angularConfig(settings, callback);
       } else {
         utils
-          .run('npm install rxjs-compat --save', true)
+          .run('npm install rxjs-compat', true)
           .then(() => {
             angularConfig(settings, callback);
           })

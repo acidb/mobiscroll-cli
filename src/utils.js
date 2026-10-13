@@ -546,7 +546,7 @@ module.exports = {
   },
   installMobiscrollLite: function (framework, version, callback) {
     framework = framework.indexOf('ionic') > -1 ? 'angular' : framework;
-    runCommand(`npm install @mobiscroll/${framework}-lite@${version || 'latest'} --save`, true).then(() => {
+    runCommand(`npm install @mobiscroll/${framework}-lite@${version || 'latest'}`, true).then(() => {
       printFeedback(`The lite version of Mobiscroll for ${framework} installed.`);
       callback();
     });
@@ -778,7 +778,6 @@ module.exports = {
       }
 
       let installCmd = usePnpm ? 'pnpm add' : useYarn ? 'yarn add' : 'npm install';
-      const saveFlag = isYarn2 ? '' : ' --save';
       if (isV6) {
         // v6+: normalize package modifiers away so the alias stays framework-stable.
         const baseAliasName = package.replace(/^datepicker-/, '').replace(/-trial$/, '').replace(/-legacy$/, '');
@@ -786,24 +785,24 @@ module.exports = {
         const targetPackageName = `@mobiscroll/${pkgName}`;
 
         if (aliasPackageName === targetPackageName) {
-          command = `${installCmd} ${targetPackageName}@${installVersion || version}${saveFlag}`
+          command = `${installCmd} ${targetPackageName}@${installVersion || version}`
         } else {
-          command = `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${installVersion || version}${saveFlag}`;
+          command = `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${installVersion || version}`;
         }
         command =
           aliasPackageName === targetPackageName
-            ? `${installCmd} ${targetPackageName}@${installVersion || version}${saveFlag}`
-            : `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${installVersion || version}${saveFlag}`;
+            ? `${installCmd} ${targetPackageName}@${installVersion || version}`
+            : `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${installVersion || version}`;
       } else {
         // Pre-v6: trial packages are still installed behind the framework package name.
         if (isTrial) {
-          command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
+          command = `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${installVersion || version}`;
         } else if (isIvy) {
-          command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
+          command = `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${installVersion || version}`;
         } else if (isReactNext) {
-          command = `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
+          command = `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${installVersion || version}`;
         } else {
-          command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version}${saveFlag}`;
+          command = `${installCmd} @mobiscroll/${pkgName}@${installVersion || version}`;
         }
       }
 
