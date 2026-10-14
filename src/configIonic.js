@@ -7,6 +7,9 @@ const helperMessages = require('./helperMessages.js');
 const inquirer = require('inquirer');
 const configAngular = require('./configAngular').configAngular;
 
+// Used when the installed Ionic version can't be determined from package.json
+const ASSUMED_MODERN_IONIC_MAJOR = 9999;
+
 function updateCssCopy(settings, ionicPackage) {
   // if there is no ionic_copy defined add the copy script and inject to the package.json
   ionicPackage.config['ionic_copy'] = './scripts/copy-mobiscroll-css.js';
@@ -37,7 +40,7 @@ function configIonic(settings, callback) {
       `$mbsc-font-path: '../lib/mobiscroll/css/';
 ${utils.getScssLoadStatement(
   settings.packageJson,
-  `../../node_modules/@mobiscroll/angular/dist/css/mobiscroll${settings.isNpmSource ? '' : '.angular'}.scss`
+  `../../node_modules/@mobiscroll/angular/dist/css/mobiscroll${settings.isNpmSource ? '' : '.angular'}.scss`,
 )}`,
       '',
       false,
@@ -47,7 +50,7 @@ ${utils.getScssLoadStatement(
           utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with sass?`);
           return;
         }
-      }
+      },
     );
   } else {
     console.log(`\n  Adding stylesheet copy script to ${chalk.grey('package.json')}`);
@@ -133,8 +136,8 @@ function detectReactPages(settings /*, callback*/) {
   if (fs.existsSync(pagesPath)) {
     console.log(
       chalk.bold(
-        `\n\nMultiple pages detected. Mobiscroll components must be imported into every page separately where you want to use the components. You can import the component the following way:`
-      )
+        `\n\nMultiple pages detected. Mobiscroll components must be imported into every page separately where you want to use the components. You can import the component the following way:`,
+      ),
     );
     helperMessages.reactHelp(
       settings.apiKey,
@@ -142,7 +145,7 @@ function detectReactPages(settings /*, callback*/) {
       settings.isNpmSource,
       settings.useScss,
       settings.mobiscrollVersion,
-      utils.getSassLoader(settings.packageJson).syntax
+      utils.getSassLoader(settings.packageJson).syntax,
     );
   }
 }
@@ -175,17 +178,17 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, is
         console.log(
           chalk.bold(
             `\n\nMultiple pages detected. The ${chalk.grey('MbscModule')} and ${chalk.grey(
-              'FormsModule'
-            )} must be imported into every page separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`
-          )
+              'FormsModule',
+            )} must be imported into every page separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`,
+          ),
         );
       } else {
         console.log(
           chalk.bold(
             `\n\nMultiple angular modules detected. The ${chalk.grey('MbscModule')} and ${chalk.grey(
-              'FormsModule'
-            )} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`
-          )
+              'FormsModule',
+            )} must be imported into every module separately where you want to use Mobiscroll components. Would you like us to inject the MbscModule for you?\n`,
+          ),
         );
       }
       inquirer
@@ -232,9 +235,10 @@ module.exports = {
     var versionArray,
       mainIonicVersion,
       ionicPackage = settings.packageJson, //require(settings.ionicPackageLocation),
-      ionicVersion = ionicPackage.dependencies['ionic-angular'] || ionicPackage.dependencies['@ionic/angular'],
-      ionicReactVersion = ionicPackage.dependencies['@ionic/react'];
-    ionicVueVersion = ionicPackage.dependencies['@ionic/vue'];
+      ionicDependencies = ionicPackage.dependencies || {},
+      ionicVersion = ionicDependencies['ionic-angular'] || ionicDependencies['@ionic/angular'],
+      ionicReactVersion = ionicDependencies['@ionic/react'],
+      ionicVueVersion = ionicDependencies['@ionic/vue'];
 
     const isStandaloneApp = utils.checkAngularStandaloneComponent(settings);
     settings.isStandalone = isStandaloneApp;
@@ -251,7 +255,7 @@ module.exports = {
           `import '@ionic/vue/css/core.css';`,
           `import '@ionic/vue/css/core.css';\n\rimport '@mobiscroll/vue/dist/css/${
             settings.isNpmSource ? 'mobiscroll.min.css' : settings.localCssFileName
-          }';\n\r`
+          }';\n\r`,
         );
         utils.writeToFile(mainFile, mainFileData);
 
@@ -259,7 +263,7 @@ module.exports = {
           settings.isNpmSource,
           settings.useScss,
           settings.mobiscrollVersion,
-          utils.getSassLoader(settings.packageJson).syntax
+          utils.getSassLoader(settings.packageJson).syntax,
         );
         if (callback) {
           callback();
@@ -273,9 +277,7 @@ module.exports = {
           path.resolve(settings.currDir, 'src', 'theme', fileName),
           utils.getScssLoadStatement(
             settings.packageJson,
-            `@mobiscroll/react/dist/css/${
-              settings.isNpmSource ? 'mobiscroll.scss' : settings.localCssFileName.replace('min.css', 'scss')
-            }`
+            `@mobiscroll/react/dist/css/${settings.isNpmSource ? 'mobiscroll.scss' : settings.localCssFileName.replace('min.css', 'scss')}`,
           ),
           /@(import|use) "[\S]+mobiscroll[\S]+\.scss";/g,
           false,
@@ -285,7 +287,7 @@ module.exports = {
               utils.printError(`Couldn't update ${chalk.grey(fileName)}. Does your project is configured with scss?`);
               return;
             }
-          }
+          },
         );
       } else {
         let appFile = path.resolve(settings.currDir, 'src', 'App.tsx');
@@ -303,7 +305,7 @@ module.exports = {
             `import '@ionic/react/css/core.css';`,
             `import '@ionic/react/css/core.css';\n\rimport '@mobiscroll/react/dist/css/${
               settings.isNpmSource ? 'mobiscroll.min.css' : settings.localCssFileName
-            }';\n\r`
+            }';\n\r`,
           );
           utils.writeToFile(appFile, appFileData);
         }
@@ -317,22 +319,27 @@ module.exports = {
     } else {
       if (ionicVersion) {
         // check ionic version
-        versionArray = utils.shapeVersionToArray(ionicVersion);
+        const resolvedIonicVersion = utils.resolvePackageVersion(
+          ionicPackage,
+          ionicDependencies['ionic-angular'] ? 'ionic-angular' : '@ionic/angular',
+          settings.currDir,
+        );
+        versionArray = resolvedIonicVersion ? utils.shapeVersionToArray(resolvedIonicVersion) : [ASSUMED_MODERN_IONIC_MAJOR];
 
         mainIonicVersion = versionArray[0];
         settings.mainIonicVersion = mainIonicVersion;
 
         if (mainIonicVersion == 2 && versionArray[1] < 2) {
           utils.printWarning(
-            'It looks like your are using an older version of ionic 2. The minimum required ionic 2 version is 2.2.0. Please update your ionic app in order to Mobiscroll work correctly.'
+            'It looks like your are using an older version of ionic 2. The minimum required ionic 2 version is 2.2.0. Please update your ionic app in order to Mobiscroll work correctly.',
           );
 
           return;
         }
-      } else if (ionicPackage.devDependencies['gulp']) {
+      } else if (ionicPackage.devDependencies && ionicPackage.devDependencies['gulp']) {
         // check if ionic 1.x where gulp is used
         utils.printWarning(
-          'It looks like you are trying to run this command in an ionic 1 application. The `mobiscroll config ionic` supports only ionic 2+ apps. Please run `mobiscroll config --help` for more information.'
+          'It looks like you are trying to run this command in an ionic 1 application. The `mobiscroll config ionic` supports only ionic 2+ apps. Please run `mobiscroll config --help` for more information.',
         );
         return;
       }
@@ -354,7 +361,7 @@ module.exports = {
             settings.jsFileName,
             mainIonicVersion,
             isStandaloneApp,
-            callback
+            callback,
           );
         });
       } else {

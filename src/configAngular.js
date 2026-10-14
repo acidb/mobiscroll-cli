@@ -24,14 +24,14 @@ function updateAngularJsonWithCss(settings) {
     stylesArray = projectConfig.targets.build.options.styles;
   } else {
     utils.printWarning(
-      "It looks like something changed in the angular.json configuration file. Couldn't locate the `styles` property. Skipping Mobiscroll stylesheet configuration."
+      "It looks like something changed in the angular.json configuration file. Couldn't locate the `styles` property. Skipping Mobiscroll stylesheet configuration.",
     );
     console.log("You will have to add the stylesheet manually. Here is it's location: " + chalk.grey(cssFile));
   }
 
   if (stylesArray) {
     stylesArray = stylesArray.filter((x) =>
-      x != null && typeof x == 'object' ? x.input && x.input.indexOf('mobiscroll') == -1 : x.indexOf('mobiscroll') == -1
+      x != null && typeof x == 'object' ? x.input && x.input.indexOf('mobiscroll') == -1 : x.indexOf('mobiscroll') == -1,
     ); // remove previously installed mobiscroll styles
 
     if (!settings.useScss) {
@@ -83,19 +83,16 @@ function angularConfig(settings, callback) {
 
     if (isStandalone) {
       // Try to find and update the main component file
-      const componentFiles = [
-        path.resolve(currDir, 'src/app/app.component.ts'),
-        path.resolve(currDir, 'src/app/app.ts')
-      ];
+      const componentFiles = [path.resolve(currDir, 'src/app/app.component.ts'), path.resolve(currDir, 'src/app/app.ts')];
 
-      const componentFile = componentFiles.find(file => fs.existsSync(file));
+      const componentFile = componentFiles.find((file) => fs.existsSync(file));
 
       if (componentFile) {
         const fileName = path.basename(componentFile);
         utils.importModules(componentFile, fileName, settings.jsFileName, isStandalone);
       } else {
         printWarning(
-          `Couldn't identify the necessary modules/components where Mobiscroll resources should be included. In this case, manual inclusion is required. Please follow the instructions below:\n`
+          `Couldn't identify the necessary modules/components where Mobiscroll resources should be included. In this case, manual inclusion is required. Please follow the instructions below:\n`,
         );
         helperMessages.angularLazy(false, false, false, true);
         return;
@@ -107,12 +104,14 @@ function angularConfig(settings, callback) {
     const cssFile = settings.cssFileName.replace('../', './');
     // if not an angular-cli based app
     printWarning(
-      `Couldn't identify the necessary modules/components where Mobiscroll resources should be included. In this case, manual inclusion is required. Please follow the instructions below:\n`
+      `Couldn't identify the necessary modules/components where Mobiscroll resources should be included. In this case, manual inclusion is required. Please follow the instructions below:\n`,
     );
 
     helperMessages.angularLazy(false, false, false, true);
-    console.log("\n 2. Include the stylesheet into your application from the following location: " + chalk.grey(cssFile) + '\n');
-    console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', `https://mobiscroll.com/docs/angular`));
+    console.log('\n 2. Include the stylesheet into your application from the following location: ' + chalk.grey(cssFile) + '\n');
+    console.log(
+      `\nFind more information about the usage on the ` + terminalLink('documentation page:', `https://mobiscroll.com/docs/angular`),
+    );
     console.log(`\nFind usage examples on the ` + terminalLink('Demo page:', 'https://demo.mobiscroll.com/angular/eventcalendar/') + '\n');
     return;
   } else if (settings.useScss) {
@@ -122,8 +121,8 @@ function angularConfig(settings, callback) {
         settings.packageJson,
         `${settings.angularVersion && semver.gte(settings.angularVersion, '15.0.0') ? '' : '~'}@mobiscroll/angular/dist/css/mobiscroll${
           settings.isNpmSource ? '' : '.angular'
-        }.scss`
-      )
+        }.scss`,
+      ),
     );
   } else {
     console.log(`  Adding stylesheet to ${chalk.grey('angular.json')}`);
@@ -157,8 +156,8 @@ function angularConfig(settings, callback) {
     } else {
       utils.printWarning(
         `The file ${chalk.grey('angular.json')} could not be found. If this is not an Angular CLI app, make sure to load ${chalk.grey(
-          settings.cssFileName
-        )} into your app.`
+          settings.cssFileName,
+        )} into your app.`,
       );
       utils.printFeedback('Mobiscroll configuration ready. Make sure to restart your app for changes to take effect!');
     }
@@ -171,8 +170,10 @@ function angularConfig(settings, callback) {
 
 module.exports = {
   configAngular: function (settings, callback) {
-    const angularVers = settings.packageJson.dependencies['@angular/common'];
-    const angularVersion = angularVers && angularVers.replace(/^[^\d]/, '');
+    const angularVersion =
+      utils.resolvePackageVersion(settings.packageJson, '@angular/common', settings.currDir) ||
+      utils.resolvePackageVersion(settings.packageJson, '@angular/core', settings.currDir) ||
+      undefined;
     if (!settings.isIonicApp) {
       utils.printFeedback('Configuring Angular app...');
     }
@@ -190,7 +191,7 @@ module.exports = {
       semver.lt(settings.mobiscrollVersion, '4.8.2')
     ) {
       // check if angular 6 or older than v4.8.2
-      if (settings.packageJson.dependencies['rxjs-compat']) {
+      if (settings.packageJson.dependencies && settings.packageJson.dependencies['rxjs-compat']) {
         utils.printFeedback('rxjs-compat package detected');
         angularConfig(settings, callback);
       } else {

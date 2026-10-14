@@ -5,6 +5,7 @@
 `@mobiscroll/cli` is a Node.js CLI tool that automates integrating the [Mobiscroll](https://mobiscroll.com/) UI component library into JavaScript projects. It handles npm authentication, package installation, and framework-specific configuration files.
 
 **Main commands:**
+
 - `mobiscroll config <type>` — installs Mobiscroll packages and configures the project
 - `mobiscroll login` / `logout` — manages credentials in `.npmrc` / `.yarnrc.yml`
 - `mobiscroll start <type> [name]` — clones a Mobiscroll starter/demo project
@@ -85,17 +86,17 @@ Before publishing: bump the version in `package.json` and update `CHANGELOG.md`.
 
 ### Key functions in `src/utils.js`
 
-| Function | Purpose |
-|---|---|
-| `run(cmd, silent, returnOutput, ignoreError)` | Wraps `child_process.exec` as a Promise |
-| `installMobiscroll(settings, callback)` | Builds the full install command string, runs it |
-| `checkMbscNpmLogin(...)` | Verifies auth token via Mobiscroll API, prompts login if needed |
-| `findMonorepoRoot(dir)` | Traverses up to 5 levels looking for workspace root |
-| `testPnpm(dir)` / `testYarn(dir)` | Detects package manager from lock files |
-| `getMainAngularVersion(packageJson)` | Returns major Angular version from dependencies |
-| `getSassLoader(packageJson)` | Returns `{ syntax: '@import'|'@use' }` based on sass version |
-| `updateAuthTokenInYarnrc(dir, remove)` | Syncs `.npmrc` auth token into `.yarnrc.yml` |
-| `printFeedback` / `printWarning` / `printError` / `printLog` | Colored console output helpers |
+| Function                                                     | Purpose                                                         |
+| ------------------------------------------------------------ | --------------------------------------------------------------- | ------------------------------- |
+| `run(cmd, silent, returnOutput, ignoreError)`                | Wraps `child_process.exec` as a Promise                         |
+| `installMobiscroll(settings, callback)`                      | Builds the full install command string, runs it                 |
+| `checkMbscNpmLogin(...)`                                     | Verifies auth token via Mobiscroll API, prompts login if needed |
+| `findMonorepoRoot(dir)`                                      | Traverses up to 5 levels looking for workspace root             |
+| `testPnpm(dir)` / `testYarn(dir)`                            | Detects package manager from lock files                         |
+| `getMainAngularVersion(packageJson)`                         | Returns major Angular version from dependencies                 |
+| `getSassLoader(packageJson)`                                 | Returns `{ syntax: '@import'                                    | '@use' }` based on sass version |
+| `updateAuthTokenInYarnrc(dir, remove)`                       | Syncs `.npmrc` auth token into `.yarnrc.yml`                    |
+| `printFeedback` / `printWarning` / `printError` / `printLog` | Colored console output helpers                                  |
 
 ### Settings object
 
@@ -178,6 +179,7 @@ There are no unit test files beyond this. When changing install command logic, e
 
 ## Common Gotchas
 
+- **Framework versions come from `resolvePackageVersion()`** (`src/utils.js`), never from parsing `packageJson.dependencies[...]` directly. It handles `catalog:`, `npm:` aliases, ranges, dev/peer deps and `node_modules`; unresolvable versions warn and assume a modern version. Tests: `node tests/integration/test-version-resolution.js`.
 - **`process.env.HOME`** is explicitly set to `''` on Windows to fix the npm-login plugin — don't remove this line in `mobiscroll.js`.
 - **Monorepo detection** traverses up 5 directory levels; lock file checks use the monorepo root, not `currDir`.
 - **Standalone Angular components** (Angular 14+) skip `app.module.ts` modification; detection is via presence of `bootstrapApplication` in `main.ts`.
@@ -218,23 +220,27 @@ Rules for specific areas of the codebase — break them only with a clear reason
 When making a change, apply these rules to resolve ambiguity.
 
 **Which file handles a framework?**
+
 - Angular → `src/configAngular.js`
 - Ionic (any sub-framework) → `src/configIonic.js`
 - React, Vue, jQuery, JavaScript → `helperMessages.js` only (no file modifications, just print instructions)
 
 **Should a new flag go in `mobiscroll.js` or `utils.js`?**
+
 - If it affects what gets installed or how: `mobiscroll.js` (sets a `handle*()` var, passed into `settings`)
 - If it affects file detection/reading: `utils.js`
 
 **v5 vs v6 install command branching:**
+
 - Check `semver.major(mobiscrollVersion) >= 6` (or `=== 5` for legacy paths)
 - v6+ uses npm aliases; v5 uses `-ivy` / `-next` suffixes — never mix the two patterns
 
 **When to prompt vs. proceed silently:**
+
 - Prompt the user only for destructive or irreversible choices (overwriting config files, skipping install)
 - Always default to the safer/non-destructive option in the `inquirer` `default` field
 
 **Monorepo vs. single-project paths:**
+
 - Always call `findMonorepoRoot(currDir)` first and use its result for lock file detection
 - Use `currDir` (not monorepo root) for all project file reads/writes (e.g., `package.json`, `angular.json`)
-

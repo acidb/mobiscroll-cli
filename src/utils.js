@@ -99,9 +99,9 @@ function runCommand(cmd, skipWarning, skipError, skipLog) {
       if (stderr && !skipError && !skipWarning) {
         printWarning(
           'There was an stderror during executing the following command ' +
-          chalk.gray(cmd) +
-          '. \n\nHere is the warning message: \n\n' +
-          stderr
+            chalk.gray(cmd) +
+            '. \n\nHere is the warning message: \n\n' +
+            stderr,
         );
       }
       if (error && !skipError) {
@@ -238,8 +238,9 @@ function getApiKey(userName, proxy, framework, callback) {
     })
     .catch((err) => {
       printError(
-        `There was an error during getting the user's trial code. Status: ${err.response && err.response.status
-        }, User: ${userName}. \nPlease see the error message for more information: ` + err
+        `There was an error during getting the user's trial code. Status: ${
+          err.response && err.response.status
+        }, User: ${userName}. \nPlease see the error message for more information: ` + err,
       );
     });
 }
@@ -270,28 +271,28 @@ function checkMeteor(packageJson, currDir, framework) {
 function checkAngularStandaloneComponent(settings) {
   const currDir = settings.currDir;
   const mainTsPath = path.join(currDir, 'src', 'main.ts');
-  
+
   if (fs.existsSync(mainTsPath)) {
     const content = fs.readFileSync(mainTsPath, 'utf-8');
-    
+
     // Standalone apps use bootstrapApplication
     // Module-based apps use platformBrowserDynamic().bootstrapModule
     if (content.includes('bootstrapApplication')) {
       return true;
     }
-    
+
     if (content.includes('bootstrapModule') || content.includes('platformBrowserDynamic')) {
       return false;
     }
   }
-  
+
   // Fallback: check app.component.ts for standalone: true
   const appComponentPath = path.join(currDir, 'src', 'app', 'app.component.ts');
   if (fs.existsSync(appComponentPath)) {
     const componentContent = fs.readFileSync(appComponentPath, 'utf-8');
     return componentContent.includes('standalone: true');
   }
-  
+
   // Default to false if uncertain
   return false;
 }
@@ -387,7 +388,7 @@ function login(useGlobalNpmrc, proxy) {
           '@mobiscroll',
           null,
           useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc'),
-          proxy && processProxyUrl(proxy)
+          proxy && processProxyUrl(proxy),
         )
           .then(() => {
             console.log(`  Logged in as ${answers.username}`);
@@ -409,8 +410,8 @@ function login(useGlobalNpmrc, proxy) {
             ) {
               printWarning(
                 `We couldn’t log you in. This might be either because your account does not exist or you mistyped your login information. You can update your credentials ` +
-                terminalLink('from your account', 'https://mobiscroll.com/account') +
-                '.'
+                  terminalLink('from your account', 'https://mobiscroll.com/account') +
+                  '.',
               );
               printWarning(`If you don’t have an account yet, you can start a free trial from https://mobiscroll.com/starttrial`);
               console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
@@ -427,19 +428,153 @@ function login(useGlobalNpmrc, proxy) {
   });
 }
 
-function getMainAngularVersion(packageJson) {
-  const angularVersionRaw = packageJson.dependencies['@angular/core'];
-  const angularVersionArr = shapeVersionToArray(angularVersionRaw);
-  return angularVersionArr[0];
+// Major used when a framework version can't be determined; modern projects are the far more likely case.
+const ASSUMED_MODERN_MAJOR = 9999;
+
+function readJsonSafe(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (e) {
+    return null;
+  }
+}
+
+function readYamlSafe(filePath) {
+  try {
+    return yaml.load(fs.readFileSync(filePath, 'utf8')) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Looks up a `catalog:` / `catalog:<name>` spec in pnpm, yarn and bun/npm style catalog definitions.
+function lookupCatalogSpec(packageName, spec, rootDir) {
+  if (!rootDir) {
+    return null;
+  }
+
+  const catalogName = spec.slice('catalog:'.length).trim();
+  const isDefault = !catalogName || catalogName === 'default';
+  const sources = [readYamlSafe(path.join(rootDir, 'pnpm-workspace.yaml')), readYamlSafe(path.join(rootDir, '.yarnrc.yml'))];
+  const rootPkg = readJsonSafe(path.join(rootDir, 'package.json'));
+
+  if (rootPkg) {
+    sources.push(rootPkg);
+    if (rootPkg.workspaces && !Array.isArray(rootPkg.workspaces)) {
+      sources.push(rootPkg.workspaces);
+    }
+  }
+
+  for (let i = 0; i < sources.length; i++) {
+    const source = sources[i];
+    if (!source) {
+      continue;
+    }
+    const catalogs = source.catalogs || {};
+    const candidates = isDefault ? [source.catalog, catalogs.default] : [catalogs[catalogName]];
+    for (let j = 0; j < candidates.length; j++) {
+      const catalog = candidates[j];
+      if (catalog && typeof catalog[packageName] === 'string') {
+        return catalog[packageName];
+      }
+    }
+  }
+
+  return null;
+}
+
+// Turns a package.json version spec into a concrete semver version, or null if it can't be determined.
+function specToVersion(packageName, spec, rootDir, depth) {
+  if (typeof spec !== 'string' || depth > 3) {
+    return null;
+  }
+
+  spec = spec.trim();
+
+  if (spec.indexOf('catalog:') === 0) {
+    return specToVersion(packageName, lookupCatalogSpec(packageName, spec, rootDir), rootDir, depth + 1);
+  }
+
+  if (spec.indexOf('npm:') === 0) {
+    const at = spec.lastIndexOf('@');
+    return at > 3 ? specToVersion(packageName, spec.slice(at + 1), rootDir, depth + 1) : null;
+  }
+
+  if (!semver.validRange(spec)) {
+    // workspace:, file:, link:, git urls, tags like `latest`...
+    return null;
+  }
+
+  try {
+    // For `^18 || ^19` the lowest version is picked, the conservative choice
+    return semver.minVersion(spec).version;
+  } catch (e) {
+    return null;
+  }
+}
+
+function getInstalledVersion(packageName, dirs) {
+  for (let i = 0; i < dirs.length; i++) {
+    if (!dirs[i]) {
+      continue;
+    }
+    const installed = readJsonSafe(path.resolve(dirs[i], 'node_modules', packageName, 'package.json'));
+    if (installed && semver.valid(installed.version)) {
+      return installed.version;
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolves the version of a dependency of the user's project to a concrete semver string.
+ * Looks in dependencies, devDependencies and peerDependencies, and understands ranges, npm: aliases,
+ * `catalog:` specs (pnpm / yarn / bun) and falls back to the installed version in node_modules.
+ * Returns null if the package is not found or its version can't be determined.
+ * Prints a warning when the package is declared but its version can't be determined.
+ */
+function resolvePackageVersion(packageJson, packageName, currDir) {
+  const baseDir = currDir || process.cwd();
+  const rootDir = findMonorepoRoot(baseDir);
+  const spec = ['dependencies', 'devDependencies', 'peerDependencies']
+    .map((key) => packageJson && packageJson[key] && packageJson[key][packageName])
+    .filter(Boolean)[0];
+
+  const declared = spec && specToVersion(packageName, spec, rootDir, 0);
+  if (declared) {
+    return declared;
+  }
+
+  const installed = getInstalledVersion(packageName, [baseDir, rootDir]);
+  if (installed) {
+    return installed;
+  }
+
+  if (spec) {
+    printWarning(
+      `Could not determine the version of ${packageName} from "${spec}" in package.json. Assuming a current version of ${packageName}.`,
+    );
+  }
+
+  return null;
+}
+
+// Returns the major version of a dependency, or null if it can't be determined.
+function getMainPackageVersion(packageJson, packageName, currDir) {
+  const version = resolvePackageVersion(packageJson, packageName, currDir);
+  return version ? semver.major(version) : null;
+}
+
+function getMainAngularVersion(packageJson, currDir) {
+  const major = getMainPackageVersion(packageJson, '@angular/core', currDir);
+  return major === null ? ASSUMED_MODERN_MAJOR : major;
 }
 
 function getPackageVersion(packageJson, packageName, currDir) {
   const dependencies = packageJson && packageJson.dependencies;
   const devDependencies = packageJson && packageJson.devDependencies;
 
-  const declaredVersion =
-    (dependencies && dependencies[packageName]) ||
-    (devDependencies && devDependencies[packageName]);
+  const declaredVersion = (dependencies && dependencies[packageName]) || (devDependencies && devDependencies[packageName]);
 
   if (declaredVersion) {
     return declaredVersion;
@@ -488,7 +623,7 @@ function getScssLoadStatement(packageJson, stylesheetPath, currDir) {
 function findMonorepoRoot(currDir) {
   const maxLevels = 5;
   let currentDir = currDir || process.cwd();
-  
+
   for (let i = 0; i < maxLevels; i++) {
     // Check for npm/yarn workspaces
     const pkgJsonPath = path.join(currentDir, 'package.json');
@@ -502,15 +637,12 @@ function findMonorepoRoot(currDir) {
         // Continue searching
       }
     }
-    
+
     // Check for pnpm root markers
-    if (
-      fs.existsSync(path.join(currentDir, 'pnpm-workspace.yaml')) ||
-      fs.existsSync(path.join(currentDir, 'pnpm-lock.yaml'))
-    ) {
+    if (fs.existsSync(path.join(currentDir, 'pnpm-workspace.yaml')) || fs.existsSync(path.join(currentDir, 'pnpm-lock.yaml'))) {
       return currentDir;
     }
-    
+
     // Move up one level
     const parentDir = path.dirname(currentDir);
     if (parentDir === currentDir) {
@@ -519,7 +651,7 @@ function findMonorepoRoot(currDir) {
     }
     currentDir = parentDir;
   }
-  
+
   return null;
 }
 
@@ -531,14 +663,14 @@ module.exports = {
 
     if (v[0] < 2 || (v[0] == 2 && v[1] < 2)) {
       printWarning(
-        `Your app's TypeScript version is older then the minimum required version for Mobiscroll. (${version} < 2.2.0) Please update your project's Typescript version. (You can update the following way: $ npm install typescript@latest)`
+        `Your app's TypeScript version is older then the minimum required version for Mobiscroll. (${version} < 2.2.0) Please update your project's Typescript version. (You can update the following way: $ npm install typescript@latest)`,
       );
       return false;
     }
 
     if (v.length === 0) {
       printWarning(
-        `No TypeScript version was found in the package.json. The TypeScript >= 2.2.0 is required for the @mobiscroll/angular package.`
+        `No TypeScript version was found in the package.json. The TypeScript >= 2.2.0 is required for the @mobiscroll/angular package.`,
       );
     }
 
@@ -606,7 +738,7 @@ module.exports = {
         },
         (err) => {
           console.log('Login error' + err);
-        }
+        },
       )
       .then((userName) => {
         getApiKey(userName, proxy, framework, installHandler);
@@ -618,32 +750,32 @@ module.exports = {
             if (data.License === 'complete') {
               printWarning(
                 `Looks like your maitenance agreement expired. You can check and renew your maintenance from your account at: ${chalk.gray(
-                  'https://mobiscroll.com/account/licenses'
-                )}`
+                  'https://mobiscroll.com/account/licenses',
+                )}`,
               );
             } else {
               printWarning(
                 `Looks like you don't have access to ${chalk.gray(
-                  '@mobiscroll/' + framework
+                  '@mobiscroll/' + framework,
                 )} or your maintenance agreement is expired. Make sure to double check your license and/or renew your maintenance agreement from your account: ${chalk.gray(
-                  'https://mobiscroll.com/account/licenses'
-                )}`
+                  'https://mobiscroll.com/account/licenses',
+                )}`,
               );
             }
 
             if (data.License === 'component') {
               printWarning(
                 `With a Component license the CLI can't install from NPM. Go to ${chalk.gray(
-                  'https://download.mobiscroll.com'
+                  'https://download.mobiscroll.com',
                 )}, manually download the package, copy it into your project and run the same command with the ${chalk.gray(
-                  '--no-npm'
-                )} flag.`
+                  '--no-npm',
+                )} flag.`,
               );
               printWarning(`If you wish to use NPM installs, you can always upgrade to the Framework or Complete license.`);
             }
 
             printWarning(
-              `In case there's any trouble, submit a support ticket from: ${chalk.gray('https://mobiscroll.com/account/supporttickets')}`
+              `In case there's any trouble, submit a support ticket from: ${chalk.gray('https://mobiscroll.com/account/supporttickets')}`,
             );
 
             inquirer
@@ -665,12 +797,12 @@ module.exports = {
               if (!data.NpmUser && !data.NpmUserNoWarn) {
                 if (data.NpmUserSet) {
                   printWarning(
-                    `You are not logged in with the NPM user that was set up for your team. Please use the credentials for the NPM user.`
+                    `You are not logged in with the NPM user that was set up for your team. Please use the credentials for the NPM user.`,
                   );
                   printWarning(
                     `You can check out the credentials of the NPM User on your licences page at: ${chalk.gray(
-                      'https://mobiscroll.com/account/licenses'
-                    )}`
+                      'https://mobiscroll.com/account/licenses',
+                    )}`,
                   );
                   login(useGlobalNpmrc, proxy)
                     .then((userName) => {
@@ -682,8 +814,8 @@ module.exports = {
                   printNpmWarning(
                     'team access not set up',
                     `Looks like you don't have team NPM access configured. Please head on over to your account page to set it up: ${chalk.gray(
-                      'https://mobiscroll.com/account/licenses#npm-user-setup'
-                    )}\n`
+                      'https://mobiscroll.com/account/licenses#npm-user-setup',
+                    )}\n`,
                   );
                 }
               }
@@ -693,7 +825,7 @@ module.exports = {
               data.LatestVersion && !isTrial
                 ? semver.gt('3.2.4', semver.valid(instVersion) ? instVersion : semver.coerce(instVersion))
                 : true,
-              data
+              data,
             );
           }
         }
@@ -715,7 +847,8 @@ module.exports = {
 
     switch (framework) {
       case 'ionic':
-        frameworkName = dependencies && dependencies['@ionic/react'] ? 'react' : dependencies['@ionic/vue'] ? 'vue' : 'angular';
+        frameworkName =
+          dependencies && dependencies['@ionic/react'] ? 'react' : dependencies && dependencies['@ionic/vue'] ? 'vue' : 'angular';
         break;
       default:
         frameworkName = framework;
@@ -723,16 +856,15 @@ module.exports = {
     }
 
     let isIvy = false;
-    if (frameworkName === 'angular' && dependencies) {
-      isIvy = getMainAngularVersion(packageJson) >= 13;
+    if (frameworkName === 'angular' && packageJson) {
+      isIvy = getMainAngularVersion(packageJson, currDir) >= 13;
     }
 
     let isReactNext = false;
 
-    if (frameworkName === 'react' && dependencies) {
-      const reactVersionRaw = packageJson.dependencies['react'];
-      const reactVersionArr = shapeVersionToArray(reactVersionRaw);
-      isReactNext = reactVersionArr[0] >= 18;
+    if (frameworkName === 'react' && packageJson) {
+      const reactMajor = getMainPackageVersion(packageJson, 'react', currDir);
+      isReactNext = reactMajor === null || reactMajor >= 18;
     }
 
     if (!semver.valid(installVersion)) {
@@ -752,7 +884,7 @@ module.exports = {
 
       isIvy = isIvy && semver.gte(installVersion || version, '5.23.0');
       isReactNext = isReactNext && semver.gte(installVersion || version, '5.30.0');
-      const isV6 = semver.gte(installVersion || version, "6.0.0");
+      const isV6 = semver.gte(installVersion || version, '6.0.0');
       // For v6+: Package name renames
       // angular-ivy -> angular (Angular 13+)
       // angular -> angular-legacy (Angular 9-12)
@@ -770,7 +902,7 @@ module.exports = {
         suffix = (isReactNext ? '-next' : '') + (isIvy ? '-ivy' : '');
       }
 
-      let pkgName = package + suffix + (isTrial ? "-trial" : ""),
+      let pkgName = package + suffix + (isTrial ? '-trial' : ''),
         command;
 
       if (isYarn2) {
@@ -780,12 +912,15 @@ module.exports = {
       let installCmd = usePnpm ? 'pnpm add' : useYarn ? 'yarn add' : 'npm install';
       if (isV6) {
         // v6+: normalize package modifiers away so the alias stays framework-stable.
-        const baseAliasName = package.replace(/^datepicker-/, '').replace(/-trial$/, '').replace(/-legacy$/, '');
+        const baseAliasName = package
+          .replace(/^datepicker-/, '')
+          .replace(/-trial$/, '')
+          .replace(/-legacy$/, '');
         const aliasPackageName = `@mobiscroll/${baseAliasName}`;
         const targetPackageName = `@mobiscroll/${pkgName}`;
 
         if (aliasPackageName === targetPackageName) {
-          command = `${installCmd} ${targetPackageName}@${installVersion || version}`
+          command = `${installCmd} ${targetPackageName}@${installVersion || version}`;
         } else {
           command = `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${installVersion || version}`;
         }
@@ -872,11 +1007,10 @@ module.exports = {
       try {
         let data = fs.readFileSync(moduleLocation, 'utf8').toString();
 
-        if (data.indexOf("MbscModule") === -1) {
-
+        if (data.indexOf('MbscModule') === -1) {
           // Add angular module imports which are needed for mobiscroll
           data = importModule('FormsModule', '@angular/forms', data, isStandaloneComponent);
-          data = importModule('MbscModule', mbscFileName, data, isStandaloneComponent); 
+          data = importModule('MbscModule', mbscFileName, data, isStandaloneComponent);
 
           writeToFile(moduleLocation, data);
         }
@@ -909,7 +1043,9 @@ module.exports = {
   checkAngularStandaloneComponent,
   updateAuthTokenInYarnrc,
   getMainAngularVersion,
+  getMainPackageVersion,
+  resolvePackageVersion,
   getSassLoader,
   getScssLoadStatement,
-  findMonorepoRoot
+  findMonorepoRoot,
 };
