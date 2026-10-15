@@ -72,8 +72,8 @@ function checkUpdate(proxy) {
       } else {
         utils.printWarning(
           `It looks like the CLI couldn't determine the installed cli version. This problem might indicate npm problems on your system. You can update it manually by running the ${chalk.gray(
-            'npm install npm@latest -g'
-          )} `
+            'npm install npm@latest -g',
+          )} `,
         );
         console.log(`${chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com.')}`);
         resolve();
@@ -87,10 +87,10 @@ function notLoggedInFeedback() {
   if (!useGlobalNpmrc) {
     console.log(
       `${chalk.yellow(
-        'Please Note:'
+        'Please Note:',
       )} If you are logged in globally you will have to use the -g/--global flag with this command.\n\nUsage: ${chalk.gray(
-        'mobiscroll logout -g'
-      )}`
+        'mobiscroll logout -g',
+      )}`,
     );
   }
 }
@@ -195,7 +195,7 @@ function config(settings, callback) {
         settings.isNpmSource,
         settings.useScss,
         settings.mobiscrollVersion,
-        utils.getSassLoader(settings.packageJson).syntax
+        utils.getSassLoader(settings.packageJson).syntax,
       );
       if (callback) {
         callback();
@@ -206,7 +206,7 @@ function config(settings, callback) {
         settings.isNpmSource,
         settings.useScss,
         settings.mobiscrollVersion,
-        utils.getSassLoader(settings.packageJson).syntax
+        utils.getSassLoader(settings.packageJson).syntax,
       );
       if (callback) {
         callback();
@@ -359,47 +359,47 @@ Done. Now run:
 
   ${chalk.gray(`cd ${name}`)}
   ${chalk.gray(runCmd || 'npm run dev')}
-      `)
-  }
+      `);
+  };
   switch (type) {
     case 'angular':
       startProject('https://github.com/acidb/mobiscroll-demos-angular', type, 'angular', name, undefined, () => {
-        printNextSteps(name, 'ng s -o')
+        printNextSteps(name, 'ng s -o');
       });
       break;
     case 'react':
       startProject('https://github.com/acidb/mobiscroll-demos-react', type, 'react', name, undefined, () => {
-        printNextSteps(name, 'npm run dev')
+        printNextSteps(name, 'npm run dev');
       });
       break;
     case 'react-ts':
-        startProject('https://github.com/acidb/mobiscroll-demos-react-ts', type, 'react', name, undefined, () => {
-          printNextSteps(name, 'npm run dev')
-        });
-        break;
+      startProject('https://github.com/acidb/mobiscroll-demos-react-ts', type, 'react', name, undefined, () => {
+        printNextSteps(name, 'npm run dev');
+      });
+      break;
     case 'vue':
-        startProject('https://github.com/acidb/mobiscroll-demos-vue', type, 'vue', name, undefined, () => {
-          printNextSteps(name, 'npm run dev')
-        });
-        break;
+      startProject('https://github.com/acidb/mobiscroll-demos-vue', type, 'vue', name, undefined, () => {
+        printNextSteps(name, 'npm run dev');
+      });
+      break;
     case 'vue-ts':
-        startProject('https://github.com/acidb/mobiscroll-demos-vue-ts', type, 'vue', name, undefined, () => {
-          printNextSteps(name, 'npm run dev')
-        });
-         break;
+      startProject('https://github.com/acidb/mobiscroll-demos-vue-ts', type, 'vue', name, undefined, () => {
+        printNextSteps(name, 'npm run dev');
+      });
+      break;
     case 'javascript':
       startProject('https://github.com/acidb/mobiscroll-demos-javascript', type, 'javascript', name, undefined, () => {
-        printNextSteps(name, 'npm run dev')
+        printNextSteps(name, 'npm run dev');
       });
-       break;
+      break;
     case 'jquery':
       startProject('https://github.com/acidb/mobiscroll-demos-jquery', type, 'jquery', name, undefined, () => {
-        printNextSteps(name, 'npm run dev')
+        printNextSteps(name, 'npm run dev');
       });
-       break;
+      break;
     default:
       printWarning(
-        'No valid project type was specified. Currently the following project types are supported: [ angular, react, vue, vue-ts, javascript, jquery ]'
+        'No valid project type was specified. Currently the following project types are supported: [ angular, react, vue, vue-ts, javascript, jquery ]',
       );
       break;
   }
@@ -430,8 +430,8 @@ function handleConfig(projectType) {
   if (!projectType) {
     printWarning(
       'Please specify the project type. [ionic, angular, javascript, jquery, react, vue] \n\nFor more information please run the ' +
-      chalk.gray('mobiscroll config --help') +
-      ' command.'
+        chalk.gray('mobiscroll config --help') +
+        ' command.',
     );
     return;
   }
@@ -454,7 +454,7 @@ function handleConfig(projectType) {
       try {
         packageJson = require(packageJsonLocation);
       } finally {
-        const dependencies = packageJson.dependencies;
+        const dependencies = packageJson.dependencies || {};
         framework =
           projectType == 'ionic' ? (dependencies['@ionic/react'] ? 'react' : dependencies['@ionic/vue'] ? 'vue' : 'angular') : projectType;
       }
@@ -553,10 +553,11 @@ function handleConfig(projectType) {
 
           if (!localJsFileName.length || !localCssFileName.length) {
             printWarning(
-              `No mobiscroll js/css files were found in your project's src/lib/mobiscroll folder. \n\nPlease make sure to extract the downloaded Mobiscroll package, then grab the ${framework == 'angular'
-                ? 'lib folder and copy it into src folder of your app!'
-                : 'js and css folders and copy it into src/lib/mobiscroll folder of your app. If there is no such folder available, you can create it.'
-              }`
+              `No mobiscroll js/css files were found in your project's src/lib/mobiscroll folder. \n\nPlease make sure to extract the downloaded Mobiscroll package, then grab the ${
+                framework == 'angular'
+                  ? 'lib folder and copy it into src folder of your app!'
+                  : 'js and css folders and copy it into src/lib/mobiscroll folder of your app. If there is no such folder available, you can create it.'
+              }`,
             );
             return;
           }
@@ -597,7 +598,7 @@ function handleConfig(projectType) {
 
           askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
             const isAngular = framework == 'angular';
-            const mainAngularVersion = getMainAngularVersion(packageJson);
+            const mainAngularVersion = getMainAngularVersion(packageJson, currDir);
             configObject.useScss = isScssSelected;
 
             if (configObject.useScss) {
@@ -605,7 +606,10 @@ function handleConfig(projectType) {
               let fileData = fs.readFileSync(scssFileLocation).toString();
 
               if (fileData && isAngular) {
-                fileData = fileData.replace("$mbsc-font-path: '' !default;", `$mbsc-font-path: '${mainAngularVersion > 13 ? '' : '~' }@mobiscroll/angular/dist/css/' !default;`);
+                fileData = fileData.replace(
+                  "$mbsc-font-path: '' !default;",
+                  `$mbsc-font-path: '${mainAngularVersion > 13 ? '' : '~'}@mobiscroll/angular/dist/css/' !default;`,
+                );
                 utils.writeToFile(scssFileLocation, fileData);
               }
             }
@@ -641,8 +645,7 @@ function handleConfig(projectType) {
                 }
               }
 
-              if (!esmBundleAvailable ||
-                isAngular && packageJson && packageJson.dependencies && mainAngularVersion < 16) {
+              if (!esmBundleAvailable || (isAngular && packageJson && packageJson.dependencies && mainAngularVersion < 16)) {
                 delete noNpmPackageJson.exports;
               }
 
@@ -661,7 +664,7 @@ function handleConfig(projectType) {
               let useYarn = utils.testYarn(currDir);
 
               // remove previously installed mobiscroll package (fix npm caching the local package)
-              utils.run(`${useYarn ? 'yarn remove' : 'npm uninstall'} @mobiscroll/${framework} --save`, true, true, true).then(() => {
+              utils.run(`${useYarn ? 'yarn remove' : 'npm uninstall'} @mobiscroll/${framework}`, true, true, true).then(() => {
                 utils.printLog('Removing old Mobiscroll version.');
                 // write the new package.json
                 utils.writeToFile(path.resolve(packageFolder, 'package.json'), JSON.stringify(noNpmPackageJson, null, 2), () => {
@@ -686,8 +689,9 @@ function handleConfig(projectType) {
 
                       utils.writeToFile(packageJsonLocation, JSON.stringify(packageJson, null, 4), () => {
                         console.log(
-                          `${chalk.green('>') + chalk.grey(' package.json')
-                          } modified to load mobiscroll from the generated package file. \n`
+                          `${
+                            chalk.green('>') + chalk.grey(' package.json')
+                          } modified to load mobiscroll from the generated package file. \n`,
                         );
 
                         // run npm install
@@ -714,7 +718,11 @@ function handleConfig(projectType) {
                   }
 
                   if (esmBundleAvailable) {
-                    utils.writeToFile(path.resolve(packageFolder, 'dist/esm5/package.json'), `{ "type": "module", "version": "${version}" }`, pack);
+                    utils.writeToFile(
+                      path.resolve(packageFolder, 'dist/esm5/package.json'),
+                      `{ "type": "module", "version": "${version}" }`,
+                      pack,
+                    );
                   } else {
                     pack();
                   }
@@ -723,7 +731,7 @@ function handleConfig(projectType) {
             });
           });
         },
-        true
+        true,
       );
     }
   });
@@ -743,7 +751,7 @@ program
   .option(
     '-g, --global',
     "Modify the Mobiscroll npm login credentials save/use location to the global .npmrc file. Starting from cli v0.6.0 by default it is saved in the application's directory.",
-    handleGlobalInstall
+    handleGlobalInstall,
   )
   .usage('[commands] [options]');
 
@@ -754,8 +762,8 @@ program
   .command('config [types]')
   .description(
     `Configures your current project with the Mobiscroll resources and dependencies. For more information run the ${chalk.gray(
-      'mobiscroll config --help'
-    )} command.\n`
+      'mobiscroll config --help',
+    )} command.\n`,
   )
   .action(handleConfig)
   .on('--help', helperMessages.configHelp)
@@ -765,30 +773,30 @@ program
   .option(
     '-n, --no-npm',
     "Mobiscroll resources won't be installed from npm. In this case the Mobiscroll resources must be copied manually to the src/lib folder.\n",
-    handleNpmInstall
+    handleNpmInstall,
   )
   .option(
     '--version [version]',
     `Pass the Mobiscroll version which you want to install. Supports the following formats: ${chalk.gray(
-      '--version=4.7.1'
+      '--version=4.7.1',
     )} or ${chalk.gray('--version=5')}\n`,
-    handleMobiscrollVersion
+    handleMobiscrollVersion,
   )
   .option(
     '--proxy [proxy]',
     `Pass a proxy URL which will be passed to the internal requests. Supports the following formats: ${chalk.gray(
-      '{protocol}://{host}:{port} example: --proxy=http://myproxy.com:1122'
+      '{protocol}://{host}:{port} example: --proxy=http://myproxy.com:1122',
     )} or with auth details ${chalk.gray(
-      '{protocol}://{user}:{password}@{host}:{port} example: --proxy=http://myuser:mypass@myproxy.com:1122'
+      '{protocol}://{user}:{password}@{host}:{port} example: --proxy=http://myuser:mypass@myproxy.com:1122',
     )}`,
-    handleProxy
+    handleProxy,
   )
   .option('--scss', 'The project will be configured with scss styles instead of css.', handleScss)
   .option('--css', 'The project will be configured with css styles instead of scss.', handleCss)
   .option(
     '--legacy-peer-deps',
     `Pass the ${chalk.gray('--legacy-peer-deps')} flag to internally executed npm install command.`,
-    handleLegacyPeerFlags
+    handleLegacyPeerFlags,
   );
 
 program

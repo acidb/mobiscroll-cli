@@ -103,30 +103,29 @@ function getExpectedCommand(tc) {
 
   const pkgName = tc.pkg + suffix + (tc.isTrial ? '-trial' : '');
   const installCmd = 'npm install';
-  const saveFlag = ' --save';
 
   if (isV6) {
     const baseAliasName = tc.pkg.replace(/^datepicker-/, '');
     const aliasPackageName = `@mobiscroll/${baseAliasName}`;
     const targetPackageName = `@mobiscroll/${pkgName}`;
     return aliasPackageName === targetPackageName
-      ? `${installCmd} ${targetPackageName}@${version}${saveFlag}`
-      : `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${version}${saveFlag}`;
+      ? `${installCmd} ${targetPackageName}@${version}`
+      : `${installCmd} ${aliasPackageName}@npm:${targetPackageName}@${version}`;
   }
 
   if (tc.isTrial) {
-    return `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${version}${saveFlag}`;
+    return `${installCmd} @mobiscroll/${frameworkName}@npm:@mobiscroll/${pkgName}@${version}`;
   }
 
   if (isIvy) {
-    return `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${version}${saveFlag}`;
+    return `${installCmd} @mobiscroll/angular@npm:@mobiscroll/${pkgName}@${version}`;
   }
 
   if (isReactNext) {
-    return `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${version}${saveFlag}`;
+    return `${installCmd} @mobiscroll/react@npm:@mobiscroll/${pkgName}@${version}`;
   }
 
-  return `${installCmd} @mobiscroll/${pkgName}@${version}${saveFlag}`;
+  return `${installCmd} @mobiscroll/${pkgName}@${version}`;
 }
 
 // ── Test matrix ────────────────────────────────────────────────────────────
