@@ -5,6 +5,28 @@ All notable changes to the Mobiscroll CLI are documented in this file. Full rele
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - Unreleased
+
+### Added
+
+- We added sign-in through the browser: `mobiscroll login` and `mobiscroll config` open mobiscroll.com, you approve the sign-in there, and the CLI continues signed in. No password is typed in the terminal.
+- We added the `--team` flag to sign in as the team npm user: a team member approves it in the browser, and the token keeps working when that person leaves.
+- We added the `--password` flag for the previous user name and password (or team secret) login.
+- We added the `-y, --yes` flag: the CLI never asks a question, uses the default answer or stops with a message naming the flag to add. This is automatic when there is no terminal, for example when an AI agent runs the CLI.
+- We added the `--no-wait` flag to `login` and `config`: the CLI prints the sign-in link and stops, and the next run picks up the approved sign-in. For AI agents that only see the output once a command ends.
+- The CLI now also prints the mobiscroll.com/device address: on another device, open it and type the code shown in the terminal.
+- `mobiscroll logout` now also cancels the token on the registry (personal tokens only), not just in the `.npmrc`.
+
+### Changed
+
+- The licence check now asks the Mobiscroll npm registry with your token, instead of the public API with your user name.
+- When your team has a team npm user and you are signed in personally, the CLI warns and continues, instead of asking for the team npm user's credentials.
+- The CLI exits with code 1 when it stops with an error, so scripts and agents can tell.
+
+### Fixed
+
+- We fixed the Ionic config command not finishing when no extra module was selected for the MbscModule injection.
+
 ## [1.16.4] - 2026-10-14
 
 ### Fixed

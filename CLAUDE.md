@@ -7,7 +7,7 @@
 **Main commands:**
 
 - `mobiscroll config <type>` — installs Mobiscroll packages and configures the project
-- `mobiscroll login` / `logout` — manages credentials in `.npmrc` / `.yarnrc.yml`
+- `mobiscroll login` / `logout` — browser sign-in (or `--password`), credentials in `.npmrc` / `.yarnrc.yml`; logout also cancels the token on the registry
 - `mobiscroll start <type> [name]` — clones a Mobiscroll starter/demo project
 
 **Supported framework types:** `angular`, `ionic`, `react`, `vue`, `jquery`, `javascript`
@@ -38,7 +38,9 @@ mobiscroll-cli/
 │   ├── configAngular.js       # Angular-specific: app.module.ts, angular.json, SCSS, standalone components
 │   ├── configIonic.js         # Ionic variants: Angular/React/Vue, lazy loading, CSS copy scripts
 │   ├── helperMessages.js      # Per-framework usage instructions printed after config
-│   └── npm-login/             # Custom npm login (index.js, login.js, adduser.js)
+│   ├── webLogin.js            # Browser sign-in (npm web login protocol on the registry), --no-wait, machine id
+│   ├── token.js               # Reads the npm token from .npmrc / .yarnrc.yml (never prints it)
+│   └── npm-login/             # Custom npm login (index.js, login.js, adduser.js); saveToken() for the browser sign-in
 ├── resources/                 # Template files copied into user projects
 │   ├── angular/, ionic/, react/, vue/, javascript/, jquery/
 │   └── ionic/scripts/copy-mobiscroll-css.js
@@ -46,7 +48,9 @@ mobiscroll-cli/
 │   └── normalize-line-endings.js   # Converts CRLF → LF before publish
 └── tests/
     └── integration/
-        └── test-install-commands.js  # 60+ scenario matrix for installMobiscroll()
+        ├── test-install-commands.js  # 60+ scenario matrix for installMobiscroll()
+        ├── test-version-resolution.js
+        └── test-web-login.js         # Browser sign-in, --no-wait, token reading, logout cancel
 ```
 
 ---
@@ -66,6 +70,11 @@ mobiscroll config angular
 
 # Run integration tests
 node tests/integration/test-install-commands.js
+node tests/integration/test-version-resolution.js
+node tests/integration/test-web-login.js
+
+# Against a local or test registry (undocumented override, used for mbscNpmUrl)
+MOBISCROLL_REGISTRY_URL=http://localhost:8081 node mobiscroll.js login
 
 # Publish (normalizes line endings first via prepublish hook)
 npm publish

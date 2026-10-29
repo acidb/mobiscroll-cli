@@ -150,7 +150,7 @@ function detectReactPages(settings /*, callback*/) {
   }
 }
 
-function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, isStandaloneApp, callback) {
+function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, isStandaloneApp, callback, nonInteractive) {
   var modulePages = [],
     ngAppPath = path.resolve(currDir, ionicVersion >= 4 ? 'src/app' : 'src/pages');
 
@@ -171,6 +171,20 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, is
           });
         }
       }
+    }
+
+    if (modulePages.length && nonInteractive) {
+      // --yes / no terminal: inject nowhere else, but say where it is still needed
+      utils.printWarning(
+        `The MbscModule was not injected into the other ${isStandaloneApp ? 'pages' : 'modules'}. Import the MbscModule and FormsModule wherever you use Mobiscroll components: ${modulePages
+          .map((p) => p.name)
+          .join(', ')}`,
+      );
+      helperMessages.angularLazy(apiKey, isLite, isStandaloneApp);
+      if (callback) {
+        callback();
+      }
+      return true;
     }
 
     if (modulePages.length) {
@@ -209,13 +223,13 @@ function detectLazyModules(currDir, apiKey, isLite, jsFileName, ionicVersion, is
             }
 
             utils.printFeedback('MbscModule injected successfully to the selected modules.');
-
-            if (callback) {
-              callback();
-            }
           }
 
           helperMessages.angularLazy(apiKey, isLite, isStandaloneApp);
+
+          if (callback) {
+            callback();
+          }
         });
 
       return true;
@@ -362,12 +376,22 @@ module.exports = {
             mainIonicVersion,
             isStandaloneApp,
             callback,
+            settings.nonInteractive,
           );
         });
       } else {
         //configIonic(ionicPackage, ionicPackageLocation, currDir, cssFileName, jsFileName, isNpmSource, isLite, isLazy, apiKey, ionicPro, () => {
         configIonic(settings, () => {
-          detectLazyModules(settings.currDir, settings.apiKey, settings.isLite, settings.jsFileName, mainIonicVersion, false, callback);
+          detectLazyModules(
+            settings.currDir,
+            settings.apiKey,
+            settings.isLite,
+            settings.jsFileName,
+            mainIonicVersion,
+            false,
+            callback,
+            settings.nonInteractive,
+          );
         });
       }
     }

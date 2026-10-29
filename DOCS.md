@@ -168,11 +168,15 @@ Installs and configures Mobiscroll in an existing project.
 | `--scss` / `--css` | Force stylesheet format (skips interactive prompt) |
 | `--legacy-peer-deps` | Passes `--legacy-peer-deps` to npm install |
 | `-g, --global` | Write auth to global `~/.npmrc` instead of local `.npmrc` |
+| `--team` | Sign in as the team npm user (a team member approves in the browser) |
+| `--password` | Old user name + password (or team secret) prompt instead of the browser sign-in |
+| `--no-wait` | Start the browser sign-in, print the link and code, and exit 0. The next run picks the sign-in up (see Authentication flow) |
+| `-y, --yes` | Program-level: never prompt. Automatic when stdin/stdout is not a TTY (AI agents, scripts) |
 
 **What it does in order:**
 1. Reads the project's `package.json` to detect framework version
-2. Verifies Mobiscroll npm credentials, prompts login if needed
-3. Calls Mobiscroll API to check license and get the right package name
+2. Verifies Mobiscroll npm credentials, starts the browser sign-in if needed
+3. Asks the registry (`GET /-/mobiscroll/access/<framework>` with the token) to check the license and get the right package name
 4. Builds and runs the `npm install` / `yarn add` / `pnpm add` command
 5. Modifies config files (Angular/Ionic only)
 6. Prints usage instructions
@@ -181,13 +185,13 @@ Installs and configures Mobiscroll in an existing project.
 
 ### `mobiscroll login`
 
-Authenticates with the Mobiscroll npm registry. Saves auth token to `.npmrc` (and `.yarnrc.yml` for Yarn 2+ projects). Use `-g` to write to global config.
+Authenticates with the Mobiscroll npm registry through the browser (see Authentication flow). Saves auth token to `.npmrc` (and `.yarnrc.yml` for Yarn 2+ projects). Use `-g` to write to global config. Flags: `--team`, `--password`, `--no-wait`, `--proxy`.
 
 ---
 
 ### `mobiscroll logout`
 
-Removes credentials from `.npmrc` and `.yarnrc.yml`.
+Cancels the token on the registry (`DELETE /-/user/token/<token>`; the registry cancels personal tokens only, and a `${VAR}` reference is never sent), then removes credentials from `.npmrc` and `.yarnrc.yml`.
 
 ---
 
@@ -276,11 +280,19 @@ No file modifications. The config command installs the package and prints copy-p
 ## Authentication flow
 
 1. `checkMbscNpmLogin()` runs `npm whoami --registry=https://npm.mobiscroll.com`
-2. If that fails, prompts the customer for username + password
-3. Calls `npmLogin()` (custom implementation in `src/npm-login/`) to get an auth token
-4. Writes `//npm.mobiscroll.com/:_authToken=<token>` to `.npmrc`
-5. If `.yarnrc.yml` exists in the project, syncs the token there too (Yarn 2+ format)
-6. Calls `getApiKey()` → `GET https://api.mobiscroll.com/api/access/{username}/{framework}` to check license, get latest version, and get trial code if applicable
+2. If that fails, starts the browser sign-in (`src/webLogin.js`, npm's web login protocol on the registry):
+   - `POST /-/v1/login` with the machine name, a machine id kept in `~/.mobiscroll/cli.json` and `team` → `{ loginUrl, doneUrl, code, deviceUrl }`
+   - prints the link, the code and the `/device` page (where the code can be typed on another device), opens the browser (not when `CI` is set)
+   - polls `doneUrl` (202 + `Retry-After` while waiting, 200 `{ token }` once approved, 403 denied, 410 expired)
+   - With `--no-wait`: doesn't poll. Keeps `{ loginUrl, doneUrl, code, expiresAt, team }` as `pending` in `~/.mobiscroll/cli.json` and exits 0. The next sign-in for the same registry and `--team` setting checks that `doneUrl` first: approved → takes the token; still waiting → waits (or, with `--no-wait` again, prints the same link and exits); denied / expired / used → forgets it and starts a new one. `start` has no `--no-wait` (running it again would hit the existing folder): run `mobiscroll login --no-wait` first.
+   - With `--password`: the old username + password prompt and `npmLogin()` (`src/npm-login/`)
+3. Writes `//npm.mobiscroll.com/:_authToken=<token>` to `.npmrc` (`npmLogin.saveToken()` for the browser sign-in)
+4. If Yarn 2+ is used, syncs the token to `.yarnrc.yml` too
+5. Calls `getApiKey()` → `GET https://npm.mobiscroll.com/-/mobiscroll/access/{framework}` with `Authorization: Bearer <token>` (token read by `src/token.js` from the project / user `.npmrc` or `.yarnrc.yml`, `${VAR}` expanded). Falls back to `GET https://api.mobiscroll.com/api/access/{username}/{framework}` when there is no token or the registry doesn't answer.
+
+New tokens carry a random `mbsc_` secret instead of the password (the registry stores only its hash), so they can be listed and cancelled on mobiscroll.com. For local testing against a registry on your machine, set `MOBISCROLL_REGISTRY_URL=http://localhost:8081`.
+
+**Non-interactive mode** (`--yes`, or no TTY): no prompt is shown. The update prompt is skipped with a hint, the stylesheet uses the default, and the trial / project name / overwrite questions stop with exit code 1 and a message naming the flag or argument to add.
 
 **Invariant:** Auth tokens must never appear in log output, error messages, or feedback strings.
 
