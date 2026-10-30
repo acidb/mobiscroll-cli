@@ -5,7 +5,16 @@ const execSync = require('child_process').execSync;
 // MOBISCROLL_REGISTRY_URL is for testing against a local registry only (e.g. http://localhost:8081)
 const mbscNpmUrl = process.env.MOBISCROLL_REGISTRY_URL || 'https://npm.mobiscroll.com';
 const mbscApiUrlBase = 'https://api.mobiscroll.com';
-const dataRowRegex = /\/\/npm.mobiscroll.com\/:_authToken=(.*)/im;
+// the token row of the registry in use (npm.mobiscroll.com, or the MOBISCROLL_REGISTRY_URL one)
+const dataRowRegex = new RegExp(
+  '\\/\\/' +
+    mbscNpmUrl
+      .replace(/^https?:\/\//, '')
+      .replace(/\/$/, '')
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
+    '\\/:_authToken=(.*)',
+  'im',
+);
 const terminalLink = require('terminal-link');
 const inquirer = require('inquirer');
 const path = require('path');
