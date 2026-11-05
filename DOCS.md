@@ -290,7 +290,7 @@ No file modifications. The config command installs the package and prints copy-p
 4. If Yarn 2+ is used, syncs the token to `.yarnrc.yml` too
 5. Calls `getApiKey()` → `GET https://npm.mobiscroll.com/-/mobiscroll/access/{framework}` with `Authorization: Bearer <token>` (token read by `src/token.js` from the project / user `.npmrc` or `.yarnrc.yml`, `${VAR}` expanded). Falls back to `GET https://api.mobiscroll.com/api/access/{username}/{framework}` when there is no token or the registry doesn't answer.
 
-New tokens carry a random `mbsc_` secret instead of the password (the registry stores only its hash), so they can be listed and cancelled on mobiscroll.com. For local testing against a registry on your machine, set `MOBISCROLL_REGISTRY_URL=http://localhost:8081`.
+New tokens carry a random `mbsc_` secret instead of the password (the registry stores only its hash), so they can be listed and cancelled on mobiscroll.com. The registry the CLI talks to is the `mbscNpmUrl` constant at the top of `src/utils.js`; to test against another registry, change it there (it must be `https://npm.mobiscroll.com` in a release).
 
 **Non-interactive mode** (`--yes`, or no TTY): no prompt is shown. The update prompt is skipped with a hint, the stylesheet uses the default, and the trial / project name / overwrite questions stop with exit code 1 and a message naming the flag or argument to add.
 

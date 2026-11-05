@@ -2,10 +2,11 @@ const fs = require('fs');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
 const execSync = require('child_process').execSync;
-// MOBISCROLL_REGISTRY_URL is for testing against a local registry only (e.g. http://localhost:8081)
-const mbscNpmUrl = process.env.MOBISCROLL_REGISTRY_URL || 'https://npm.mobiscroll.com';
+// The Mobiscroll npm registry. TESTING: points at the dev registry.
+// Switch back to 'https://npm.mobiscroll.com' before releasing.
+const mbscNpmUrl = 'https://npmdev.mobiscroll.com';
 const mbscApiUrlBase = 'https://api.mobiscroll.com';
-// the token row of the registry in use (npm.mobiscroll.com, or the MOBISCROLL_REGISTRY_URL one)
+// the token row of the registry in use (mbscNpmUrl)
 const dataRowRegex = new RegExp(
   '\\/\\/' +
     mbscNpmUrl

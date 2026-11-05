@@ -124,7 +124,7 @@ function removeTokenFromNpmrc(currDir) {
       const original = fs.readFileSync(npmrcPath).toString();
       if (original.length > 5) {
         // there is difference in the format of the auth token
-        // the registry's host: npm.mobiscroll.com, or a local registry when testing (MOBISCROLL_REGISTRY_URL)
+        // the registry's host (utils.npmUrl)
         const host = utils.npmUrl
           .replace(/^https?:\/\//, '')
           .replace(/\/$/, '')

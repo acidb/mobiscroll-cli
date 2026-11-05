@@ -21,7 +21,6 @@ fs.mkdirSync(home);
 process.env.HOME = home;
 process.env.USERPROFILE = home;
 delete process.env.NPM_CONFIG_USERCONFIG;
-delete process.env.MOBISCROLL_REGISTRY_URL;
 
 // ── Stub child_process (must be done before any require of utils) ──────────
 const cp = require('child_process');
@@ -343,18 +342,20 @@ const cases = [
       const project = path.join(tmpRoot, 'logout-project');
       fs.mkdirSync(project, { recursive: true });
       const npmrc = path.join(project, '.npmrc');
-      fs.writeFileSync(npmrc, '//npm.mobiscroll.com/:_authToken=ab+c/d=\n');
+      // the registry the CLI is built for (utils.npmUrl)
+      const registryHost = utils.npmUrl.replace(/^https?:\/\//, '');
+      fs.writeFileSync(npmrc, '//' + registryHost + '/:_authToken=ab+c/d=\n');
       answers = [{ status: 200, data: { ok: 'Logged out' } }];
       return utils
         .cancelRegistryToken(npmrc)
         .then(() => {
           assert.strictEqual(requests.length, 1);
           assert.strictEqual(requests[0].method, 'delete');
-          assert.strictEqual(requests[0].url, 'https://npm.mobiscroll.com/-/user/token/' + encodeURIComponent('ab+c/d='));
+          assert.strictEqual(requests[0].url, utils.npmUrl + '/-/user/token/' + encodeURIComponent('ab+c/d='));
           assert.strictEqual(requests[0].headers.Authorization, 'Bearer ab+c/d=');
 
           reset();
-          fs.writeFileSync(npmrc, '//npm.mobiscroll.com/:_authToken=${MOBISCROLL_NPM_TOKEN}\n');
+          fs.writeFileSync(npmrc, '//' + registryHost + '/:_authToken=${MOBISCROLL_NPM_TOKEN}\n');
           return utils.cancelRegistryToken(npmrc);
         })
         .then(() => {

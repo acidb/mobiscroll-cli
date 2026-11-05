@@ -73,8 +73,9 @@ node tests/integration/test-install-commands.js
 node tests/integration/test-version-resolution.js
 node tests/integration/test-web-login.js
 
-# Against a local or test registry (undocumented override, used for mbscNpmUrl)
-MOBISCROLL_REGISTRY_URL=http://localhost:8081 node mobiscroll.js login
+# The registry is the `mbscNpmUrl` const at the top of src/utils.js.
+# To test against another registry (dev, or http://localhost:8081), change it there;
+# it must be https://npm.mobiscroll.com in a release.
 
 # Publish (normalizes line endings first via prepublish hook)
 npm publish
