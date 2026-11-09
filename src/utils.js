@@ -416,8 +416,8 @@ function syncTokenToYarnrc(useGlobalNpmrc) {
  * .npmrc, or the user-level one with -g.
  * @param {boolean} useGlobalNpmrc
  * @param {string} proxy
- * @param {{ password: boolean, team: boolean, noWait: boolean, nonInteractive: boolean }} options password: the old
- * username/password prompt instead of the browser sign-in; team: sign in as the team npm user; noWait: print the
+ * @param {{ password: boolean, noWait: boolean, nonInteractive: boolean }} options password: the old
+ * username/password prompt instead of the browser sign-in; noWait: print the
  * link and stop (the next run picks the sign-in up); nonInteractive: --yes or no terminal
  * @returns {Promise<string>} the user name (with noWait and no approval yet, the process ends instead)
  */
@@ -441,7 +441,6 @@ function browserLogin(useGlobalNpmrc, proxy, options) {
     .webLogin({
       registryUrl: mbscNpmUrl,
       proxy: proxy ? processProxyUrl(proxy) : undefined,
-      team: !!options.team,
       openBrowser: !process.env.CI,
       cliVersion: require('../package.json').version,
       noWait: !!options.noWait,
@@ -462,11 +461,8 @@ function browserLogin(useGlobalNpmrc, proxy, options) {
       return result.username;
     })
     .catch((err) => {
-      const teamHint = options.team
-        ? `\n\nWith ${chalk.gray('--team')} the sign-in has to be approved as a team npm user, by someone with a seat on a team that has one (licenses page, NPM access). To sign in as yourself, run the command without ${chalk.gray('--team')}.`
-        : '';
       printError(
-        `Sign-in failed. ${err.message}${teamHint}\n\nRun ${chalk.gray('mobiscroll login')} to try again. Teams logging in with the team npm user's secret can use ${chalk.gray(
+        `Sign-in failed. ${err.message}\n\nRun ${chalk.gray('mobiscroll login')} to try again. Teams logging in with the team npm user's secret can use ${chalk.gray(
           'mobiscroll login --password',
         )}.`,
       );
@@ -865,11 +861,10 @@ module.exports = {
     }
   },
   /**
-   * options: { password, team, noWait, nonInteractive } - see login()
+   * options: { password, noWait, nonInteractive } - see login()
    */
   checkMbscNpmLogin: (isTrial, useGlobalNpmrc, proxy, framework, installVersion, callback, options) => {
     options = options || {};
-    let teamSignInStarted = false;
     printFeedback('Checking logged in status...');
     // check if the user is already logged in
     runCommand('npm whoami --registry=' + mbscNpmUrl + (proxy ? ' --proxy ' + proxy : ''), false, true)
@@ -881,7 +876,6 @@ module.exports = {
             return userName;
           }
           console.log(`  Logging in to the Mobiscroll NPM registry...`);
-          teamSignInStarted = !!options.team;
           return login(useGlobalNpmrc, proxy, options);
         },
         (err) => {
@@ -893,27 +887,6 @@ module.exports = {
 
         function installHandler(data) {
           const instVersion = installVersion || data.LatestVersion;
-
-          // --team while signed in personally: sign in again as the team npm user (once)
-          if (options.team && !data.NpmUser && !teamSignInStarted) {
-            teamSignInStarted = true;
-            printFeedback('Signing in as your team npm user (--team)...');
-            login(useGlobalNpmrc, proxy, options).then((teamUserName) => {
-              userName = teamUserName;
-              getApiKey(teamUserName, proxy, framework, installHandler);
-            });
-            return;
-          }
-          // --team, but the new sign-in still isn't a team npm user's: say so instead of asking the browser again
-          if (options.team && !data.NpmUser) {
-            printError(
-              `You are signed in as ${userName}, not as a team npm user. With ${chalk.gray(
-                '--team',
-              )} a team member with a seat on a team that has a team npm user has to approve. To use your own account, run the command without ${chalk.gray(
-                '--team',
-              )}.`,
-            );
-          }
 
           if (data.HasAccess === false && data.License !== '') {
             if (data.License === 'complete') {
@@ -976,7 +949,7 @@ module.exports = {
                   // A personal token works for installs: warn, but don't stop (no password prompt anymore)
                   printWarning(
                     `Your team installs through its team NPM user, but you are signed in as ${userName}. To switch, run ${chalk.gray(
-                      'mobiscroll login --team',
+                      'mobiscroll login',
                     )} and pick the team NPM user on the approve page.`,
                   );
                 } else {

@@ -50,14 +50,13 @@ function getMachineId() {
 }
 
 /**
- * The sign-in a --no-wait run left behind, if it is for the same registry and --team setting and has not expired.
+ * The sign-in a --no-wait run left behind, if it is for the same registry and has not expired.
  */
 function readPending(options) {
   const pending = readState().pending;
   if (
     !pending ||
     pending.registryUrl !== options.registryUrl ||
-    pending.team !== !!options.team ||
     !(pending.expiresAt > Date.now())
   ) {
     return null;
@@ -99,7 +98,7 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function printSignIn(signIn, team) {
+function printSignIn(signIn) {
   console.log(
     '\n' +
       chalk.bold.cyan('Sign in to Mobiscroll in your browser:') +
@@ -107,14 +106,13 @@ function printSignIn(signIn, team) {
       signIn.loginUrl +
       '\n\n' +
       (signIn.code ? `Check that the page shows the code ${chalk.bold(signIn.code)}, then approve.` : 'Approve the sign-in on that page.') +
-      (team ? ' Pick the team npm user on the page.' : '') +
       (signIn.deviceUrl && signIn.code ? `\nOr open ${signIn.deviceUrl} on any device and type the code ${chalk.bold(signIn.code)}.` : ''),
   );
 }
 
 /**
  * Signs in through the browser.
- * @param {{ registryUrl: string, proxy: object|undefined, team: boolean, openBrowser: boolean, cliVersion: string, noWait: boolean }} options
+ * @param {{ registryUrl: string, proxy: object|undefined, openBrowser: boolean, cliVersion: string, noWait: boolean }} options
  * noWait: start the sign-in (or check the pending one) and return { pending: true } instead of waiting for the approval
  * @returns {Promise<{ token: string, username: string } | { pending: true }>}
  */
@@ -173,7 +171,7 @@ function webLogin(options) {
       Object.assign({}, requestBase, {
         method: 'post',
         url: options.registryUrl + '/-/v1/login',
-        data: { hostname: os.hostname(), machineId: getMachineId(), team: !!options.team },
+        data: { hostname: os.hostname(), machineId: getMachineId() },
       }),
     ).then((resp) => {
       if (resp.status === 429) {
@@ -185,14 +183,13 @@ function webLogin(options) {
 
       const signIn = {
         registryUrl: options.registryUrl,
-        team: !!options.team,
         loginUrl: resp.data.loginUrl,
         doneUrl: resp.data.doneUrl,
         deviceUrl: resp.data.deviceUrl,
         code: resp.data.code,
         expiresAt: Date.now() + pendingMs,
       };
-      printSignIn(signIn, options.team);
+      printSignIn(signIn);
       if (options.openBrowser) {
         openBrowser(signIn.loginUrl);
       }
@@ -213,7 +210,7 @@ function webLogin(options) {
   // A --no-wait run started this sign-in: collect it, keep waiting for it, or start a new one if it is over
   return check(pending.doneUrl).then((done) => {
     if (done.status === 202) {
-      printSignIn(pending, pending.team);
+      printSignIn(pending);
       if (options.noWait) {
         return { pending: true };
       }

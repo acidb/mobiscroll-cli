@@ -31,7 +31,6 @@ var proxyUrl = '';
 var useScss = undefined;
 var startIoncVesrion = '';
 var isYes = false;
-var useTeam = false;
 var usePasswordLogin = false;
 var useNoWait = false;
 
@@ -43,7 +42,7 @@ function isNonInteractive() {
 }
 
 function loginOptions() {
-  return { team: useTeam, password: usePasswordLogin, noWait: useNoWait, nonInteractive: isNonInteractive() };
+  return { password: usePasswordLogin, noWait: useNoWait, nonInteractive: isNonInteractive() };
 }
 
 function checkUpdate(proxy) {
@@ -196,10 +195,6 @@ function handleGlobalInstall() {
 
 function handleYes() {
   isYes = true;
-}
-
-function handleTeam() {
-  useTeam = true;
 }
 
 function handlePasswordLogin() {
@@ -836,8 +831,6 @@ program
   )
   .usage('[commands] [options]');
 
-const teamOptionText =
-  'Sign in as your team npm user instead of yourself, for shared projects and CI. A team member approves it in the browser.\n';
 const noWaitOptionText =
   "Don't wait for the browser approval: print the link and the code, then stop. Run the same command again after approving.\n";
 const passwordOptionText = 'Log in with user name and password (or the team npm user secret) in the terminal instead of the browser.\n';
@@ -885,7 +878,6 @@ program
     `Pass the ${chalk.gray('--legacy-peer-deps')} flag to internally executed npm install command.`,
     handleLegacyPeerFlags,
   )
-  .option('--team', teamOptionText, handleTeam)
   .option('--password', passwordOptionText, handlePasswordLogin)
   .option('--no-wait', noWaitOptionText, handleNoWait);
 
@@ -894,7 +886,6 @@ program
   .description(
     'Logs you in to the Mobiscroll npm registry: approve the sign-in in your browser. (Use the --global flag if you want to login globally). \n',
   )
-  .option('--team', teamOptionText, handleTeam)
   .option('--password', passwordOptionText, handlePasswordLogin)
   .option('--no-wait', noWaitOptionText, handleNoWait)
   .option('--proxy [proxy]', 'Pass a proxy URL which will be passed to the internal requests.', handleProxy)
@@ -910,7 +901,6 @@ program
   .command('start [types] [name]')
   .on('--help', helperMessages.startHelp)
   .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
-  .option('--team', teamOptionText, handleTeam)
   .option('--password', passwordOptionText, handlePasswordLogin)
   .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
   .action(handleStart);

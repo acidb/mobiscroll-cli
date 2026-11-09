@@ -124,13 +124,13 @@ const cases = [
         { status: 200, data: { token: 'TOKEN-VALUE', username: 'anna@acme.com' } },
       ];
       return webLogin
-        .webLogin({ registryUrl: 'https://npm.mobiscroll.com', team: true, openBrowser: true, cliVersion: '9.9.9' })
+        .webLogin({ registryUrl: 'https://npm.mobiscroll.com', openBrowser: true, cliVersion: '9.9.9' })
         .then((result) => {
           assert.strictEqual(result.token, 'TOKEN-VALUE');
           assert.strictEqual(result.username, 'anna@acme.com');
           assert.strictEqual(requests[0].method, 'post');
           assert.strictEqual(requests[0].url, 'https://npm.mobiscroll.com/-/v1/login');
-          assert.strictEqual(requests[0].data.team, true);
+          assert.strictEqual(requests[0].data.team, undefined, 'no team flag is sent');
           assert.ok(requests[0].data.machineId, 'machine id sent');
           assert.strictEqual(requests.length, 4, 'polled until 200');
           assert.ok(printed.join('\n').indexOf('WDJB-MJHT') !== -1, 'code printed');
@@ -251,7 +251,7 @@ const cases = [
   {
     name: '--no-wait: an approved kept sign-in is collected straight away',
     run: () => {
-      writePending({ team: false });
+      writePending({});
       answers = [{ status: 200, data: { token: 'T3', username: 'x' } }];
       return webLogin
         .webLogin({ registryUrl: 'https://npm.mobiscroll.com', openBrowser: false, cliVersion: '9.9.9', noWait: true })
@@ -265,7 +265,7 @@ const cases = [
   {
     name: '--no-wait: a denied or expired kept sign-in is forgotten and a new one started',
     run: () => {
-      writePending({ team: false });
+      writePending({});
       answers = [
         { status: 410, data: { error: 'The sign-in expired. Start it again.' } },
         { status: 200, data: { loginUrl: 'https://mobiscroll.com/cli/approve?id=new', doneUrl: 'https://npm.mobiscroll.com/-/v1/done/new', code: 'NEWW-NEWW' } },
@@ -280,17 +280,17 @@ const cases = [
     },
   },
   {
-    name: '--no-wait: a kept sign-in is not reused with another --team setting or after it expired',
+    name: '--no-wait: a kept sign-in is not reused for another registry or after it expired',
     run: () => {
-      writePending({ team: true });
+      writePending({ registryUrl: 'https://other.example.com' });
       answers = [{ status: 200, data: { loginUrl: 'https://mobiscroll.com/cli/approve?id=p', doneUrl: 'https://npm.mobiscroll.com/-/v1/done/p' } }];
       return webLogin
         .webLogin({ registryUrl: 'https://npm.mobiscroll.com', openBrowser: false, cliVersion: '9.9.9', noWait: true })
         .then(() => {
-          assert.strictEqual(requests[0].method, 'post', 'team sign-in kept, a personal one started');
+          assert.strictEqual(requests[0].method, 'post', 'the other registry\'s sign-in is not used, a new one is started');
 
           reset();
-          writePending({ team: false, expiresAt: Date.now() - 1000 });
+          writePending({ expiresAt: Date.now() - 1000 });
           answers = [{ status: 200, data: { loginUrl: 'https://mobiscroll.com/cli/approve?id=q', doneUrl: 'https://npm.mobiscroll.com/-/v1/done/q' } }];
           return webLogin.webLogin({ registryUrl: 'https://npm.mobiscroll.com', openBrowser: false, cliVersion: '9.9.9', noWait: true });
         })

@@ -168,7 +168,6 @@ Installs and configures Mobiscroll in an existing project.
 | `--scss` / `--css` | Force stylesheet format (skips interactive prompt) |
 | `--legacy-peer-deps` | Passes `--legacy-peer-deps` to npm install |
 | `-g, --global` | Write auth to global `~/.npmrc` instead of local `.npmrc` |
-| `--team` | Sign in as the team npm user (a team member approves in the browser) |
 | `--password` | Old user name + password (or team secret) prompt instead of the browser sign-in |
 | `--no-wait` | Start the browser sign-in, print the link and code, and exit 0. The next run picks the sign-in up (see Authentication flow) |
 | `-y, --yes` | Program-level: never prompt. Automatic when stdin/stdout is not a TTY (AI agents, scripts) |
@@ -185,7 +184,7 @@ Installs and configures Mobiscroll in an existing project.
 
 ### `mobiscroll login`
 
-Authenticates with the Mobiscroll npm registry through the browser (see Authentication flow). Saves auth token to `.npmrc` (and `.yarnrc.yml` for Yarn 2+ projects). Use `-g` to write to global config. Flags: `--team`, `--password`, `--no-wait`, `--proxy`.
+Authenticates with the Mobiscroll npm registry through the browser (see Authentication flow). Saves auth token to `.npmrc` (and `.yarnrc.yml` for Yarn 2+ projects). Use `-g` to write to global config. Flags: `--password`, `--no-wait`, `--proxy`. To sign in as the team npm user, pick it on the approve page.
 
 ---
 
@@ -281,10 +280,10 @@ No file modifications. The config command installs the package and prints copy-p
 
 1. `checkMbscNpmLogin()` runs `npm whoami --registry=https://npm.mobiscroll.com`
 2. If that fails, starts the browser sign-in (`src/webLogin.js`, npm's web login protocol on the registry):
-   - `POST /-/v1/login` with the machine name, a machine id kept in `~/.mobiscroll/cli.json` and `team` → `{ loginUrl, doneUrl, code, deviceUrl }`
+   - `POST /-/v1/login` with the machine name, a machine id kept in `~/.mobiscroll/cli.json` → `{ loginUrl, doneUrl, code, deviceUrl }`
    - prints the link, the code and the `/device` page (where the code can be typed on another device), opens the browser (not when `CI` is set)
    - polls `doneUrl` (202 + `Retry-After` while waiting, 200 `{ token }` once approved, 403 denied, 410 expired)
-   - With `--no-wait`: doesn't poll. Keeps `{ loginUrl, doneUrl, code, expiresAt, team }` as `pending` in `~/.mobiscroll/cli.json` and exits 0. The next sign-in for the same registry and `--team` setting checks that `doneUrl` first: approved → takes the token; still waiting → waits (or, with `--no-wait` again, prints the same link and exits); denied / expired / used → forgets it and starts a new one. `start` has no `--no-wait` (running it again would hit the existing folder): run `mobiscroll login --no-wait` first.
+   - With `--no-wait`: doesn't poll. Keeps `{ loginUrl, doneUrl, code, expiresAt }` as `pending` in `~/.mobiscroll/cli.json` and exits 0. The next sign-in for the same registry checks that `doneUrl` first: approved → takes the token; still waiting → waits (or, with `--no-wait` again, prints the same link and exits); denied / expired / used → forgets it and starts a new one. `start` has no `--no-wait` (running it again would hit the existing folder): run `mobiscroll login --no-wait` first.
    - With `--password`: the old username + password prompt and `npmLogin()` (`src/npm-login/`)
 3. Writes `//npm.mobiscroll.com/:_authToken=<token>` to `.npmrc` (`npmLogin.saveToken()` for the browser sign-in)
 4. If Yarn 2+ is used, syncs the token to `.yarnrc.yml` too
