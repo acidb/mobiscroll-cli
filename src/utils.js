@@ -473,12 +473,13 @@ function browserLogin(useGlobalNpmrc, proxy, options) {
  * Logout: cancels the token written in the .npmrc on the registry, before the CLI removes it from the file.
  * The registry cancels personal tokens only; a team npm user's token keeps working elsewhere (CI, other
  * machines). A ${VAR} reference is not a token of this machine, so it is left alone.
- * @returns {Promise<void>} never rejects
+ * @returns {Promise<{ teamToken: boolean }>} never rejects; teamToken is true when the registry says the token is
+ * a team npm user's and so still works (an older registry doesn't say: false)
  */
 function cancelRegistryToken(npmrcPath, proxy) {
   const token = npmToken.tokenFromNpmrc(npmrcPath, mbscNpmUrl, true);
   if (!token || token.indexOf('${') !== -1) {
-    return Promise.resolve();
+    return Promise.resolve({ teamToken: false });
   }
   return axios({
     method: 'delete',
@@ -490,9 +491,10 @@ function cancelRegistryToken(npmrcPath, proxy) {
     proxy: proxy ? processProxyUrl(proxy) : undefined,
     validateStatus: () => true,
   }).then(
-    () => {},
+    (res) => ({ teamToken: !!(res && res.status === 200 && res.data && res.data.teamToken === true) }),
     () => {
       printWarning('Could not reach the Mobiscroll registry to cancel the token. It is removed from this machine only.');
+      return { teamToken: false };
     },
   );
 }

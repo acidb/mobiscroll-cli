@@ -119,7 +119,7 @@ function removeTokenFromNpmrc(currDir) {
   const yarnRcPath = path.resolve(currDir, '.yarnrc.yml');
   if (fs.existsSync(npmrcPath)) {
     // cancel the token on the registry first (personal tokens only), then remove it from the file
-    utils.cancelRegistryToken(npmrcPath, proxyUrl).then(() => {
+    utils.cancelRegistryToken(npmrcPath, proxyUrl).then((result) => {
       const original = fs.readFileSync(npmrcPath).toString();
       if (original.length > 5) {
         // there is difference in the format of the auth token
@@ -135,6 +135,10 @@ function removeTokenFromNpmrc(currDir) {
         if (content !== original) {
           utils.writeToFile(npmrcPath, content, () => {
             printFeedback('Successful logout!\n');
+            if (result.teamToken) {
+              // the registry doesn't cancel a team npm user's token: teammates and CI may use it
+              printWarning('This was a team token: it still works elsewhere. Cancel it on the licences page if needed.\n');
+            }
           });
         } else {
           notLoggedInFeedback();

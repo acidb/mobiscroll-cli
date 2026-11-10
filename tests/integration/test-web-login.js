@@ -345,21 +345,45 @@ const cases = [
       // the registry the CLI is built for (utils.npmUrl)
       const registryHost = utils.npmUrl.replace(/^https?:\/\//, '');
       fs.writeFileSync(npmrc, '//' + registryHost + '/:_authToken=ab+c/d=\n');
+      // an older registry: no teamToken field
       answers = [{ status: 200, data: { ok: 'Logged out' } }];
       return utils
         .cancelRegistryToken(npmrc)
-        .then(() => {
+        .then((result) => {
           assert.strictEqual(requests.length, 1);
           assert.strictEqual(requests[0].method, 'delete');
           assert.strictEqual(requests[0].url, utils.npmUrl + '/-/user/token/' + encodeURIComponent('ab+c/d='));
           assert.strictEqual(requests[0].headers.Authorization, 'Bearer ab+c/d=');
+          assert.strictEqual(result.teamToken, false, 'an older registry says nothing: no team note');
+
+          reset();
+          answers = [{ status: 200, data: { ok: 'Logged out', cancelled: false, teamToken: true } }];
+          return utils.cancelRegistryToken(npmrc);
+        })
+        .then((result) => {
+          assert.strictEqual(result.teamToken, true, 'a team token is reported, so logout can say it still works');
+
+          reset();
+          answers = [{ status: 200, data: { ok: 'Logged out', cancelled: true, teamToken: false } }];
+          return utils.cancelRegistryToken(npmrc);
+        })
+        .then((result) => {
+          assert.strictEqual(result.teamToken, false, 'a cancelled personal token: no team note');
+
+          reset();
+          answers = [new Error('ECONNREFUSED')];
+          return utils.cancelRegistryToken(npmrc);
+        })
+        .then((result) => {
+          assert.strictEqual(result.teamToken, false, 'registry not reachable: still resolves');
 
           reset();
           fs.writeFileSync(npmrc, '//' + registryHost + '/:_authToken=${MOBISCROLL_NPM_TOKEN}\n');
           return utils.cancelRegistryToken(npmrc);
         })
-        .then(() => {
+        .then((result) => {
           assert.strictEqual(requests.length, 0, 'a reference is not cancelled');
+          assert.strictEqual(result.teamToken, false);
         });
     },
   },
