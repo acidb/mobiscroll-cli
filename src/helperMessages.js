@@ -56,10 +56,10 @@ module.exports = {
     console.log('    jquery          Use it for configuring jQuery based applications.\n');
     console.log('    react           Use it for configuring React applications.\n');
     console.log('    vue             Use it for configuring Vue applications.\n');
-    console.log('\n  For AI agents and scripts: mobiscroll config <type> --yes');
-    console.log('  Sign-in happens in the browser. Add --trial to install the trial.');
-    console.log("  If you only see the output when the command ends, add --no-wait: it prints the sign-in link and stops;");
-    console.log('  run the same command again after the approval.\n');
+    console.log('\n  Sign-in happens in the browser. Add --trial to install the trial.');
+    console.log('  For AI agents: mobiscroll config <type> --yes --no-wait');
+    console.log('  It prints a sign-in link and code and stops; show them to the user and run the same command again');
+    console.log('  after the approval. For scripts: --yes never asks a question.\n');
   },
   startHelp: () => {
     console.log('\n\n  Clones the repository containing Mobiscroll website demos and installs all required dependencies.');
