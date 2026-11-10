@@ -118,7 +118,8 @@ const cases = [
     name: 'browser sign-in: 202 until approved, then the token',
     run: () => {
       answers = [
-        { status: 200, data: { loginUrl: 'https://mobiscroll.com/cli/approve/abc', doneUrl: 'https://npm.mobiscroll.com/-/v1/done/xyz', code: 'WDJB-MJHT' } },
+        // a dev registry whose website is a local one: the tokens page is on the approve link's site
+        { status: 200, data: { loginUrl: 'https://mobiscrollprod.com/cli/approve/abc', doneUrl: 'https://npm.mobiscroll.com/-/v1/done/xyz', code: 'WDJB-MJHT' } },
         { status: 202, headers: { 'retry-after': '2' }, data: {} },
         { status: 202, headers: { 'retry-after': '2' }, data: {} },
         { status: 200, data: { token: 'TOKEN-VALUE', username: 'anna@acme.com' } },
@@ -128,6 +129,7 @@ const cases = [
         .then((result) => {
           assert.strictEqual(result.token, 'TOKEN-VALUE');
           assert.strictEqual(result.username, 'anna@acme.com');
+          assert.strictEqual(result.tokensUrl, 'https://mobiscrollprod.com/account/tokens', 'tokens page on the site of the approve link');
           assert.strictEqual(requests[0].method, 'post');
           assert.strictEqual(requests[0].url, 'https://npm.mobiscroll.com/-/v1/login');
           assert.strictEqual(requests[0].data.team, undefined, 'no team flag is sent');
@@ -135,7 +137,7 @@ const cases = [
           assert.strictEqual(requests.length, 4, 'polled until 200');
           assert.ok(printed.join('\n').indexOf('WDJB-MJHT') !== -1, 'code printed');
           assert.ok(printed.join('\n').indexOf('TOKEN-VALUE') === -1, 'token never printed');
-          assert.ok(executed.some((cmd) => cmd.indexOf('https://mobiscroll.com/cli/approve/abc') !== -1), 'browser opened');
+          assert.ok(executed.some((cmd) => cmd.indexOf('https://mobiscrollprod.com/cli/approve/abc') !== -1), 'browser opened');
         });
     },
   },
@@ -242,6 +244,7 @@ const cases = [
       ];
       return webLogin.webLogin({ registryUrl: 'https://npm.mobiscroll.com', openBrowser: false, cliVersion: '9.9.9' }).then((result) => {
         assert.strictEqual(result.token, 'KEPT-TOKEN');
+        assert.strictEqual(result.tokensUrl, 'https://mobiscroll.com/account/tokens', 'tokens page from the link of the kept sign-in');
         assert.ok(requests.every((r) => r.method === 'get'), 'no new sign-in started');
         assert.strictEqual(pendingState(), undefined, 'forgotten');
         assert.ok(printed.join('\n').indexOf('KEPT-TOKEN') === -1, 'token never printed');
@@ -355,13 +358,17 @@ const cases = [
           assert.strictEqual(requests[0].url, utils.npmUrl + '/-/user/token/' + encodeURIComponent('ab+c/d='));
           assert.strictEqual(requests[0].headers.Authorization, 'Bearer ab+c/d=');
           assert.strictEqual(result.teamToken, false, 'an older registry says nothing: no team note');
+          assert.strictEqual(result.tokensUrl, 'https://mobiscroll.com/account/tokens', 'an older registry: the default tokens page');
 
           reset();
-          answers = [{ status: 200, data: { ok: 'Logged out', cancelled: false, teamToken: true } }];
+          answers = [
+            { status: 200, data: { ok: 'Logged out', cancelled: false, teamToken: true, tokensUrl: 'https://mobiscrollprod.com/account/tokens' } },
+          ];
           return utils.cancelRegistryToken(npmrc);
         })
         .then((result) => {
           assert.strictEqual(result.teamToken, true, 'a team token is reported, so logout can say it still works');
+          assert.strictEqual(result.tokensUrl, 'https://mobiscrollprod.com/account/tokens', 'the tokens page the registry gives');
 
           reset();
           answers = [{ status: 200, data: { ok: 'Logged out', cancelled: true, teamToken: false } }];
@@ -376,6 +383,7 @@ const cases = [
         })
         .then((result) => {
           assert.strictEqual(result.teamToken, false, 'registry not reachable: still resolves');
+          assert.strictEqual(result.tokensUrl, 'https://mobiscroll.com/account/tokens');
 
           reset();
           fs.writeFileSync(npmrc, '//' + registryHost + '/:_authToken=${MOBISCROLL_NPM_TOKEN}\n');

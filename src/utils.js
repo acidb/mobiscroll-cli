@@ -6,6 +6,9 @@ const execSync = require('child_process').execSync;
 // Switch back to 'https://npm.mobiscroll.com' before releasing.
 const mbscNpmUrl = 'https://npmdev.mobiscroll.com';
 const mbscApiUrlBase = 'https://api.mobiscroll.com';
+// The website's npm access tokens page, when the registry doesn't say where it is (an older registry, --password login).
+// The browser sign-in and the logout take it from the registry, so a dev or staging registry points to its own website.
+const defaultTokensUrl = 'https://mobiscroll.com/account/tokens';
 // the token row of the registry in use (mbscNpmUrl)
 const dataRowRegex = new RegExp(
   '\\/\\/' +
@@ -456,7 +459,8 @@ function browserLogin(useGlobalNpmrc, proxy, options) {
       }
       npmLogin.saveToken(result.token, mbscNpmUrl, '@mobiscroll', useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc'));
       console.log(`  Logged in as ${result.username}`);
-      printFeedback('Successful login!\n');
+      printFeedback('Successful login!');
+      console.log(`  Your tokens: ${result.tokensUrl || defaultTokensUrl}\n`);
       syncTokenToYarnrc(useGlobalNpmrc);
       return result.username;
     })
@@ -473,13 +477,14 @@ function browserLogin(useGlobalNpmrc, proxy, options) {
  * Logout: cancels the token written in the .npmrc on the registry, before the CLI removes it from the file.
  * The registry cancels personal tokens only; a team npm user's token keeps working elsewhere (CI, other
  * machines). A ${VAR} reference is not a token of this machine, so it is left alone.
- * @returns {Promise<{ teamToken: boolean }>} never rejects; teamToken is true when the registry says the token is
- * a team npm user's and so still works (an older registry doesn't say: false)
+ * @returns {Promise<{ teamToken: boolean, tokensUrl: string }>} never rejects; teamToken is true when the registry says
+ * the token is a team npm user's and so still works (an older registry doesn't say: false); tokensUrl is the website's
+ * npm access tokens page as the registry gives it, or defaultTokensUrl
  */
 function cancelRegistryToken(npmrcPath, proxy) {
   const token = npmToken.tokenFromNpmrc(npmrcPath, mbscNpmUrl, true);
   if (!token || token.indexOf('${') !== -1) {
-    return Promise.resolve({ teamToken: false });
+    return Promise.resolve({ teamToken: false, tokensUrl: defaultTokensUrl });
   }
   return axios({
     method: 'delete',
@@ -491,10 +496,16 @@ function cancelRegistryToken(npmrcPath, proxy) {
     proxy: proxy ? processProxyUrl(proxy) : undefined,
     validateStatus: () => true,
   }).then(
-    (res) => ({ teamToken: !!(res && res.status === 200 && res.data && res.data.teamToken === true) }),
+    (res) => {
+      const data = res && res.status === 200 && res.data ? res.data : {};
+      return {
+        teamToken: data.teamToken === true,
+        tokensUrl: typeof data.tokensUrl === 'string' && /^https?:\/\//.test(data.tokensUrl) ? data.tokensUrl : defaultTokensUrl,
+      };
+    },
     () => {
       printWarning('Could not reach the Mobiscroll registry to cancel the token. It is removed from this machine only.');
-      return { teamToken: false };
+      return { teamToken: false, tokensUrl: defaultTokensUrl };
     },
   );
 }
@@ -538,7 +549,8 @@ function passwordLogin(useGlobalNpmrc, proxy) {
         )
           .then(() => {
             console.log(`  Logged in as ${answers.username}`);
-            printFeedback('Successful login!\n');
+            printFeedback('Successful login!');
+            console.log(`  Your tokens: ${defaultTokensUrl}\n`);
             syncTokenToYarnrc(useGlobalNpmrc);
             resolve(answers.username);
           })

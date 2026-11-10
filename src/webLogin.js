@@ -94,6 +94,18 @@ function openBrowser(url) {
   child.unref();
 }
 
+/**
+ * The website's npm access tokens page, on the same site as the approve link (the registry's webUrl: prod, staging or a
+ * local website). Undefined if the link isn't a URL.
+ */
+function tokensUrlFrom(loginUrl) {
+  try {
+    return new URL(loginUrl).origin + '/account/tokens';
+  } catch (err) {
+    return undefined;
+  }
+}
+
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -114,7 +126,7 @@ function printSignIn(signIn) {
  * Signs in through the browser.
  * @param {{ registryUrl: string, proxy: object|undefined, openBrowser: boolean, cliVersion: string, noWait: boolean }} options
  * noWait: start the sign-in (or check the pending one) and return { pending: true } instead of waiting for the approval
- * @returns {Promise<{ token: string, username: string } | { pending: true }>}
+ * @returns {Promise<{ token: string, username: string, tokensUrl: string|undefined } | { pending: true }>}
  */
 function webLogin(options) {
   const requestBase = {
@@ -127,9 +139,9 @@ function webLogin(options) {
     return axios(Object.assign({}, requestBase, { method: 'get', url: doneUrl }));
   }
 
-  function result(done) {
+  function result(done, loginUrl) {
     if (done.status === 200 && done.data && done.data.token) {
-      return { token: done.data.token, username: done.data.username || '' };
+      return { token: done.data.token, username: done.data.username || '', tokensUrl: tokensUrlFrom(loginUrl) };
     }
     if (done.status === 403) {
       throw new Error('The sign-in was denied on the website.');
@@ -137,7 +149,7 @@ function webLogin(options) {
     throw new Error((done.data && done.data.error) || `The sign-in failed (status ${done.status}).`);
   }
 
-  function waitForApproval(doneUrl, deadline) {
+  function waitForApproval(doneUrl, deadline, loginUrl) {
     let networkErrors = 0;
 
     function poll() {
@@ -151,7 +163,7 @@ function webLogin(options) {
             const retryAfter = parseInt(done.headers && done.headers['retry-after'], 10);
             return wait(retryAfter > 0 ? retryAfter * 1000 : defaultRetryMs).then(poll);
           }
-          return result(done);
+          return result(done, loginUrl);
         },
         (err) => {
           // Network hiccup while waiting: try again a few times
@@ -198,7 +210,7 @@ function webLogin(options) {
         return { pending: true };
       }
       console.log('Waiting for the approval...');
-      return waitForApproval(signIn.doneUrl, Date.now() + maxWaitMs);
+      return waitForApproval(signIn.doneUrl, Date.now() + maxWaitMs, signIn.loginUrl);
     });
   }
 
@@ -215,7 +227,7 @@ function webLogin(options) {
         return { pending: true };
       }
       console.log('Waiting for the approval...');
-      return waitForApproval(pending.doneUrl, pending.expiresAt + 60 * 1000).then(
+      return waitForApproval(pending.doneUrl, pending.expiresAt + 60 * 1000, pending.loginUrl).then(
         (signedIn) => {
           clearPending();
           return signedIn;
@@ -228,7 +240,7 @@ function webLogin(options) {
     }
     clearPending();
     if (done.status === 200) {
-      return result(done);
+      return result(done, pending.loginUrl);
     }
     // Denied, expired or already used: start a new one
     console.log(`The previous sign-in can't be used (${(done.data && done.data.error) || 'status ' + done.status}). Starting a new one.`);

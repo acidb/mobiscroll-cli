@@ -137,7 +137,7 @@ function removeTokenFromNpmrc(currDir) {
             printFeedback('Successful logout!\n');
             if (result.teamToken) {
               // the registry doesn't cancel a team npm user's token: teammates and CI may use it
-              printWarning('This was a team token: it still works elsewhere. Cancel it on the licences page if needed.\n');
+              printWarning(`This was a team token: it still works elsewhere. Cancel it on ${result.tokensUrl} if needed.\n`);
             }
           });
         } else {
