@@ -38,6 +38,7 @@ mobiscroll-cli/
 │   ├── configAngular.js       # Angular-specific: app.module.ts, angular.json, SCSS, standalone components
 │   ├── configIonic.js         # Ionic variants: Angular/React/Vue, lazy loading, CSS copy scripts
 │   ├── helperMessages.js      # Per-framework usage instructions printed after config
+│   ├── help.js                # The --help screens (option rows come from the registered options)
 │   ├── webLogin.js            # Browser sign-in (npm web login protocol on the registry), --no-wait, machine id
 │   ├── token.js               # Reads the npm token from .npmrc / .yarnrc.yml (never prints it)
 │   └── npm-login/             # Custom npm login (index.js, login.js, adduser.js); saveToken() for the browser sign-in
@@ -50,7 +51,8 @@ mobiscroll-cli/
     └── integration/
         ├── test-install-commands.js  # 60+ scenario matrix for installMobiscroll()
         ├── test-version-resolution.js
-        └── test-web-login.js         # Browser sign-in, --no-wait, token reading, logout cancel
+        ├── test-web-login.js         # Browser sign-in, --no-wait, token reading, logout cancel
+        └── test-help.js              # Every --help screen lists every option and the agent example
 ```
 
 ---
@@ -72,6 +74,7 @@ mobiscroll config angular
 node tests/integration/test-install-commands.js
 node tests/integration/test-version-resolution.js
 node tests/integration/test-web-login.js
+node tests/integration/test-help.js
 
 # The registry is the `mbscNpmUrl` const at the top of src/utils.js.
 # To test against another registry (dev, or http://localhost:8081), change it there;

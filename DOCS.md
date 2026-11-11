@@ -76,6 +76,7 @@ mobiscroll-cli/
 │   ├── configAngular.js        # Angular file modifications (app.module.ts, angular.json, SCSS)
 │   ├── configIonic.js          # Ionic file modifications (index.html, variables.scss, copy scripts)
 │   ├── helperMessages.js       # Printed usage instructions for React/Vue/jQuery/JS
+│   ├── help.js                 # The --help screens (option rows come from the registered options)
 │   └── npm-login/              # Custom npm login implementation
 │       ├── index.js
 │       ├── login.js

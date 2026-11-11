@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The licence check now asks the Mobiscroll npm registry with your token, instead of the public API with your user name.
 - When your team has a team npm user and you are signed in personally, the CLI warns and continues, instead of asking for the team npm user's credentials.
 - The CLI exits with code 1 when it stops with an error, so scripts and agents can tell.
+- The `--help` screens are rewritten: every command's options listed, examples with the command for AI agents, and `-V` prints the version too.
 
 ### Fixed
 

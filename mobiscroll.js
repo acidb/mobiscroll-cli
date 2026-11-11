@@ -9,6 +9,7 @@ const configAngular = require('./src/configAngular.js').configAngular;
 const chalk = require('chalk');
 const path = require('path');
 const helperMessages = require('./src/helperMessages.js');
+const help = require('./src/help.js');
 const ncp = require('ncp').ncp;
 const figlet = require('figlet');
 const os = require('os');
@@ -822,27 +823,28 @@ function handleLogout() {
 
 // options
 program
-  .version(localCliVersion, '-v')
   .option(
     '-g, --global',
     "Modify the Mobiscroll npm login credentials save/use location to the global .npmrc file. Starting from cli v0.6.0 by default it is saved in the application's directory.",
     handleGlobalInstall,
   )
-  .option(
-    '-y, --yes',
-    'Never ask questions: use the default answer, or stop with a message naming the flag to add. This is automatic when there is no terminal (for example when an AI agent runs the CLI).',
-    handleYes,
-  )
-  .usage('[commands] [options]');
+  .option('-y, --yes', 'Never ask questions (automatic without a terminal)', handleYes)
+  // not .version(): commander 2 can't take two flags for it
+  .option('-v, -V', 'output the version number', () => {
+    process.stdout.write(localCliVersion + '\n');
+    process.exit(0);
+  })
+  .usage('<command> [options]');
+program.helpInformation = () => help.main(program);
 
-const noWaitOptionText =
-  "Don't wait for the browser approval: print the link and the code, then stop. Run the same command again after approving.\n";
-const passwordOptionText = 'Log in with user name and password (or the team npm user secret) in the terminal instead of the browser.\n';
+const noWaitOptionText = 'Print the sign-in link and code, then stop; rerun after approving';
+const passwordOptionText = 'Sign in with user name and password (or the team npm user secret) instead of the browser';
+const proxyOptionText = 'Pass a proxy URL which will be passed to the internal requests.';
 
 // commands
 
 // config command
-program
+const configCommand = program
   .command('config [types]')
   .description(
     `Configures your current project with the Mobiscroll resources and dependencies. For more information run the ${chalk.gray(
@@ -850,7 +852,6 @@ program
     )} command.\n`,
   )
   .action(handleConfig)
-  .on('--help', helperMessages.configHelp)
   //.option('-l, --lazy', 'Skipping MbscModule injection from app.module.ts in case of Ionic lazy loading project.\n', handleLazy)
   .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
   .option('-i, --lite', 'The project will be tuned up with lite configuration.\n', handleLite)
@@ -884,30 +885,34 @@ program
   )
   .option('--password', passwordOptionText, handlePasswordLogin)
   .option('--no-wait', noWaitOptionText, handleNoWait);
+configCommand.helpInformation = () => help.config(configCommand);
 
-program
+const loginCommand = program
   .command('login')
   .description(
     'Logs you in to the Mobiscroll npm registry: approve the sign-in in your browser. (Use the --global flag if you want to login globally). \n',
   )
   .option('--password', passwordOptionText, handlePasswordLogin)
   .option('--no-wait', noWaitOptionText, handleNoWait)
-  .option('--proxy [proxy]', 'Pass a proxy URL which will be passed to the internal requests.', handleProxy)
+  .option('--proxy [proxy]', proxyOptionText, handleProxy)
   .action(handleLogin);
+loginCommand.helpInformation = () => help.login(loginCommand);
 
-program
+const logoutCommand = program
   .command('logout')
   .description('Logs you out from the Mobiscroll npm registry. (Use the --global flag if you want to log out globally).\n')
-  .option('--proxy [proxy]', 'Pass a proxy URL which will be passed to the internal requests.', handleProxy)
+  .option('--proxy [proxy]', proxyOptionText, handleProxy)
   .action(handleLogout);
+logoutCommand.helpInformation = () => help.logout(logoutCommand);
 
-program
+const startCommand = program
   .command('start [types] [name]')
-  .on('--help', helperMessages.startHelp)
+  .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
   .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
   .option('--password', passwordOptionText, handlePasswordLogin)
-  .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
+  .option('--proxy [proxy]', proxyOptionText, handleProxy)
   .action(handleStart);
+startCommand.helpInformation = () => help.start(startCommand);
 
 program.on('command:*', function () {
   // warning on unknown commands
