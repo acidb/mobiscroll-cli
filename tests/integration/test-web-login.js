@@ -424,6 +424,23 @@ const cases = [
       });
     },
   },
+  {
+    name: 'licence check fallback to api/access names the CLI in the User-Agent',
+    run: () => {
+      // signed in, but no token to read: the licence check falls back to api.mobiscroll.com/api/access
+      whoamiUser = 'anna@acme.com';
+      answers = [{ status: 200, data: { HasAccess: true, License: 'framework', LatestVersion: '6.0.0', NpmUser: true } }];
+      return new Promise((resolve) => {
+        utils.checkMbscNpmLogin(false, false, undefined, 'react', undefined, () => resolve(), { nonInteractive: true });
+      }).then(() => {
+        whoamiUser = '';
+        assert.strictEqual(requests.length, 1);
+        assert.ok(requests[0].url.indexOf('/api/access/anna@acme.com/react') !== -1, 'the old endpoint');
+        // older CLIs send 'request'; the IIS logs tell the two apart by this
+        assert.strictEqual(requests[0].headers['User-Agent'], 'mobiscroll-cli/' + require('../../package.json').version);
+      });
+    },
+  },
 ];
 
 cases

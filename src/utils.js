@@ -272,7 +272,9 @@ function getApiKeyFromApi(userName, proxy, framework, callback) {
     url: mbscApiUrlBase + '/api/access/' + userName + '/' + framework,
     // json: true,
     headers: {
-      'User-Agent': 'request',
+      // Older CLIs send 'request'. This one names itself, so the API server's IIS logs tell its fallback calls apart
+      // from older CLIs still in use (mobiscroll-web scripts/count-api-access-calls.ps1), until api/access is switched off.
+      'User-Agent': 'mobiscroll-cli/' + require('../package.json').version,
     },
   };
 
