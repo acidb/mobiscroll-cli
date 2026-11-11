@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - We added the `--no-wait` flag to `login` and `config`: the CLI prints the sign-in link and stops, and the next run picks up the approved sign-in. For AI agents that only see the output once a command ends.
 - The CLI now also prints the mobiscroll.com/device address: on another device, open it and type the code shown in the terminal.
 - `mobiscroll logout` now also cancels the token on the registry (personal tokens only), not just in the `.npmrc`.
+- Each sign-in creates its own token, and tokens don't expire. You can see and cancel your tokens on the npm access tokens page (https://mobiscroll.com/account/tokens); the CLI prints the link after login and logout.
+- Without an account, you can start a free trial on the sign-in page, then approve.
 
 ### Changed
 

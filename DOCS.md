@@ -1,6 +1,6 @@
 # Mobiscroll CLI — Internal Team Documentation
 
-**Package:** `@mobiscroll/cli` · **Current version:** 1.16.2 · **Published to:** npmjs.com (public)
+**Package:** `@mobiscroll/cli` · **Current version:** 1.17.0 · **Published to:** npmjs.com (public)
 
 This document is the starting point for anyone on the team working on the CLI — new contributors, reviewers, or anyone shipping a release.
 
@@ -29,7 +29,7 @@ This document is the starting point for anyone on the team working on the CLI �
 The CLI's job is to get Mobiscroll installed and configured in a customer's project in one command. It:
 
 - Authenticates the customer with the Mobiscroll npm registry (`npm.mobiscroll.com`)
-- Calls the Mobiscroll API to verify their license and get the correct package name/version
+- Checks their license with the Mobiscroll npm registry (falling back to the Mobiscroll API) and gets the correct package name/version
 - Runs the right `npm install` / `yarn add` / `pnpm add` command for their framework and version
 - For Angular and Ionic: actually modifies project files (module imports, `angular.json`, SCSS, etc.)
 - For React, Vue, jQuery, JS: prints copy-paste code snippets the customer uses manually
@@ -77,6 +77,8 @@ mobiscroll-cli/
 │   ├── configIonic.js          # Ionic file modifications (index.html, variables.scss, copy scripts)
 │   ├── helperMessages.js       # Printed usage instructions for React/Vue/jQuery/JS
 │   ├── help.js                 # The --help screens (option rows come from the registered options)
+│   ├── webLogin.js             # Browser sign-in (npm's web login protocol on the registry), --no-wait
+│   ├── token.js                # Reads the npm token from .npmrc / .yarnrc.yml (never prints it)
 │   └── npm-login/              # Custom npm login implementation
 │       ├── index.js
 │       ├── login.js
@@ -113,7 +115,7 @@ All dependencies are runtime (no separate devDependencies). Here's what each one
 | **inquirer** | `^8.1.0` | Interactive terminal prompts (username/password inputs, yes/no confirmations, select lists) | `mobiscroll.js`, `src/utils.js` — login prompts, SCSS/CSS choice, overwrite confirmations |
 | **chalk** | `^2.4.1` | Terminal colors and text styling (green success, red errors, yellow warnings) | `src/utils.js` — `printFeedback`, `printWarning`, `printError`, `printLog` helpers |
 | **figlet** | `^1.2.1` | ASCII art banner printed at CLI startup | `mobiscroll.js` — the "Mobiscroll" header shown on every run |
-| **axios** | `1.13.6` | HTTP client for Mobiscroll API calls (license check, version fetch) | `src/utils.js` — `getApiKey()`, `getMobiscrollVersion()` |
+| **axios** | `1.13.6` | HTTP client for the registry and Mobiscroll API calls (browser sign-in, license check, version fetch) | `src/webLogin.js`; `src/utils.js` — `getApiKey()`, `getMobiscrollVersion()` |
 | **js-yaml** | `^4.1.0` | Parses and writes `.yarnrc.yml` for Yarn 2+ auth token sync | `src/utils.js` — `updateAuthTokenInYarnrc()` |
 | **semver** | `^6.3.0` | Compares and validates version strings to decide which package variant to install | `src/utils.js` — v5 vs v6 branching, Angular/React version checks in install logic |
 | **ncp** | `^2.0.0` | Recursively copies directory trees (used for `--no-npm` resource template copying) | `src/utils.js` — `packMobiscroll()` |
@@ -129,7 +131,7 @@ This is a local custom module (not an npm package) that handles authenticating w
 | `login.js` | Makes the registry API call to exchange credentials for an auth token |
 | `adduser.js` | Handles new user registration against the registry |
 
-**Why not use the standard `npm login` command?** The standard CLI tool has known issues in non-interactive environments and doesn't reliably handle custom registry token formats. This custom implementation gives full control over the request/response cycle and works consistently across environments.
+**When is it used?** Only for `--password` (user name and password, or the team npm user secret, typed in the terminal). The default sign-in is the browser sign-in in `src/webLogin.js`, which uses npm's web login protocol on the registry; `saveToken()` here writes its token to `.npmrc`. Plain `npm login` on npm 9+ also works against the registry, but the CLI keeps its own flow so it can print the code, support `--no-wait` and sync `.yarnrc.yml`.
 
 ### Why commander v2?
 
@@ -212,7 +214,7 @@ mobiscroll.js  ──parse flags──►  settings object
                                       │
                               checkMbscNpmLogin()
                                       │
-                               getApiKey() (API call)
+                     getApiKey() (registry licence check)
                                       │
                      ┌────────────────┼───────────────────┐
                      ▼                ▼                    ▼
@@ -296,7 +298,7 @@ New tokens carry a random `mbsc_` secret instead of the password (the registry s
 
 **Invariant:** Auth tokens must never appear in log output, error messages, or feedback strings.
 
-**Why a custom npm-login module?** The standard `npm login` CLI has known issues with non-interactive environments and custom registry token formats. The custom implementation in `src/npm-login/` handles this reliably.
+**Two sign-in paths:** the browser sign-in (`src/webLogin.js`, default) and the `--password` prompt (`src/npm-login/`). Both end with the token written to `.npmrc` and synced to `.yarnrc.yml`.
 
 ---
 
@@ -325,7 +327,12 @@ The project has integration tests only — no unit test framework.
 
 ```bash
 node tests/integration/test-install-commands.js
+node tests/integration/test-version-resolution.js
+node tests/integration/test-web-login.js
+node tests/integration/test-help.js
 ```
+
+`test-web-login.js` covers the browser sign-in, `--no-wait`, token reading, logout cancel and the licence check; `test-help.js` checks that every `--help` screen lists every option and the agent example.
 
 **What is tested:** The `installMobiscroll()` function is called directly with every combination of project type, Mobiscroll version, Angular version, React version, and package manager. The test verifies the generated install command string matches expected output.
 
