@@ -25,9 +25,11 @@ delete process.env.NPM_CONFIG_USERCONFIG;
 // ── Stub child_process (must be done before any require of utils) ──────────
 const cp = require('child_process');
 const executed = [];
+// `npm whoami` answers this user name ('' = not logged in)
+let whoamiUser = '';
 cp.exec = (cmd, cb) => {
   executed.push(cmd);
-  cb(null, '', '');
+  cb(null, cmd.indexOf('npm whoami') === 0 ? whoamiUser : '', '');
 };
 cp.spawn = (cmd, args) => {
   executed.push([cmd].concat(args || []).join(' '));
@@ -393,6 +395,33 @@ const cases = [
           assert.strictEqual(requests.length, 0, 'a reference is not cancelled');
           assert.strictEqual(result.teamToken, false);
         });
+    },
+  },
+  {
+    name: '--yes: a licence without this framework installs the trial right away and says so',
+    run: () => {
+      // signed in (npm whoami answers), with a token in the user-level .npmrc for the licence check
+      whoamiUser = 'anna@acme.com';
+      const registryHost = utils.npmUrl.replace(/^https?:\/\//, '');
+      fs.writeFileSync(path.join(home, '.npmrc'), '//' + registryHost + '/:_authToken=TOKEN-VALUE\n');
+      // a Vue framework licence asked for Angular
+      answers = [{ status: 200, data: { HasAccess: false, License: 'framework' } }];
+      return new Promise((resolve) => {
+        utils.checkMbscNpmLogin(false, false, undefined, 'angular', undefined, (userName, useTrial) => resolve({ userName, useTrial }), {
+          nonInteractive: true,
+        });
+      }).then((result) => {
+        whoamiUser = '';
+        fs.unlinkSync(path.join(home, '.npmrc'));
+        assert.strictEqual(result.useTrial, true, 'the trial is installed without asking');
+        assert.strictEqual(result.userName, 'anna@acme.com');
+        assert.strictEqual(requests[0].url, utils.npmUrl + '/-/mobiscroll/access/angular');
+        const out = printed.join('\n');
+        assert.ok(out.indexOf('No active licence for') !== -1 && out.indexOf('installing the trial') !== -1, 'says why');
+        assert.ok(out.indexOf('mobiscroll.com/account/licenses') !== -1, 'says where to buy or renew');
+        assert.ok(out.indexOf('Run the command again') === -1, 'no need to run the command again');
+        assert.ok(out.indexOf('TOKEN-VALUE') === -1, 'token never printed');
+      });
     },
   },
 ];

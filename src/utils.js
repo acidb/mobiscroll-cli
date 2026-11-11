@@ -935,11 +935,15 @@ module.exports = {
             );
 
             if (options.nonInteractive) {
-              printError(
-                `No licence for ${chalk.gray('@mobiscroll/' + framework)}. Run the command again with ${chalk.gray(
-                  '--trial',
-                )} to install the trial version.`,
+              // --yes or no terminal (an agent, a script): no question, the trial goes on right away. The line says why,
+              // so an agent can tell the person to buy or renew. A person in a terminal is still asked (below).
+              printWarning(
+                `No active licence for ${chalk.gray('@mobiscroll/' + framework)}: installing the trial. Buy or renew at ${chalk.gray(
+                  'https://mobiscroll.com/account/licenses',
+                )}`,
               );
+              callback(data.userName, true, data);
+              return;
             }
 
             inquirer

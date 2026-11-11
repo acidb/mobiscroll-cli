@@ -291,7 +291,7 @@ No file modifications. The config command installs the package and prints copy-p
 
 New tokens carry a random `mbsc_` secret instead of the password (the registry stores only its hash), so they can be listed and cancelled on mobiscroll.com. The registry the CLI talks to is the `mbscNpmUrl` constant at the top of `src/utils.js`; to test against another registry, change it there (it must be `https://npm.mobiscroll.com` in a release).
 
-**Non-interactive mode** (`--yes`, or no TTY): no prompt is shown. The update prompt is skipped with a hint, the stylesheet uses the default, and the trial / project name / overwrite questions stop with exit code 1 and a message naming the flag or argument to add.
+**Non-interactive mode** (`--yes`, or no TTY): no prompt is shown. The update prompt is skipped with a hint and the stylesheet uses the default. When the licence doesn't cover the framework (or its maintenance has expired), the trial is installed right away with the line "No active licence for @mobiscroll/<framework>: installing the trial. Buy or renew at https://mobiscroll.com/account/licenses"; in a terminal the person is still asked. The project name / overwrite questions stop with exit code 1 and a message naming the argument to add.
 
 **Invariant:** Auth tokens must never appear in log output, error messages, or feedback strings.
 
