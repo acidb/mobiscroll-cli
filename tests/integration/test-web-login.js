@@ -144,6 +144,72 @@ const cases = [
     },
   },
   {
+    name: 'browser sign-in, agent / --yes: opens the browser at once and says a person must approve',
+    run: () => {
+      answers = [
+        {
+          status: 200,
+          data: { loginUrl: 'https://mobiscroll.com/cli/approve?id=ag', doneUrl: 'https://npm.mobiscroll.com/-/v1/done/ag', deviceUrl: 'https://mobiscroll.com/device', code: 'AGAG-AGAG' },
+        },
+        { status: 200, data: { token: 'T-AG', username: 'x' } },
+      ];
+      return webLogin.webLogin({ registryUrl: 'https://npm.mobiscroll.com', openBrowser: true, cliVersion: '9.9.9' }).then(() => {
+        const out = printed.join('\n');
+        assert.ok(/A person must approve this sign-in\. Opening the approve page/.test(out), 'person + opening');
+        assert.ok(out.indexOf('No browser window? Open the link above, or open https://mobiscroll.com/device') !== -1, 'fallback');
+        assert.ok(/AI agents: show this link and code to the user/.test(out), 'agent line');
+        assert.ok(out.indexOf('Press Enter') === -1, 'no Enter prompt');
+        assert.ok(executed.some((cmd) => cmd.indexOf('id=ag') !== -1), 'browser opened');
+      });
+    },
+  },
+  {
+    name: 'browser sign-in, a person in a terminal: the browser opens only on Enter',
+    run: () => {
+      const EventEmitter = require('events');
+      const input = new EventEmitter();
+      let paused = false;
+      input.resume = () => {
+        paused = false;
+      };
+      input.pause = () => {
+        paused = true;
+      };
+      answers = [
+        { status: 200, data: { loginUrl: 'https://mobiscroll.com/cli/approve?id=tt', doneUrl: 'https://npm.mobiscroll.com/-/v1/done/tt', code: 'TTTT-TTTT' } },
+        { status: 202, headers: { 'retry-after': '2' }, data: {} },
+        { status: 200, data: { token: 'T-TT', username: 'x' } },
+      ];
+      const signedIn = webLogin.webLogin({ registryUrl: 'https://npm.mobiscroll.com', openBrowser: true, askFirst: true, input: input, cliVersion: '9.9.9' });
+      assert.strictEqual(executed.length, 0, 'not opened before Enter');
+      return signedIn.then(() => {
+        const out = printed.join('\n');
+        assert.ok(/Press Enter to open the link in your browser/.test(out), 'Enter prompt');
+        assert.ok(out.indexOf('AI agents') === -1, 'no agent line for a person');
+        assert.strictEqual(executed.length, 0, 'approved without Enter: never opened');
+        assert.ok(paused && input.listenerCount('data') === 0, 'stopped listening after the approval');
+      });
+    },
+  },
+  {
+    name: 'browser sign-in, a person in a terminal: Enter opens the browser',
+    run: () => {
+      const EventEmitter = require('events');
+      const input = new EventEmitter();
+      input.resume = () => input.emit('data', '\n'); // Enter pressed as soon as the CLI listens
+      input.pause = () => {};
+      answers = [
+        { status: 200, data: { loginUrl: 'https://mobiscroll.com/cli/approve?id=en', doneUrl: 'https://npm.mobiscroll.com/-/v1/done/en', code: 'ENEN-ENEN' } },
+        { status: 200, data: { token: 'T-EN', username: 'x' } },
+      ];
+      return webLogin
+        .webLogin({ registryUrl: 'https://npm.mobiscroll.com', openBrowser: true, askFirst: true, input: input, cliVersion: '9.9.9' })
+        .then(() => {
+          assert.strictEqual(executed.filter((cmd) => cmd.indexOf('id=en') !== -1).length, 1, 'opened once');
+        });
+    },
+  },
+  {
     name: 'browser sign-in: the machine id is kept between sign-ins',
     run: () => {
       const first = webLogin.getMachineId();
@@ -225,9 +291,11 @@ const cases = [
     run: () => {
       answers = [{ status: 202, headers: { 'retry-after': '2' }, data: {} }];
       return webLogin
-        .webLogin({ registryUrl: 'https://npm.mobiscroll.com', openBrowser: false, cliVersion: '9.9.9', noWait: true })
+        .webLogin({ registryUrl: 'https://npm.mobiscroll.com', openBrowser: true, cliVersion: '9.9.9', noWait: true })
         .then((result) => {
           assert.deepStrictEqual(result, { pending: true });
+          assert.strictEqual(executed.length, 0, 'the browser is not opened again');
+          assert.ok(/still waiting for a person to approve it/.test(printed.join('\n')));
           assert.strictEqual(requests.length, 1);
           assert.strictEqual(requests[0].method, 'get', 'checks the kept sign-in, starts none');
           assert.strictEqual(requests[0].url, 'https://npm.mobiscroll.com/-/v1/done/nw-done');

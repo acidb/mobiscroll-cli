@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- We added sign-in through the browser: `mobiscroll login` and `mobiscroll config` open mobiscroll.com, you approve the sign-in there, and the CLI continues signed in. No password is typed in the terminal.
+- We added sign-in through the browser: `mobiscroll login` and `mobiscroll config` print a link to mobiscroll.com, you approve the sign-in there, and the CLI continues signed in. No password is typed in the terminal. In a terminal, press Enter to open the link; when an AI agent runs the CLI (or with `--yes`), the browser opens right away and the CLI says that a person must approve.
 - On the approve page a team member can sign in as the team npm user (preselected when the team has one) or as themselves. A team npm user's token keeps working when that person leaves.
 - We added the `--password` flag for the previous user name and password (or team secret) login.
 - We added the `-y, --yes` flag: the CLI never asks a question, uses the default answer or stops with a message naming the flag to add. When your licence doesn't cover the framework, it installs the trial and says so. This is automatic when there is no terminal, for example when an AI agent runs the CLI.

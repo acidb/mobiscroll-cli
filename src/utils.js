@@ -449,11 +449,13 @@ function browserLogin(useGlobalNpmrc, proxy, options) {
       openBrowser: !process.env.CI,
       cliVersion: require('../package.json').version,
       noWait: !!options.noWait,
+      // A person in a terminal opens the browser with Enter; agents and --yes get it opened right away
+      askFirst: options.nonInteractive === false,
     })
     .then((result) => {
       if (result.pending) {
         printFeedback(
-          `Approve the sign-in in the browser, then run the same command again: it picks up this sign-in. It expires in 10 minutes.\n`,
+          `After the approval, run the same command again: it picks up this sign-in and continues. The link expires in 10 minutes.\n`,
         );
         // --no-wait: the user asked the CLI to stop here. Exit once the output is written (stdout can be a pipe).
         process.stdout.write('', () => process.exit(0));

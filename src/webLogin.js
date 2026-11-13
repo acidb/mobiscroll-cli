@@ -110,22 +110,71 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function printSignIn(signIn) {
-  console.log(
-    '\n' +
-      chalk.bold.cyan('Sign in to Mobiscroll in your browser:') +
-      '\n\n  ' +
-      signIn.loginUrl +
-      '\n\n' +
-      (signIn.code ? `Check that the page shows the code ${chalk.bold(signIn.code)}, then approve.` : 'Approve the sign-in on that page.') +
-      (signIn.deviceUrl && signIn.code ? `\nOr open ${signIn.deviceUrl} on any device and type the code ${chalk.bold(signIn.code)}.` : ''),
-  );
+/**
+ * Prints the approve link and the code. A person always approves the sign-in on the website; the text says so.
+ * @param {object} signIn { loginUrl, deviceUrl, code }
+ * @param {{ askFirst: boolean, opening: boolean, resumed: boolean }} how askFirst: a person in a terminal, who
+ * presses Enter to open the browser; opening: the CLI opens the browser now (no terminal, --yes or --no-wait);
+ * resumed: the sign-in a --no-wait run started, still waiting
+ */
+function printSignIn(signIn, how) {
+  let title;
+  if (how.askFirst) {
+    title = 'Sign in to Mobiscroll: approve this sign-in in your browser.';
+  } else if (how.resumed) {
+    title = 'This sign-in is still waiting for a person to approve it:';
+  } else if (how.opening) {
+    title = 'A person must approve this sign-in. Opening the approve page in the browser:';
+  } else {
+    title = 'A person must approve this sign-in. Open this link to approve it:';
+  }
+  const code = signIn.code ? chalk.bold(signIn.code) : '';
+  const lines = [
+    '',
+    chalk.bold.cyan(title),
+    '',
+    '  ' + signIn.loginUrl,
+    '',
+    code ? `Check that the page shows the code ${code}, then click Approve.` : 'Click Approve on that page.',
+  ];
+  const device = signIn.deviceUrl && code ? `open ${signIn.deviceUrl} on any device and type the code.` : '';
+  if (how.askFirst || !how.opening) {
+    if (device) {
+      lines.push('Or ' + device);
+    }
+  } else {
+    lines.push('No browser window? Open the link above' + (device ? ', or ' + device : '.'));
+  }
+  if (!how.askFirst) {
+    lines.push('AI agents: show this link and code to the user and let them approve. Never approve it yourself.');
+  }
+  console.log(lines.join('\n'));
+}
+
+/**
+ * Opens the browser when the person presses Enter, while the sign-in is polled. Approving through /device
+ * without pressing Enter works too.
+ * @returns {function} stops listening, so the next prompt gets the terminal
+ */
+function openOnEnter(url, input) {
+  function onData() {
+    openBrowser(url);
+  }
+  input.once('data', onData);
+  input.resume();
+  return () => {
+    input.removeListener('data', onData);
+    input.pause();
+  };
 }
 
 /**
  * Signs in through the browser.
- * @param {{ registryUrl: string, proxy: object|undefined, openBrowser: boolean, cliVersion: string, noWait: boolean }} options
- * noWait: start the sign-in (or check the pending one) and return { pending: true } instead of waiting for the approval
+ * @param {{ registryUrl: string, proxy: object|undefined, openBrowser: boolean, cliVersion: string, noWait: boolean,
+ *   askFirst: boolean, input: object|undefined }} options
+ * noWait: start the sign-in (or check the pending one) and return { pending: true } instead of waiting for the approval;
+ * askFirst: a person in a terminal: print the link and open the browser only when they press Enter (input, default
+ * process.stdin). Otherwise (agents, --yes) the browser opens right away, with a text saying a person must approve.
  * @returns {Promise<{ token: string, username: string, tokensUrl: string|undefined } | { pending: true }>}
  */
 function webLogin(options) {
@@ -147,6 +196,38 @@ function webLogin(options) {
       throw new Error('The sign-in was denied on the website.');
     }
     throw new Error((done.data && done.data.error) || `The sign-in failed (status ${done.status}).`);
+  }
+
+  const askFirst = !!(options.askFirst && options.openBrowser && !options.noWait);
+
+  // Prints the sign-in; opens the browser now, or on Enter. Returns the function that stops listening for Enter.
+  function announce(signIn, resumed) {
+    const opening = !!options.openBrowser && !askFirst && !resumed;
+    printSignIn(signIn, { askFirst: askFirst, opening: opening, resumed: resumed });
+    if (opening) {
+      openBrowser(signIn.loginUrl);
+    }
+    if (askFirst) {
+      console.log('\nPress Enter to open the link in your browser. Waiting for the approval...');
+      return openOnEnter(signIn.loginUrl, options.input || process.stdin);
+    }
+    if (!options.noWait) {
+      console.log('Waiting for the approval...');
+    }
+    return () => {};
+  }
+
+  function waitAndStop(doneUrl, deadline, loginUrl, stop) {
+    return waitForApproval(doneUrl, deadline, loginUrl).then(
+      (signedIn) => {
+        stop();
+        return signedIn;
+      },
+      (err) => {
+        stop();
+        throw err;
+      },
+    );
   }
 
   function waitForApproval(doneUrl, deadline, loginUrl) {
@@ -201,16 +282,12 @@ function webLogin(options) {
         code: resp.data.code,
         expiresAt: Date.now() + pendingMs,
       };
-      printSignIn(signIn);
-      if (options.openBrowser) {
-        openBrowser(signIn.loginUrl);
-      }
+      const stop = announce(signIn, false);
       if (options.noWait) {
         savePending(signIn);
         return { pending: true };
       }
-      console.log('Waiting for the approval...');
-      return waitForApproval(signIn.doneUrl, Date.now() + maxWaitMs, signIn.loginUrl);
+      return waitAndStop(signIn.doneUrl, Date.now() + maxWaitMs, signIn.loginUrl, stop);
     });
   }
 
@@ -222,12 +299,12 @@ function webLogin(options) {
   // A --no-wait run started this sign-in: collect it, keep waiting for it, or start a new one if it is over
   return check(pending.doneUrl).then((done) => {
     if (done.status === 202) {
-      printSignIn(pending);
+      // Not opened again: the run that started it did that. A person in a terminal can still press Enter.
+      const stop = announce(pending, true);
       if (options.noWait) {
         return { pending: true };
       }
-      console.log('Waiting for the approval...');
-      return waitForApproval(pending.doneUrl, pending.expiresAt + 60 * 1000, pending.loginUrl).then(
+      return waitAndStop(pending.doneUrl, pending.expiresAt + 60 * 1000, pending.loginUrl, stop).then(
         (signedIn) => {
           clearPending();
           return signedIn;
