@@ -95,7 +95,7 @@ function openBrowser(url) {
 }
 
 /**
- * The website's npm access tokens page, on the same site as the approve link (the registry's webUrl: prod, staging or a
+ * The website's Access Tokens page, on the same site as the approve link (the registry's webUrl: prod, staging or a
  * local website). Undefined if the link isn't a URL.
  */
 function tokensUrlFrom(loginUrl) {

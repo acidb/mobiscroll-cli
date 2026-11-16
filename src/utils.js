@@ -6,7 +6,7 @@ const execSync = require('child_process').execSync;
 // Switch back to 'https://npm.mobiscroll.com' before releasing.
 const mbscNpmUrl = 'https://npmdev.mobiscroll.com';
 const mbscApiUrlBase = 'https://api.mobiscroll.com';
-// The website's npm access tokens page, when the registry doesn't say where it is (an older registry, --password login).
+// The website's Access Tokens page, when the registry doesn't say where it is (an older registry, --password login).
 // The browser sign-in and the logout take it from the registry, so a dev or staging registry points to its own website.
 const defaultTokensUrl = 'https://mobiscroll.com/account/tokens';
 // the token row of the registry in use (mbscNpmUrl)
@@ -483,7 +483,7 @@ function browserLogin(useGlobalNpmrc, proxy, options) {
  * machines). A ${VAR} reference is not a token of this machine, so it is left alone.
  * @returns {Promise<{ teamToken: boolean, tokensUrl: string }>} never rejects; teamToken is true when the registry says
  * the token is a team npm user's and so still works (an older registry doesn't say: false); tokensUrl is the website's
- * npm access tokens page as the registry gives it, or defaultTokensUrl
+ * Access Tokens page as the registry gives it, or defaultTokensUrl
  */
 function cancelRegistryToken(npmrcPath, proxy) {
   const token = npmToken.tokenFromNpmrc(npmrcPath, mbscNpmUrl, true);
