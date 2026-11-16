@@ -39,7 +39,7 @@ mobiscroll login
 mobiscroll logout
 ```
 
-Signs you in to the Mobiscroll npm registry, or signs you out. Each sign-in creates a token in the project's `.npmrc` (or the global one with `-g`). Tokens don't expire: see and cancel them at [mobiscroll.com/account/tokens](https://mobiscroll.com/account/tokens). `mobiscroll logout` also cancels your token. To sign in with your user name and password (or the team npm user secret) in the terminal instead of the browser, add `--password`.
+Signs you in to the Mobiscroll npm registry, or signs you out. Each sign-in creates a token in the project's `.npmrc` (or the global one with `-g`). Tokens don't expire: see and cancel them at [mobiscroll.com/account/tokens](https://mobiscroll.com/account/tokens). `mobiscroll logout` also cancels your token. To sign in with your user name and password (or the team npm user secret) in the terminal instead of the browser, add `--password`. If you commit the project's `.npmrc`, installs work for everyone out of the box, but anyone who can read the repository can use the token; for other setups see [Using the npm auth token securely](https://mobiscroll.com/docs/javascript/guides/npm-auth-token). With `-g`, the CLI doesn't touch the project's `.npmrc`; if that file has a token, npm keeps using it, and the CLI warns you.
 
 ```bash
 mobiscroll start <type> [name]

@@ -170,7 +170,7 @@ Installs and configures Mobiscroll in an existing project.
 | `--proxy <url>` | HTTP proxy, supports auth: `protocol://user:pass@host:port` |
 | `--scss` / `--css` | Force stylesheet format (skips interactive prompt) |
 | `--legacy-peer-deps` | Passes `--legacy-peer-deps` to npm install |
-| `-g, --global` | Write auth to global `~/.npmrc` instead of local `.npmrc` |
+| `-g, --global` | Write auth to the user-level `~/.npmrc` instead of the project's `.npmrc`; the project file is not touched |
 | `--password` | Old user name + password (or team secret) prompt instead of the browser sign-in |
 | `--no-wait` | Start the browser sign-in, print the link and code, and exit 0. The next run picks the sign-in up (see Authentication flow) |
 | `-y, --yes` | Program-level: never prompt. Automatic when stdin/stdout is not a TTY (AI agents, scripts) |
@@ -187,7 +187,7 @@ Installs and configures Mobiscroll in an existing project.
 
 ### `mobiscroll login`
 
-Authenticates with the Mobiscroll npm registry through the browser (see Authentication flow). Saves auth token to `.npmrc` (and `.yarnrc.yml` for Yarn 2+ projects). Use `-g` to write to global config. Flags: `--password`, `--no-wait`, `--proxy`. To sign in as the team npm user, pick it on the approve page.
+Authenticates with the Mobiscroll npm registry through the browser (see Authentication flow). Saves auth token to `.npmrc` (and `.yarnrc.yml` for Yarn 2+ projects). Use `-g` to write to global config. Flags: `--password`, `--no-wait`, `--proxy`. To sign in as the team npm user, pick it on the approve page. After saving to the project's `.npmrc`, it prints a note that committing the file shares the token. After a `-g` login, it warns when the project's `.npmrc` still has a token (npm uses that one).
 
 ---
 

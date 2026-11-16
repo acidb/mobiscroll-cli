@@ -108,6 +108,27 @@ function clearPendingState() {
   fs.writeFileSync(stateFile, JSON.stringify(state));
 }
 
+// A browser sign-in through utils.login, run in `dir` (-g or not): resolves the printed output
+function browserLoginIn(dir, useGlobalNpmrc, framework) {
+  const cwd = process.cwd();
+  process.chdir(dir);
+  answers = [
+    { status: 200, data: { loginUrl: 'https://mobiscroll.com/cli/approve/abc', doneUrl: utils.npmUrl + '/-/v1/done/xyz', code: 'WDJB-MJHT' } },
+    { status: 200, data: { token: 'TOKEN-VALUE', username: 'anna@acme.com' } },
+  ];
+  printed.length = 0;
+  return utils.login(useGlobalNpmrc, undefined, { nonInteractive: true, framework }).then(
+    () => {
+      process.chdir(cwd);
+      return printed.join('\n');
+    },
+    (err) => {
+      process.chdir(cwd);
+      throw err;
+    },
+  );
+}
+
 function reset() {
   requests.length = 0;
   executed.length = 0;
@@ -490,6 +511,77 @@ const cases = [
         assert.ok(out.indexOf('Run the command again') === -1, 'no need to run the command again');
         assert.ok(out.indexOf('TOKEN-VALUE') === -1, 'token never printed');
       });
+    },
+  },
+  {
+    name: 'login -g: warns when the project .npmrc still has a token (npm uses that one), never prints it',
+    run: () => {
+      const registryHost = utils.npmUrl.replace(/^https?:\/\//, '');
+      const project = path.join(tmpRoot, 'shadow-project');
+      fs.mkdirSync(project, { recursive: true });
+      const npmrc = path.join(project, '.npmrc');
+      const before = '@mobiscroll:registry=' + utils.npmUrl + '\n//' + registryHost + '/:_authToken=OLD-PROJECT-TOKEN\n';
+      fs.writeFileSync(npmrc, before);
+      return browserLoginIn(project, true, 'react').then((out) => {
+        assert.ok(out.indexOf('Please Note:') !== -1 && out.indexOf(npmrc) !== -1, 'warns and names the project file');
+        assert.ok(out.indexOf('//' + registryHost + '/:_authToken') !== -1, 'names the line to remove');
+        assert.ok(out.indexOf('OLD-PROJECT-TOKEN') === -1 && out.indexOf('TOKEN-VALUE') === -1, 'no token printed');
+        assert.ok(out.indexOf('If you commit that file') === -1, 'no commit note for a -g login');
+        assert.strictEqual(fs.readFileSync(npmrc, 'utf8'), before, 'the project file is not touched');
+      });
+    },
+  },
+  {
+    name: 'login -g: a ${MOBISCROLL_NPM_TOKEN} reference in the project .npmrc also gets the warning',
+    run: () => {
+      const registryHost = utils.npmUrl.replace(/^https?:\/\//, '');
+      const project = path.join(tmpRoot, 'shadow-ref-project');
+      fs.mkdirSync(project, { recursive: true });
+      fs.writeFileSync(path.join(project, '.npmrc'), '//' + registryHost + '/:_authToken=${MOBISCROLL_NPM_TOKEN}\n');
+      return browserLoginIn(project, true).then((out) => {
+        assert.ok(out.indexOf('Please Note:') !== -1, 'warns');
+      });
+    },
+  },
+  {
+    name: 'login -g: no warning without a project token for this registry',
+    run: () => {
+      const empty = path.join(tmpRoot, 'no-npmrc-project');
+      fs.mkdirSync(empty, { recursive: true });
+      const other = path.join(tmpRoot, 'other-registry-project');
+      fs.mkdirSync(other, { recursive: true });
+      fs.writeFileSync(path.join(other, '.npmrc'), '//registry.example.com/:_authToken=OTHER\n');
+      return browserLoginIn(empty, true)
+        .then((out) => {
+          assert.ok(out.indexOf('Please Note:') === -1, 'no project .npmrc: no warning');
+          return browserLoginIn(other, true);
+        })
+        .then((out) => {
+          assert.ok(out.indexOf('Please Note:') === -1, 'another registry only: no warning');
+        });
+    },
+  },
+  {
+    name: 'project login: the note on committing .npmrc, with the framework docs link, and no warning',
+    run: () => {
+      const project = path.join(tmpRoot, 'note-project');
+      fs.mkdirSync(project, { recursive: true });
+      // a token in ~/.npmrc doesn't matter: the project's new one wins
+      const registryHost = utils.npmUrl.replace(/^https?:\/\//, '');
+      fs.writeFileSync(path.join(home, '.npmrc'), '//' + registryHost + '/:_authToken=USER-LEVEL\n');
+      return browserLoginIn(project, false, 'vue')
+        .then((out) => {
+          assert.ok(out.indexOf("The token is saved in this project's .npmrc. If you commit that file") !== -1, 'the note');
+          assert.ok(out.indexOf('https://mobiscroll.com/docs/vue/guides/npm-auth-token') !== -1, 'the framework docs link');
+          assert.ok(out.indexOf('Please Note:') === -1, 'no warning');
+          assert.ok(out.indexOf('TOKEN-VALUE') === -1 && out.indexOf('USER-LEVEL') === -1, 'no token printed');
+          // a plain `mobiscroll login` has no framework: the JavaScript page
+          return browserLoginIn(project, false);
+        })
+        .then((out) => {
+          fs.unlinkSync(path.join(home, '.npmrc'));
+          assert.ok(out.indexOf('https://mobiscroll.com/docs/javascript/guides/npm-auth-token') !== -1, 'the JavaScript docs link');
+        });
     },
   },
   {

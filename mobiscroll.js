@@ -825,7 +825,7 @@ function handleLogout() {
 program
   .option(
     '-g, --global',
-    "Modify the Mobiscroll npm login credentials save/use location to the global .npmrc file. Starting from cli v0.6.0 by default it is saved in the application's directory.",
+    "Save and use the login in your user-level ~/.npmrc instead of the project's .npmrc. npm still prefers a token in the project's .npmrc.",
     handleGlobalInstall,
   )
   .option('-y, --yes', 'Never ask questions (automatic without a terminal)', handleYes)

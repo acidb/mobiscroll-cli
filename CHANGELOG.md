@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `mobiscroll logout` now also cancels the token on the registry (personal tokens only), not just in the `.npmrc`.
 - Each sign-in creates its own token, and tokens don't expire. You can see and cancel your tokens on the Access Tokens page (https://mobiscroll.com/account/tokens); the CLI prints the link after login and logout.
 - Without an account, you can start a free trial on the sign-in page, then approve.
+- After a login with `-g`, the CLI warns when the project's `.npmrc` still has a Mobiscroll token, because npm uses that one in the project.
+- After a login saved to the project's `.npmrc`, the CLI notes that committing the file shares the token, and links the other setups.
 
 ### Changed
 

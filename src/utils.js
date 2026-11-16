@@ -421,9 +421,10 @@ function syncTokenToYarnrc(useGlobalNpmrc) {
  * .npmrc, or the user-level one with -g.
  * @param {boolean} useGlobalNpmrc
  * @param {string} proxy
- * @param {{ password: boolean, noWait: boolean, nonInteractive: boolean }} options password: the old
+ * @param {{ password: boolean, noWait: boolean, nonInteractive: boolean, framework: string }} options password: the old
  * username/password prompt instead of the browser sign-in; noWait: print the
- * link and stop (the next run picks the sign-in up); nonInteractive: --yes or no terminal
+ * link and stop (the next run picks the sign-in up); nonInteractive: --yes or no terminal; framework: the config
+ * type when known (only for the docs link in the note after the login)
  * @returns {Promise<string>} the user name (with noWait and no approval yet, the process ends instead)
  */
 function login(useGlobalNpmrc, proxy, options) {
@@ -436,9 +437,51 @@ function login(useGlobalNpmrc, proxy, options) {
         )} to sign in through the browser.`,
       );
     }
-    return passwordLogin(useGlobalNpmrc, proxy);
+    return passwordLogin(useGlobalNpmrc, proxy, options.framework);
   }
   return browserLogin(useGlobalNpmrc, proxy, options);
+}
+
+// "Using the npm auth token securely" in the docs (environment variable, CI, the user-level ~/.npmrc), for the
+// framework when the command knows it (config), else the JavaScript one
+function npmTokenDocsUrl(framework) {
+  const docsFramework = ['javascript', 'jquery', 'angular', 'react', 'vue'].indexOf(framework) !== -1 ? framework : 'javascript';
+  return `https://mobiscroll.com/docs/${docsFramework}/guides/npm-auth-token`;
+}
+
+/**
+ * After a login saved the token. To the project's .npmrc: a note that committing the file shares the token.
+ * To ~/.npmrc (-g): a warning when the project's .npmrc (or the monorepo root's) still has a token line for the
+ * registry, because npm, pnpm and Yarn 1 use the project's one, so the new login has no effect in this project.
+ * A ${MOBISCROLL_NPM_TOKEN} reference counts as a token line too. Never prints the token.
+ * @param {boolean} useGlobalNpmrc
+ * @param {string} [framework] the config type, for the docs link
+ */
+function afterTokenSaved(useGlobalNpmrc, framework) {
+  if (!useGlobalNpmrc) {
+    console.log(
+      chalk.gray(
+        `  The token is saved in this project's .npmrc. If you commit that file, installs work for everyone out of the box, but anyone who can read the repository can use the token. Other setups: ${npmTokenDocsUrl(
+          framework,
+        )}\n`,
+      ),
+    );
+    return;
+  }
+  const currDir = process.cwd();
+  const monorepoRoot = findMonorepoRoot(currDir);
+  const dirs = monorepoRoot && monorepoRoot !== currDir ? [currDir, monorepoRoot] : [currDir];
+  const projectNpmrc = dirs
+    .map((dir) => path.resolve(dir, '.npmrc'))
+    .find((file) => npmToken.tokenFromNpmrc(file, mbscNpmUrl, true));
+  if (projectNpmrc) {
+    const host = mbscNpmUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    console.log(
+      `${chalk.yellow('Please Note:')} this project's .npmrc (${projectNpmrc}) also has a Mobiscroll npm token, and npm uses that one in this project, not the one you just saved to ~/.npmrc. To use the new login here, remove the ${chalk.gray(
+        `//${host}/:_authToken`,
+      )} line from that file.\n`,
+    );
+  }
 }
 
 function browserLogin(useGlobalNpmrc, proxy, options) {
@@ -466,6 +509,7 @@ function browserLogin(useGlobalNpmrc, proxy, options) {
       printFeedback('Successful login!');
       console.log(`  Your tokens: ${result.tokensUrl || defaultTokensUrl}\n`);
       syncTokenToYarnrc(useGlobalNpmrc);
+      afterTokenSaved(useGlobalNpmrc, options.framework);
       return result.username;
     })
     .catch((err) => {
@@ -514,7 +558,7 @@ function cancelRegistryToken(npmrcPath, proxy) {
   );
 }
 
-function passwordLogin(useGlobalNpmrc, proxy) {
+function passwordLogin(useGlobalNpmrc, proxy, framework) {
   // input questions
   var questions = [
     {
@@ -556,6 +600,7 @@ function passwordLogin(useGlobalNpmrc, proxy) {
             printFeedback('Successful login!');
             console.log(`  Your tokens: ${defaultTokensUrl}\n`);
             syncTokenToYarnrc(useGlobalNpmrc);
+            afterTokenSaved(useGlobalNpmrc, framework);
             resolve(answers.username);
           })
           .catch((error) => {
@@ -894,7 +939,7 @@ module.exports = {
             return userName;
           }
           console.log(`  Logging in to the Mobiscroll NPM registry...`);
-          return login(useGlobalNpmrc, proxy, options);
+          return login(useGlobalNpmrc, proxy, Object.assign({}, options, { framework }));
         },
         (err) => {
           console.log('Login error' + err);
