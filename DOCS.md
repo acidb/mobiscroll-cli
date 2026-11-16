@@ -1,6 +1,6 @@
 # Mobiscroll CLI — Internal Team Documentation
 
-**Package:** `@mobiscroll/cli` · **Current version:** 1.17.0 · **Published to:** npmjs.com (public)
+**Package:** `@mobiscroll/cli` · **Current version:** 2.0.0 · **Published to:** npmjs.com (public)
 
 This document is the starting point for anyone on the team working on the CLI — new contributors, reviewers, or anyone shipping a release.
 
