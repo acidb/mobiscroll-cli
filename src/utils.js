@@ -873,13 +873,13 @@ function printTrialStatus(data) {
     printWarning(
       `Your account hasn't started a free trial yet, so the trial package will show "Trial not found" in your app. Start the trial (sign in with the same account): ${chalk.gray(
         'https://mobiscroll.com/accounttrialstarter',
-      )}, then reload your app. Just started one? It can take a few minutes to show up here.`,
+      )}, then reload your app. Already started it? Your app works right away; this message can still show here for a few minutes.`,
     );
   } else if (data.Trial === 'expired') {
     printWarning(
-      `Your free trial ended${end ? ' on ' + end : ''}, so the trial package won't work in your app. Contact us to extend it: ${chalk.gray(
-        'https://mobiscroll.com/contact',
-      )}, or buy a license: ${chalk.gray('https://mobiscroll.com/pricing')}`,
+      `Your free trial ended${end ? ' on ' + end : ''}, so the trial package won't work in your app. To extend it, write to us at ${chalk.gray(
+        'support@mobiscroll.com',
+      )} or go to ${chalk.gray('https://mobiscroll.com/contact')}. Or buy a license: ${chalk.gray('https://mobiscroll.com/pricing')}`,
     );
   } else if (data.Trial === 'active' && end) {
     printFeedback(`Your free trial is active until ${end}.`);

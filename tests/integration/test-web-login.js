@@ -608,6 +608,7 @@ const cases = [
       const out = printed.join('\n');
       assert.ok(out.indexOf('Trial not found') !== -1, out);
       assert.ok(out.indexOf('https://mobiscroll.com/accounttrialstarter') !== -1, out);
+      assert.ok(out.indexOf('Your app works right away') !== -1, out);
       assert.ok(out.indexOf('few minutes') !== -1, out);
     },
   },
@@ -617,6 +618,7 @@ const cases = [
       utils.printTrialStatus({ Trial: 'expired', TrialValid: '2026-01-15T12:00:00.000Z' });
       const out = printed.join('\n');
       assert.ok(out.indexOf('ended on January 15, 2026') !== -1, out);
+      assert.ok(out.indexOf('support@mobiscroll.com') !== -1, out);
       assert.ok(out.indexOf('https://mobiscroll.com/contact') !== -1, out);
       assert.ok(out.indexOf('https://mobiscroll.com/pricing') !== -1, out);
       assert.ok(out.indexOf('accounttrialstarter') === -1, 'no trial start link for an expired trial');
