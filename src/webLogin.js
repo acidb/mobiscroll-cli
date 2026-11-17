@@ -38,7 +38,8 @@ function writeState(state) {
 }
 
 /**
- * A random id kept in ~/.mobiscroll/cli.json. A new sign-in from the same machine cancels the previous token.
+ * A random id kept in ~/.mobiscroll/cli.json, stored with each sign-in and token on the registry (CliSignIn, NpmSecret).
+ * It doesn't cancel anything: each sign-in creates its own token.
  */
 function getMachineId() {
   const state = readState();

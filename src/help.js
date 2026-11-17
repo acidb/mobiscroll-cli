@@ -36,6 +36,7 @@ module.exports = {
   main: (program) =>
     [
       'Usage: mobiscroll <command> [options]\n',
+      "Installs and configures Mobiscroll UI components. Mobiscroll Connect doesn't use the CLI.\n",
       section(
         'Commands',
         rows(program.commands.map((c) => [usages[c._name] || c._name, c._description.trim()])),

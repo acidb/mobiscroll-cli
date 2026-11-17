@@ -260,7 +260,7 @@ const cases = [
     run: () => {
       answers = [
         { status: 200, data: { loginUrl: 'https://mobiscroll.com/cli/approve/a', doneUrl: 'https://npm.mobiscroll.com/-/v1/done/b' } },
-        { status: 410, data: { error: 'The sign-in expired. Start it again.' } },
+        { status: 410, data: { error: 'The sign-in expired. Run the command again.' } },
       ];
       return webLogin.webLogin({ registryUrl: 'https://npm.mobiscroll.com', cliVersion: '9.9.9' }).then(
         () => assert.fail('should be rejected'),
@@ -361,7 +361,7 @@ const cases = [
     run: () => {
       writePending({});
       answers = [
-        { status: 410, data: { error: 'The sign-in expired. Start it again.' } },
+        { status: 410, data: { error: 'The sign-in expired. Run the command again.' } },
         { status: 200, data: { loginUrl: 'https://mobiscroll.com/cli/approve?id=new', doneUrl: 'https://npm.mobiscroll.com/-/v1/done/new', code: 'NEWW-NEWW' } },
       ];
       return webLogin

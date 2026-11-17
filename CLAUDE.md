@@ -6,7 +6,7 @@
 
 **Main commands:**
 
-- `mobiscroll config <type>` — installs Mobiscroll packages and configures the project
+- `mobiscroll config <type>` — installs Mobiscroll UI packages and configures the project (agents: `--yes --no-wait`)
 - `mobiscroll login` / `logout` — browser sign-in (or `--password`), credentials in `.npmrc` / `.yarnrc.yml`; logout also cancels the token on the registry
 - `mobiscroll start <type> [name]` — clones a Mobiscroll starter/demo project
 
@@ -19,7 +19,7 @@
 - **Runtime:** Node.js (plain JavaScript, no TypeScript, ES6 target)
 - **CLI parsing:** `commander` ^2.19.0
 - **Interactive prompts:** `inquirer` ^8.1.0
-- **HTTP:** `axios` 1.13.6 (Mobiscroll API calls)
+- **HTTP:** `axios` ^1.16.0 (registry and Mobiscroll API calls)
 - **Terminal output:** `chalk` ^2.4.1, `figlet` ^1.2.1, `terminal-link` ^1.2.0
 - **File utilities:** `ncp` ^2.0.0 (recursive copy), `js-yaml` ^4.1.0
 - **Versioning:** `semver` ^6.3.0
@@ -103,7 +103,7 @@ Before publishing: bump the version in `package.json` and update `CHANGELOG.md`.
 | ------------------------------------------------------------ | --------------------------------------------------------------- | ------------------------------- |
 | `run(cmd, silent, returnOutput, ignoreError)`                | Wraps `child_process.exec` as a Promise                         |
 | `installMobiscroll(settings, callback)`                      | Builds the full install command string, runs it                 |
-| `checkMbscNpmLogin(...)`                                     | Verifies auth token via Mobiscroll API, prompts login if needed |
+| `checkMbscNpmLogin(...)`                                     | Signs in (browser, or `--password`) if needed, then checks the licence on the registry (Mobiscroll API as fallback) |
 | `findMonorepoRoot(dir)`                                      | Traverses up to 5 levels looking for workspace root             |
 | `testPnpm(dir)` / `testYarn(dir)`                            | Detects package manager from lock files                         |
 | `getMainAngularVersion(packageJson)`                         | Returns major Angular version from dependencies                 |
@@ -173,7 +173,7 @@ Yarn v2+ uses `.yarnrc.yml` instead of `.npmrc`. The CLI syncs the auth token in
 
 ## External APIs
 
-- **Mobiscroll API:** `https://api.mobiscroll.com/api/` — used to verify user access and get latest Mobiscroll version
+- **Mobiscroll API:** `https://api.mobiscroll.com/api/` — fallback licence check when no token can be read; latest Mobiscroll version
 - **Mobiscroll npm registry:** `https://npm.mobiscroll.com` — scoped to `@mobiscroll` packages, requires auth token in `.npmrc`
 
 ---
@@ -184,9 +184,12 @@ The integration tests stub `child_process` and `axios` before requiring `utils.j
 
 ```bash
 node tests/integration/test-install-commands.js
+node tests/integration/test-version-resolution.js
+node tests/integration/test-web-login.js
+node tests/integration/test-help.js
 ```
 
-There are no unit test files beyond this. When changing install command logic, expand the test matrix to cover the new cases.
+`test-web-login.js` covers the browser sign-in, the token reading, the licence check and the trial status; `test-help.js` the `--help` screens. When changing install command logic, expand the test matrix to cover the new cases.
 
 ---
 
@@ -207,7 +210,7 @@ There are no unit test files beyond this. When changing install command logic, e
 These must always hold. If a change would break one, stop and reconsider.
 
 - **Auth token is never logged or printed.** The token from `.npmrc` is read and passed internally but must never appear in `console.log`, error messages, or feedback strings.
-- **`process.exit()` is only called from `printError()` or after a deliberate user action** (update accepted, login completed). Never call it mid-flow to handle a recoverable error.
+- **`process.exit()` is only called from `printError()` or after a deliberate user action** (update accepted, login completed), or after `--no-wait` printed the sign-in link (exit 0, by design). Never call it mid-flow to handle a recoverable error.
 - **`.npmrc` and `.yarnrc.yml` are always kept in sync.** Any function that writes a token to `.npmrc` must also call `updateAuthTokenInYarnrc()` if `.yarnrc.yml` exists. Any function that removes it must pass `remove=true`.
 - **The `settings` object is the single source of truth for a command invocation.** Module-level variables (`isTrial`, `isLite`, etc.) in `mobiscroll.js` are set once during option parsing and then written into `settings` before being passed down — never read them directly inside `src/` files.
 - **`installMobiscroll()` must never mutate the user's project files.** It only constructs and executes the install command. File modifications happen in `configAngular.js` / `configIonic.js` after the install resolves.

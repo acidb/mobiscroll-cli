@@ -857,7 +857,7 @@ const proxyOptionText = 'Pass a proxy URL which will be passed to the internal r
 const configCommand = program
   .command('config [types]')
   .description(
-    `Configures your current project with the Mobiscroll resources and dependencies. For more information run the ${chalk.gray(
+    `Installs and configures Mobiscroll UI in your current project, signing you in first if needed. For more information run the ${chalk.gray(
       'mobiscroll config --help',
     )} command.\n`,
   )
@@ -910,14 +910,16 @@ loginCommand.helpInformation = () => help.login(loginCommand);
 
 const logoutCommand = program
   .command('logout')
-  .description('Logs you out from the Mobiscroll npm registry. (Use the --global flag if you want to log out globally).\n')
+  .description(
+    "Logs you out from the Mobiscroll npm registry and cancels your token (a team npm user's token is only removed from the file). (Use the --global flag if you want to log out globally).\n",
+  )
   .option('--proxy [proxy]', proxyOptionText, handleProxy)
   .action(handleLogout);
 logoutCommand.helpInformation = () => help.logout(logoutCommand);
 
 const startCommand = program
   .command('start [types] [name]')
-  .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
+  .description(`Creates a new Mobiscroll UI starter project and installs the Mobiscroll UI packages from npm.`)
   .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
   .option('--password', passwordOptionText, handlePasswordLogin)
   .option('--proxy [proxy]', proxyOptionText, handleProxy)

@@ -26,7 +26,7 @@ This document is the starting point for anyone on the team working on the CLI �
 
 ## What the CLI does
 
-The CLI's job is to get Mobiscroll installed and configured in a customer's project in one command. It:
+The CLI's job is to get Mobiscroll UI installed and configured in a customer's project in one command. It:
 
 - Authenticates the customer with the Mobiscroll npm registry (`npm.mobiscroll.com`)
 - Checks their license with the Mobiscroll npm registry (falling back to the Mobiscroll API) and gets the correct package name/version
@@ -90,7 +90,10 @@ mobiscroll-cli/
 │   └── normalize-line-endings.js   # Prepublish hook: CRLF → LF on mobiscroll.js
 └── tests/
     └── integration/
-        └── test-install-commands.js
+        ├── test-install-commands.js
+        ├── test-version-resolution.js
+        ├── test-web-login.js
+        └── test-help.js
 ```
 
 **One-line role for each key file:**
@@ -102,6 +105,9 @@ mobiscroll-cli/
 | `src/configAngular.js` | Everything Angular touches on disk |
 | `src/configIonic.js` | Everything Ionic touches on disk |
 | `src/helperMessages.js` | Output strings only, no side effects |
+| `src/webLogin.js` | Browser sign-in (npm web login on the registry), `--no-wait`, machine id |
+| `src/token.js` | Reads the npm token from `.npmrc` / `.yarnrc.yml` (never prints it) |
+| `src/help.js` | The `--help` screens |
 
 ---
 
@@ -112,10 +118,10 @@ All dependencies are runtime (no separate devDependencies). Here's what each one
 | Package | Version | Role | Where used |
 |---|---|---|---|
 | **commander** | `^2.19.0` | CLI skeleton — parses commands, subcommands, options, and flags | `mobiscroll.js` — all command/option definitions |
-| **inquirer** | `^8.1.0` | Interactive terminal prompts (username/password inputs, yes/no confirmations, select lists) | `mobiscroll.js`, `src/utils.js` — login prompts, SCSS/CSS choice, overwrite confirmations |
+| **inquirer** | `^8.1.0` | Interactive terminal prompts (yes/no confirmations, select lists, the `--password` login) | `mobiscroll.js`, `src/utils.js` — login prompts, SCSS/CSS choice, overwrite confirmations |
 | **chalk** | `^2.4.1` | Terminal colors and text styling (green success, red errors, yellow warnings) | `src/utils.js` — `printFeedback`, `printWarning`, `printError`, `printLog` helpers |
 | **figlet** | `^1.2.1` | ASCII art banner printed at CLI startup | `mobiscroll.js` — the "Mobiscroll" header shown on every run |
-| **axios** | `1.13.6` | HTTP client for the registry and Mobiscroll API calls (browser sign-in, license check, version fetch) | `src/webLogin.js`; `src/utils.js` — `getApiKey()`, `getMobiscrollVersion()` |
+| **axios** | `^1.16.0` | HTTP client for the registry and Mobiscroll API calls (browser sign-in, license check, version fetch) | `src/webLogin.js`; `src/utils.js` — `getApiKey()`, `getMobiscrollVersion()` |
 | **js-yaml** | `^4.1.0` | Parses and writes `.yarnrc.yml` for Yarn 2+ auth token sync | `src/utils.js` — `updateAuthTokenInYarnrc()` |
 | **semver** | `^6.3.0` | Compares and validates version strings to decide which package variant to install | `src/utils.js` — v5 vs v6 branching, Angular/React version checks in install logic |
 | **ncp** | `^2.0.0` | Recursively copies directory trees (used for `--no-npm` resource template copying) | `src/utils.js` — `packMobiscroll()` |
@@ -166,7 +172,7 @@ Installs and configures Mobiscroll in an existing project.
 | `-t, --trial` | Install trial/evaluation configuration |
 | `-i, --lite` | Install lite variant (fewer components) |
 | `-n, --no-npm` | Skip npm install; expect files at `src/lib/mobiscroll/` |
-| `--version <version>` | Pin a specific Mobiscroll version, e.g. `5.23.0` or `6` |
+| `--version [version]` | Pin a specific Mobiscroll version, e.g. `5.23.0` or `6` |
 | `--proxy <url>` | HTTP proxy, supports auth: `protocol://user:pass@host:port` |
 | `--scss` / `--css` | Force stylesheet format (skips interactive prompt) |
 | `--legacy-peer-deps` | Passes `--legacy-peer-deps` to npm install |
@@ -197,9 +203,9 @@ Cancels the token on the registry (`DELETE /-/user/token/<token>`; the registry 
 
 ---
 
-### `mobiscroll start <type> [name]`
+### `mobiscroll start <type> <name>`
 
-Clones a Mobiscroll demo project from GitHub and installs its dependencies.
+Clones a Mobiscroll UI demo project from GitHub and installs its dependencies.
 
 **Supported types:** `angular` · `react` · `react-ts` · `vue` · `vue-ts` · `javascript` · `jquery`
 
@@ -340,7 +346,7 @@ node tests/integration/test-help.js
 
 **When to add tests:** Any change to install command logic requires new test cases. The matrix should cover at minimum: npm, yarn, pnpm × affected version range.
 
-**What is not tested:** File modification logic (Angular/Ionic config files), interactive prompts, API calls, and the `start` command.
+**What is not tested:** File modification logic (Angular/Ionic config files), interactive prompts and the `start` command. The registry and API calls are covered with stubs in `test-web-login.js`.
 
 ---
 
@@ -348,13 +354,13 @@ node tests/integration/test-help.js
 
 1. Make your changes on a branch and open a PR for review
 2. Update `CHANGELOG.md` with the version number and a bullet list of changes
-3. Bump the version in `package.json` (follow semver: patch for fixes, minor for new features)
+3. Bump the version in `package.json` (follow semver: patch for fixes, minor for new features, major for breaking changes)
 4. Merge to main
 5. Publish:
 
 ```bash
-# Log in with the Mobiscroll npm publishing account
-npm login --registry=https://npm.mobiscroll.com
+# Log in to npmjs.com with the Mobiscroll publishing account
+npm login
 
 # Publish — this runs the prepublish hook (CRLF → LF normalization) automatically
 npm publish
