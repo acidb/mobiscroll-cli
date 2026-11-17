@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Without an account, you can start a free trial on the sign-in page, then approve.
 - After a login with `-g`, the CLI warns when the project's `.npmrc` still has a Mobiscroll token, because npm uses that one in the project.
 - After a login saved to the project's `.npmrc`, the CLI notes that committing the file shares the token, and links the other setups.
+- After installing the trial package, the CLI says whether it will work: without a trial on your account it links the page that starts one (the trial package shows "Trial not found" until then), an expired trial gets the contact and pricing links, and an active trial shows its end date.
 
 ### Changed
 

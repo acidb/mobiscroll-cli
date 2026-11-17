@@ -856,7 +856,38 @@ function findMonorepoRoot(currDir) {
   return null;
 }
 
+/**
+ * After the trial package is installed: whether it will work. The registry's licence check returns the account's trial
+ * (Trial: 'active' / 'expired' / 'none', TrialValid: its end); the trial package only runs with an active trial
+ * ("Trial not found" without one). Nothing is printed when the registry doesn't send it (an older registry, or the
+ * api.mobiscroll.com fallback).
+ */
+function printTrialStatus(data) {
+  if (!data || !data.Trial) {
+    return;
+  }
+  const end = data.TrialValid
+    ? new Date(data.TrialValid).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+  if (data.Trial === 'none') {
+    printWarning(
+      `Your account hasn't started a free trial yet, so the trial package will show "Trial not found" in your app. Start the trial (sign in with the same account): ${chalk.gray(
+        'https://mobiscroll.com/accounttrialstarter',
+      )}, then reload your app. Just started one? It can take a few minutes to show up here.`,
+    );
+  } else if (data.Trial === 'expired') {
+    printWarning(
+      `Your free trial ended${end ? ' on ' + end : ''}, so the trial package won't work in your app. Contact us to extend it: ${chalk.gray(
+        'https://mobiscroll.com/contact',
+      )}, or buy a license: ${chalk.gray('https://mobiscroll.com/pricing')}`,
+    );
+  } else if (data.Trial === 'active' && end) {
+    printFeedback(`Your free trial is active until ${end}.`);
+  }
+}
+
 module.exports = {
+  printTrialStatus,
   checkTypescriptVersion: (packageJson) => {
     var version = (packageJson.devDependencies ? packageJson.devDependencies.typescript : '') || packageJson.dependencies.typescript;
 

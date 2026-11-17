@@ -601,6 +601,44 @@ const cases = [
       });
     },
   },
+  {
+    name: 'trial status: no trial yet links the trial start and says it can take a few minutes',
+    run: () => {
+      utils.printTrialStatus({ Trial: 'none', TrialValid: null });
+      const out = printed.join('\n');
+      assert.ok(out.indexOf('Trial not found') !== -1, out);
+      assert.ok(out.indexOf('https://mobiscroll.com/accounttrialstarter') !== -1, out);
+      assert.ok(out.indexOf('few minutes') !== -1, out);
+    },
+  },
+  {
+    name: 'trial status: an expired trial says when, and how to extend it or buy',
+    run: () => {
+      utils.printTrialStatus({ Trial: 'expired', TrialValid: '2026-01-15T12:00:00.000Z' });
+      const out = printed.join('\n');
+      assert.ok(out.indexOf('ended on January 15, 2026') !== -1, out);
+      assert.ok(out.indexOf('https://mobiscroll.com/contact') !== -1, out);
+      assert.ok(out.indexOf('https://mobiscroll.com/pricing') !== -1, out);
+      assert.ok(out.indexOf('accounttrialstarter') === -1, 'no trial start link for an expired trial');
+    },
+  },
+  {
+    name: 'trial status: an active trial only gives its end',
+    run: () => {
+      utils.printTrialStatus({ Trial: 'active', TrialValid: '2027-02-10T12:00:00.000Z' });
+      const out = printed.join('\n');
+      assert.ok(out.indexOf('active until February 10, 2027') !== -1, out);
+      assert.ok(out.indexOf('Trial not found') === -1, out);
+    },
+  },
+  {
+    name: 'trial status: nothing when the registry does not send it (older registry, api/access fallback)',
+    run: () => {
+      utils.printTrialStatus({ HasAccess: false, License: '', TrialCode: 'abc' });
+      utils.printTrialStatus(undefined);
+      assert.strictEqual(printed.join(''), '');
+    },
+  },
 ];
 
 cases

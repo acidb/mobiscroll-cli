@@ -290,7 +290,7 @@ function cloneProject(url, type, framework, name, newAppLocation, gitOptions, ca
         proxyUrl,
         framework,
         mobiscrollVersion,
-        (userName, useTrial) => {
+        (userName, useTrial, data) => {
           let configObject = {
             projectType: type.replace('-ts', ''),
             currDir: newAppLocation,
@@ -312,6 +312,9 @@ function cloneProject(url, type, framework, name, newAppLocation, gitOptions, ca
           utils.installMobiscroll(configObject, () => {
             if (callback) {
               callback();
+            }
+            if (useTrial) {
+              utils.printTrialStatus(data);
             }
           });
         },
@@ -580,7 +583,14 @@ function handleConfig(projectType) {
               configObject.mobiscrollVersion = version;
               askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
                 configObject.useScss = isScssSelected;
-                config(configObject);
+                let trialNoted = false;
+                config(configObject, () => {
+                  // last: whether the installed trial will work (some Ionic paths call back more than once)
+                  if (useTrial && !trialNoted) {
+                    trialNoted = true;
+                    utils.printTrialStatus(data);
+                  }
+                });
               });
             });
           });

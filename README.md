@@ -32,7 +32,7 @@ mobiscroll config <type>
 
 Installs and configures Mobiscroll for the given framework (`angular`, `ionic`, `react`, `vue`, `jquery`, or `javascript`) in the current project.
 
-If you're not signed in, the command signs you in first: it opens a sign-in page in your browser, where you approve. On another device, open `mobiscroll.com/device` and type the code shown in the terminal. Without a license, the CLI installs the trial.
+If you're not signed in, the command signs you in first: it opens a sign-in page in your browser, where you approve. On another device, open `mobiscroll.com/device` and type the code shown in the terminal. Without a license, the CLI installs the trial and tells you whether your account's trial is active; if you haven't started one yet, it links the page that starts it.
 
 ```bash
 mobiscroll login
