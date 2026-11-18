@@ -57,7 +57,7 @@ mobiscroll config <type> --yes --no-wait
 
 The command prints a sign-in link and a code, then stops. The agent shows both to you, you approve in your browser, and the agent runs the same command again (within 10 minutes). The agent never approves the sign-in itself, never asks for your password and never runs `npm login`. If the CLI prints a note or warning about the token or the trial, the agent shows it to you. `--yes` never asks a question; it's automatic when there is no terminal.
 
-In CI there is no browser and no terminal, so the CLI can't sign in. Store a token in a CI secret and reference it from `.npmrc`, as described in [Using the npm auth token securely](https://mobiscroll.com/docs/javascript/guides/npm-auth-token).
+A CI pipeline doesn't run the sign-in: nobody is there to approve it. Sign in once, store your token in a CI secret and reference it from `.npmrc`, as described in [Using the npm auth token securely](https://mobiscroll.com/docs/javascript/guides/npm-auth-token). An AI agent working without a browser, for example in a cloud sandbox, still uses the command above: you approve on your own device.
 
 ## Reference
 
