@@ -1,7 +1,20 @@
 {
   "name": "@mobiscroll/cli",
-  "version": "1.16.4",
-  "description": "Mobiscroll command line configuration tool",
+  "version": "2.0.0",
+  "description": "Installs and configures Mobiscroll UI components (Angular, Ionic, React, Vue, JavaScript, jQuery) from the Mobiscroll npm registry",
+  "keywords": [
+    "mobiscroll",
+    "mobiscroll-ui",
+    "cli",
+    "calendar",
+    "scheduler",
+    "datepicker",
+    "angular",
+    "ionic",
+    "react",
+    "vue",
+    "jquery"
+  ],
   "homepage": "https://mobiscroll.com/",
   "license": "Apache-2.0",
   "main": "index.js",

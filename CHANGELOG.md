@@ -5,6 +5,34 @@ All notable changes to the Mobiscroll CLI are documented in this file. Full rele
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-11-20
+
+### Added
+
+- We added sign-in through the browser: `mobiscroll login` and `mobiscroll config` print a link to mobiscroll.com, you approve the sign-in there, and the CLI continues signed in. No password is typed in the terminal. In a terminal, press Enter to open the link; when an AI agent runs the CLI (or with `--yes`), the browser opens right away and the CLI says that a person must approve.
+- On the approve page a team member can sign in as the team npm user (preselected when the team has one) or as themselves. A team npm user's token keeps working when that person leaves.
+- We added the `--password` flag for the previous user name and password (or team secret) login.
+- We added the `-y, --yes` flag: the CLI never asks a question, uses the default answer or stops with a message naming the flag to add. When your licence doesn't cover the framework, it installs the trial and says so. This is automatic when there is no terminal, for example when an AI agent runs the CLI.
+- We added the `--no-wait` flag to `login` and `config`: the CLI prints the sign-in link and stops, and the next run picks up the approved sign-in. For AI agents that only see the output once a command ends.
+- The CLI now also prints the mobiscroll.com/device address: on another device, open it and type the code shown in the terminal.
+- `mobiscroll logout` now also cancels the token on the registry (personal tokens only), not just in the `.npmrc`.
+- Each sign-in creates its own token, and tokens don't expire. You can see and cancel your tokens on the Access Tokens page (https://mobiscroll.com/account/tokens); the CLI prints the link after login, and after logging out a team npm user's token, which keeps working.
+- Without an account, you can start a free trial on the sign-in page, then approve.
+- After a login with `-g`, the CLI warns when the project's `.npmrc` still has a Mobiscroll token, because npm uses that one in the project.
+- After a login saved to the project's `.npmrc`, the CLI notes that committing the file shares the token, and links the other setups.
+- After installing the trial package, the CLI says whether it will work: without a trial on your account it links the page that starts one (the trial package shows "Trial not found" until then), an expired trial gets the support email and the contact and pricing links, and an active trial shows its end date.
+
+### Changed
+
+- The licence check now asks the Mobiscroll npm registry with your token, instead of the public API with your user name.
+- When your team has a team npm user and you are signed in personally, the CLI warns and continues, instead of asking for the team npm user's credentials.
+- The CLI exits with code 1 when it stops with an error, so scripts and agents can tell.
+- The `--help` screens are rewritten: every command's options listed, examples with the command for AI agents, and `-V` prints the version too.
+
+### Fixed
+
+- We fixed the Ionic config command not finishing when no extra module was selected for the MbscModule injection.
+
 ## [1.16.4] - 2026-10-14
 
 ### Fixed

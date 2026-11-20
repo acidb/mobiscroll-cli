@@ -26,3 +26,11 @@ module.exports = function (user, pass, email, registry, scope, quotes, configPat
         });
     });
 };
+
+// Writes a token obtained elsewhere (browser sign-in) the same way a password login does
+module.exports.saveToken = function (token, registry, scope, configPath) {
+    var finalArgs = ncl.processArguments(null, null, null, registry, scope, null, configPath);
+    ncl.readFile(finalArgs, function (err, contents) {
+        ncl.writeFile(finalArgs, ncl.generateFileContents(finalArgs, contents, { token: token }));
+    });
+};

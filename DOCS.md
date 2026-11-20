@@ -1,6 +1,6 @@
 # Mobiscroll CLI — Internal Team Documentation
 
-**Package:** `@mobiscroll/cli` · **Current version:** 1.16.2 · **Published to:** npmjs.com (public)
+**Package:** `@mobiscroll/cli` · **Current version:** 2.0.0 · **Published to:** npmjs.com (public)
 
 This document is the starting point for anyone on the team working on the CLI — new contributors, reviewers, or anyone shipping a release.
 
@@ -26,10 +26,10 @@ This document is the starting point for anyone on the team working on the CLI �
 
 ## What the CLI does
 
-The CLI's job is to get Mobiscroll installed and configured in a customer's project in one command. It:
+The CLI's job is to get Mobiscroll UI installed and configured in a customer's project in one command. It:
 
 - Authenticates the customer with the Mobiscroll npm registry (`npm.mobiscroll.com`)
-- Calls the Mobiscroll API to verify their license and get the correct package name/version
+- Checks their license with the Mobiscroll npm registry (falling back to the Mobiscroll API) and gets the correct package name/version
 - Runs the right `npm install` / `yarn add` / `pnpm add` command for their framework and version
 - For Angular and Ionic: actually modifies project files (module imports, `angular.json`, SCSS, etc.)
 - For React, Vue, jQuery, JS: prints copy-paste code snippets the customer uses manually
@@ -76,6 +76,9 @@ mobiscroll-cli/
 │   ├── configAngular.js        # Angular file modifications (app.module.ts, angular.json, SCSS)
 │   ├── configIonic.js          # Ionic file modifications (index.html, variables.scss, copy scripts)
 │   ├── helperMessages.js       # Printed usage instructions for React/Vue/jQuery/JS
+│   ├── help.js                 # The --help screens (option rows come from the registered options)
+│   ├── webLogin.js             # Browser sign-in (npm's web login protocol on the registry), --no-wait
+│   ├── token.js                # Reads the npm token from .npmrc / .yarnrc.yml (never prints it)
 │   └── npm-login/              # Custom npm login implementation
 │       ├── index.js
 │       ├── login.js
@@ -87,7 +90,10 @@ mobiscroll-cli/
 │   └── normalize-line-endings.js   # Prepublish hook: CRLF → LF on mobiscroll.js
 └── tests/
     └── integration/
-        └── test-install-commands.js
+        ├── test-install-commands.js
+        ├── test-version-resolution.js
+        ├── test-web-login.js
+        └── test-help.js
 ```
 
 **One-line role for each key file:**
@@ -99,6 +105,9 @@ mobiscroll-cli/
 | `src/configAngular.js` | Everything Angular touches on disk |
 | `src/configIonic.js` | Everything Ionic touches on disk |
 | `src/helperMessages.js` | Output strings only, no side effects |
+| `src/webLogin.js` | Browser sign-in (npm web login on the registry), `--no-wait`, machine id |
+| `src/token.js` | Reads the npm token from `.npmrc` / `.yarnrc.yml` (never prints it) |
+| `src/help.js` | The `--help` screens |
 
 ---
 
@@ -109,10 +118,10 @@ All dependencies are runtime (no separate devDependencies). Here's what each one
 | Package | Version | Role | Where used |
 |---|---|---|---|
 | **commander** | `^2.19.0` | CLI skeleton — parses commands, subcommands, options, and flags | `mobiscroll.js` — all command/option definitions |
-| **inquirer** | `^8.1.0` | Interactive terminal prompts (username/password inputs, yes/no confirmations, select lists) | `mobiscroll.js`, `src/utils.js` — login prompts, SCSS/CSS choice, overwrite confirmations |
+| **inquirer** | `^8.1.0` | Interactive terminal prompts (yes/no confirmations, select lists, the `--password` login) | `mobiscroll.js`, `src/utils.js` — login prompts, SCSS/CSS choice, overwrite confirmations |
 | **chalk** | `^2.4.1` | Terminal colors and text styling (green success, red errors, yellow warnings) | `src/utils.js` — `printFeedback`, `printWarning`, `printError`, `printLog` helpers |
 | **figlet** | `^1.2.1` | ASCII art banner printed at CLI startup | `mobiscroll.js` — the "Mobiscroll" header shown on every run |
-| **axios** | `1.13.6` | HTTP client for Mobiscroll API calls (license check, version fetch) | `src/utils.js` — `getApiKey()`, `getMobiscrollVersion()` |
+| **axios** | `^1.16.0` | HTTP client for the registry and Mobiscroll API calls (browser sign-in, license check, version fetch) | `src/webLogin.js`; `src/utils.js` — `getApiKey()`, `getMobiscrollVersion()` |
 | **js-yaml** | `^4.1.0` | Parses and writes `.yarnrc.yml` for Yarn 2+ auth token sync | `src/utils.js` — `updateAuthTokenInYarnrc()` |
 | **semver** | `^6.3.0` | Compares and validates version strings to decide which package variant to install | `src/utils.js` — v5 vs v6 branching, Angular/React version checks in install logic |
 | **ncp** | `^2.0.0` | Recursively copies directory trees (used for `--no-npm` resource template copying) | `src/utils.js` — `packMobiscroll()` |
@@ -128,7 +137,7 @@ This is a local custom module (not an npm package) that handles authenticating w
 | `login.js` | Makes the registry API call to exchange credentials for an auth token |
 | `adduser.js` | Handles new user registration against the registry |
 
-**Why not use the standard `npm login` command?** The standard CLI tool has known issues in non-interactive environments and doesn't reliably handle custom registry token formats. This custom implementation gives full control over the request/response cycle and works consistently across environments.
+**When is it used?** Only for `--password` (user name and password, or the team npm user secret, typed in the terminal). The default sign-in is the browser sign-in in `src/webLogin.js`, which uses npm's web login protocol on the registry; `saveToken()` here writes its token to `.npmrc`. Plain `npm login` on npm 9+ also works against the registry, but the CLI keeps its own flow so it can print the code, support `--no-wait` and sync `.yarnrc.yml`.
 
 ### Why commander v2?
 
@@ -163,16 +172,19 @@ Installs and configures Mobiscroll in an existing project.
 | `-t, --trial` | Install trial/evaluation configuration |
 | `-i, --lite` | Install lite variant (fewer components) |
 | `-n, --no-npm` | Skip npm install; expect files at `src/lib/mobiscroll/` |
-| `--version <version>` | Pin a specific Mobiscroll version, e.g. `5.23.0` or `6` |
+| `--version [version]` | Pin a specific Mobiscroll version, e.g. `5.23.0` or `6` |
 | `--proxy <url>` | HTTP proxy, supports auth: `protocol://user:pass@host:port` |
 | `--scss` / `--css` | Force stylesheet format (skips interactive prompt) |
 | `--legacy-peer-deps` | Passes `--legacy-peer-deps` to npm install |
-| `-g, --global` | Write auth to global `~/.npmrc` instead of local `.npmrc` |
+| `-g, --global` | Write auth to the user-level `~/.npmrc` instead of the project's `.npmrc`; the project file is not touched |
+| `--password` | Old user name + password (or team secret) prompt instead of the browser sign-in |
+| `--no-wait` | Start the browser sign-in, print the link and code, and exit 0. The next run picks the sign-in up (see Authentication flow) |
+| `-y, --yes` | Program-level: never prompt. Automatic when stdin/stdout is not a TTY (AI agents, scripts) |
 
 **What it does in order:**
 1. Reads the project's `package.json` to detect framework version
-2. Verifies Mobiscroll npm credentials, prompts login if needed
-3. Calls Mobiscroll API to check license and get the right package name
+2. Verifies Mobiscroll npm credentials, starts the browser sign-in if needed
+3. Asks the registry (`GET /-/mobiscroll/access/<framework>` with the token) to check the license and get the right package name
 4. Builds and runs the `npm install` / `yarn add` / `pnpm add` command
 5. Modifies config files (Angular/Ionic only)
 6. Prints usage instructions
@@ -181,19 +193,19 @@ Installs and configures Mobiscroll in an existing project.
 
 ### `mobiscroll login`
 
-Authenticates with the Mobiscroll npm registry. Saves auth token to `.npmrc` (and `.yarnrc.yml` for Yarn 2+ projects). Use `-g` to write to global config.
+Authenticates with the Mobiscroll npm registry through the browser (see Authentication flow). Saves auth token to `.npmrc` (and `.yarnrc.yml` for Yarn 2+ projects). Use `-g` to write to global config. Flags: `--password`, `--no-wait`, `--proxy`. To sign in as the team npm user, pick it on the approve page. After saving to the project's `.npmrc`, it prints a note that committing the file shares the token. After a `-g` login, it warns when the project's `.npmrc` still has a token (npm uses that one).
 
 ---
 
 ### `mobiscroll logout`
 
-Removes credentials from `.npmrc` and `.yarnrc.yml`.
+Cancels the token on the registry (`DELETE /-/user/token/<token>`; the registry cancels personal tokens only, and a `${VAR}` reference is never sent), then removes credentials from `.npmrc` and `.yarnrc.yml`.
 
 ---
 
-### `mobiscroll start <type> [name]`
+### `mobiscroll start <type> <name>`
 
-Clones a Mobiscroll demo project from GitHub and installs its dependencies.
+Clones a Mobiscroll UI demo project from GitHub and installs its dependencies.
 
 **Supported types:** `angular` · `react` · `react-ts` · `vue` · `vue-ts` · `javascript` · `jquery`
 
@@ -208,7 +220,7 @@ mobiscroll.js  ──parse flags──►  settings object
                                       │
                               checkMbscNpmLogin()
                                       │
-                               getApiKey() (API call)
+                     getApiKey() (registry licence check)
                                       │
                      ┌────────────────┼───────────────────┐
                      ▼                ▼                    ▼
@@ -276,15 +288,23 @@ No file modifications. The config command installs the package and prints copy-p
 ## Authentication flow
 
 1. `checkMbscNpmLogin()` runs `npm whoami --registry=https://npm.mobiscroll.com`
-2. If that fails, prompts the customer for username + password
-3. Calls `npmLogin()` (custom implementation in `src/npm-login/`) to get an auth token
-4. Writes `//npm.mobiscroll.com/:_authToken=<token>` to `.npmrc`
-5. If `.yarnrc.yml` exists in the project, syncs the token there too (Yarn 2+ format)
-6. Calls `getApiKey()` → `GET https://api.mobiscroll.com/api/access/{username}/{framework}` to check license, get latest version, and get trial code if applicable
+2. If that fails, starts the browser sign-in (`src/webLogin.js`, npm's web login protocol on the registry):
+   - `POST /-/v1/login` with the machine name, a machine id kept in `~/.mobiscroll/cli.json` → `{ loginUrl, doneUrl, code, deviceUrl }`
+   - prints the link, the code and the `/device` page (where the code can be typed on another device), and says that a person must approve. In a terminal (no `--yes`, no `--no-wait`) the browser opens when the person presses Enter, while the CLI already polls (approving through `/device` without Enter works too). Otherwise (agents, `--yes`, `--no-wait`) it opens the browser right away and adds a line for AI agents: show the link and code to the user, never approve it yourself. A `--no-wait` rerun that finds the sign-in still waiting prints it again without reopening the browser. Never opened when `CI` is set.
+   - polls `doneUrl` (202 + `Retry-After` while waiting, 200 `{ token }` once approved, 403 denied, 410 expired)
+   - With `--no-wait`: doesn't poll. Keeps `{ loginUrl, doneUrl, code, expiresAt }` as `pending` in `~/.mobiscroll/cli.json` and exits 0. The next sign-in for the same registry checks that `doneUrl` first: approved → takes the token; still waiting → waits (or, with `--no-wait` again, prints the same link and exits); denied / expired / used → forgets it and starts a new one. `start` has no `--no-wait` (running it again would hit the existing folder): run `mobiscroll login --no-wait` first.
+   - With `--password`: the old username + password prompt and `npmLogin()` (`src/npm-login/`)
+3. Writes `//npm.mobiscroll.com/:_authToken=<token>` to `.npmrc` (`npmLogin.saveToken()` for the browser sign-in)
+4. If Yarn 2+ is used, syncs the token to `.yarnrc.yml` too
+5. Calls `getApiKey()` → `GET https://npm.mobiscroll.com/-/mobiscroll/access/{framework}` with `Authorization: Bearer <token>` (token read by `src/token.js` from the project / user `.npmrc` or `.yarnrc.yml`, `${VAR}` expanded). Falls back to `GET https://api.mobiscroll.com/api/access/{username}/{framework}` when there is no token or the registry doesn't answer.
+
+New tokens carry a random `mbsc_` secret instead of the password (the registry stores only its hash), so they can be listed and cancelled on mobiscroll.com. The registry the CLI talks to is the `mbscNpmUrl` constant at the top of `src/utils.js`; to test against another registry, change it there (it must be `https://npm.mobiscroll.com` in a release).
+
+**Non-interactive mode** (`--yes`, or no TTY): no prompt is shown. The update prompt is skipped with a hint and the stylesheet uses the default. When the licence doesn't cover the framework (or its maintenance has expired), the trial is installed right away with the line "No active licence for @mobiscroll/<framework>: installing the trial. Buy or renew at https://mobiscroll.com/account/licenses"; in a terminal the person is still asked. After a trial install (`config` and `start`), `printTrialStatus` prints what the registry's licence check says about the account's trial (`Trial`: `none` links `https://mobiscroll.com/accounttrialstarter`, `expired` gives support@mobiscroll.com and links contact and pricing, `active` shows `TrialValid`); nothing when the answer has no `Trial` (an older registry or the `api/access` fallback). The project name / overwrite questions stop with exit code 1 and a message naming the argument to add.
 
 **Invariant:** Auth tokens must never appear in log output, error messages, or feedback strings.
 
-**Why a custom npm-login module?** The standard `npm login` CLI has known issues with non-interactive environments and custom registry token formats. The custom implementation in `src/npm-login/` handles this reliably.
+**Two sign-in paths:** the browser sign-in (`src/webLogin.js`, default) and the `--password` prompt (`src/npm-login/`). Both end with the token written to `.npmrc` and synced to `.yarnrc.yml`.
 
 ---
 
@@ -313,7 +333,12 @@ The project has integration tests only — no unit test framework.
 
 ```bash
 node tests/integration/test-install-commands.js
+node tests/integration/test-version-resolution.js
+node tests/integration/test-web-login.js
+node tests/integration/test-help.js
 ```
+
+`test-web-login.js` covers the browser sign-in, `--no-wait`, token reading, logout cancel and the licence check; `test-help.js` checks that every `--help` screen lists every option and the agent example.
 
 **What is tested:** The `installMobiscroll()` function is called directly with every combination of project type, Mobiscroll version, Angular version, React version, and package manager. The test verifies the generated install command string matches expected output.
 
@@ -321,7 +346,7 @@ node tests/integration/test-install-commands.js
 
 **When to add tests:** Any change to install command logic requires new test cases. The matrix should cover at minimum: npm, yarn, pnpm × affected version range.
 
-**What is not tested:** File modification logic (Angular/Ionic config files), interactive prompts, API calls, and the `start` command.
+**What is not tested:** File modification logic (Angular/Ionic config files), interactive prompts and the `start` command. The registry and API calls are covered with stubs in `test-web-login.js`.
 
 ---
 
@@ -329,13 +354,13 @@ node tests/integration/test-install-commands.js
 
 1. Make your changes on a branch and open a PR for review
 2. Update `CHANGELOG.md` with the version number and a bullet list of changes
-3. Bump the version in `package.json` (follow semver: patch for fixes, minor for new features)
+3. Bump the version in `package.json` (follow semver: patch for fixes, minor for new features, major for breaking changes)
 4. Merge to main
 5. Publish:
 
 ```bash
-# Log in with the Mobiscroll npm publishing account
-npm login --registry=https://npm.mobiscroll.com
+# Log in to npmjs.com with the Mobiscroll publishing account
+npm login
 
 # Publish — this runs the prepublish hook (CRLF → LF normalization) automatically
 npm publish

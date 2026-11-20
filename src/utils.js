@@ -2,13 +2,29 @@ const fs = require('fs');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
 const execSync = require('child_process').execSync;
+// The Mobiscroll npm registry. TESTING: points at the dev registry.
+// Switch back to 'https://npm.mobiscroll.com' before releasing.
 const mbscNpmUrl = 'https://npm.mobiscroll.com';
 const mbscApiUrlBase = 'https://api.mobiscroll.com';
-const dataRowRegex = /\/\/npm.mobiscroll.com\/:_authToken=(.*)/im;
+// The website's Access Tokens page, when the registry doesn't say where it is (an older registry, --password login).
+// The browser sign-in and the logout take it from the registry, so a dev or staging registry points to its own website.
+const defaultTokensUrl = 'https://mobiscroll.com/account/tokens';
+// the token row of the registry in use (mbscNpmUrl)
+const dataRowRegex = new RegExp(
+  '\\/\\/' +
+    mbscNpmUrl
+      .replace(/^https?:\/\//, '')
+      .replace(/\/$/, '')
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
+    '\\/:_authToken=(.*)',
+  'im',
+);
 const terminalLink = require('terminal-link');
 const inquirer = require('inquirer');
 const path = require('path');
 const npmLogin = require('./npm-login/');
+const npmToken = require('./token.js');
+const webLogin = require('./webLogin.js');
 const helperMessages = require('./helperMessages.js');
 const ncp = require('ncp').ncp;
 const axios = require('axios');
@@ -61,7 +77,8 @@ function printWarning(text) {
 
 function printError(text) {
   console.log('\n' + chalk.bold.red(text) + chalk.magenta('\nIf the problem persists get in touch at support@mobiscroll.com'));
-  process.exit();
+  // non-zero, so scripts and AI agents can tell that the command failed
+  process.exit(1);
 }
 
 function printFeedback(text) {
@@ -217,12 +234,47 @@ function deleteFolderRecursive(path) {
   }
 }
 
+// Licence check on the registry, for the account of the token npm uses. Falls back to the old
+// api.mobiscroll.com call when there's no token to send or the registry doesn't have the route yet.
 function getApiKey(userName, proxy, framework, callback) {
+  const currDir = process.cwd();
+  const token = npmToken.readNpmToken({ currDir, monorepoRoot: findMonorepoRoot(currDir), registryUrl: mbscNpmUrl });
+
+  if (!token) {
+    getApiKeyFromApi(userName, proxy, framework, callback);
+    return;
+  }
+
+  axios({
+    url: mbscNpmUrl + '/-/mobiscroll/access/' + encodeURIComponent(framework),
+    headers: {
+      'User-Agent': 'request',
+      Authorization: 'Bearer ' + token,
+    },
+    proxy: proxy ? processProxyUrl(proxy) : undefined,
+    validateStatus: () => true,
+  })
+    .then((resp) => {
+      if (resp.status === 200 && resp.data && typeof resp.data.HasAccess === 'boolean') {
+        resp.data.userName = userName;
+        callback(resp.data);
+      } else {
+        getApiKeyFromApi(userName, proxy, framework, callback);
+      }
+    })
+    .catch(() => {
+      getApiKeyFromApi(userName, proxy, framework, callback);
+    });
+}
+
+function getApiKeyFromApi(userName, proxy, framework, callback) {
   var requestOptions = {
     url: mbscApiUrlBase + '/api/access/' + userName + '/' + framework,
     // json: true,
     headers: {
-      'User-Agent': 'request',
+      // Older CLIs send 'request'. This one names itself, so the API server's IIS logs tell its fallback calls apart
+      // from older CLIs still in use (mobiscroll-web scripts/count-api-access-calls.ps1), until api/access is switched off.
+      'User-Agent': 'mobiscroll-cli/' + require('../package.json').version,
     },
   };
 
@@ -353,7 +405,160 @@ function updateAuthTokenInYarnrc(currDir, deleteToken) {
   }
 }
 
-function login(useGlobalNpmrc, proxy) {
+// After a token was written to .npmrc: Yarn 2+ reads .yarnrc.yml instead, so copy it there too
+function syncTokenToYarnrc(useGlobalNpmrc) {
+  const currDir = useGlobalNpmrc ? os.homedir() : process.cwd();
+  const usePnpm = testPnpm(currDir);
+  const useYarn = !usePnpm && testYarn(currDir);
+
+  if (useYarn && semver.gte(useYarn, '2.0.0')) {
+    updateAuthTokenInYarnrc(currDir);
+  }
+}
+
+/**
+ * Signs in to the Mobiscroll npm registry and writes the token where it is written today: the project's
+ * .npmrc, or the user-level one with -g.
+ * @param {boolean} useGlobalNpmrc
+ * @param {string} proxy
+ * @param {{ password: boolean, noWait: boolean, nonInteractive: boolean, framework: string }} options password: the old
+ * username/password prompt instead of the browser sign-in; noWait: print the
+ * link and stop (the next run picks the sign-in up); nonInteractive: --yes or no terminal; framework: the config
+ * type when known (only for the docs link in the note after the login)
+ * @returns {Promise<string>} the user name (with noWait and no approval yet, the process ends instead)
+ */
+function login(useGlobalNpmrc, proxy, options) {
+  options = options || {};
+  if (options.password) {
+    if (options.nonInteractive) {
+      printError(
+        `The ${chalk.gray('--password')} login needs a terminal to type into. Run the command without ${chalk.gray(
+          '--password',
+        )} to sign in through the browser.`,
+      );
+    }
+    return passwordLogin(useGlobalNpmrc, proxy, options.framework);
+  }
+  return browserLogin(useGlobalNpmrc, proxy, options);
+}
+
+// "Using the npm auth token securely" in the docs (environment variable, CI, the user-level ~/.npmrc), for the
+// framework when the command knows it (config), else the JavaScript one
+function npmTokenDocsUrl(framework) {
+  const docsFramework = ['javascript', 'jquery', 'angular', 'react', 'vue'].indexOf(framework) !== -1 ? framework : 'javascript';
+  return `https://mobiscroll.com/docs/${docsFramework}/guides/npm-auth-token`;
+}
+
+/**
+ * After a login saved the token. To the project's .npmrc: a note that committing the file shares the token.
+ * To ~/.npmrc (-g): a warning when the project's .npmrc (or the monorepo root's) still has a token line for the
+ * registry, because npm, pnpm and Yarn 1 use the project's one, so the new login has no effect in this project.
+ * A ${MOBISCROLL_NPM_TOKEN} reference counts as a token line too. Never prints the token.
+ * @param {boolean} useGlobalNpmrc
+ * @param {string} [framework] the config type, for the docs link
+ */
+function afterTokenSaved(useGlobalNpmrc, framework) {
+  if (!useGlobalNpmrc) {
+    console.log(
+      chalk.gray(
+        `  The token is saved in this project's .npmrc. If you commit that file, installs work for everyone out of the box, but anyone who can read the repository can use the token. Other setups: ${npmTokenDocsUrl(
+          framework,
+        )}\n`,
+      ),
+    );
+    return;
+  }
+  const currDir = process.cwd();
+  const monorepoRoot = findMonorepoRoot(currDir);
+  const dirs = monorepoRoot && monorepoRoot !== currDir ? [currDir, monorepoRoot] : [currDir];
+  const projectNpmrc = dirs
+    .map((dir) => path.resolve(dir, '.npmrc'))
+    .find((file) => npmToken.tokenFromNpmrc(file, mbscNpmUrl, true));
+  if (projectNpmrc) {
+    const host = mbscNpmUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    console.log(
+      `${chalk.yellow('Please Note:')} this project's .npmrc (${projectNpmrc}) also has a Mobiscroll npm token, and npm uses that one in this project, not the one you just saved to ~/.npmrc. To use the new login here, remove the ${chalk.gray(
+        `//${host}/:_authToken`,
+      )} line from that file.\n`,
+    );
+  }
+}
+
+function browserLogin(useGlobalNpmrc, proxy, options) {
+  return webLogin
+    .webLogin({
+      registryUrl: mbscNpmUrl,
+      proxy: proxy ? processProxyUrl(proxy) : undefined,
+      openBrowser: !process.env.CI,
+      cliVersion: require('../package.json').version,
+      noWait: !!options.noWait,
+      // A person in a terminal opens the browser with Enter; agents and --yes get it opened right away
+      askFirst: options.nonInteractive === false,
+    })
+    .then((result) => {
+      if (result.pending) {
+        printFeedback(
+          `After the approval, run the same command again: it picks up this sign-in and continues. The link expires in 10 minutes.\n`,
+        );
+        // --no-wait: the user asked the CLI to stop here. Exit once the output is written (stdout can be a pipe).
+        process.stdout.write('', () => process.exit(0));
+        return new Promise(() => {});
+      }
+      npmLogin.saveToken(result.token, mbscNpmUrl, '@mobiscroll', useGlobalNpmrc ? undefined : path.resolve(process.cwd(), '.npmrc'));
+      console.log(`  Logged in as ${result.username}`);
+      printFeedback('Successful login!');
+      console.log(`  Your tokens: ${result.tokensUrl || defaultTokensUrl}\n`);
+      syncTokenToYarnrc(useGlobalNpmrc);
+      afterTokenSaved(useGlobalNpmrc, options.framework);
+      return result.username;
+    })
+    .catch((err) => {
+      printError(
+        `Sign-in failed. ${err.message}\n\nRun ${chalk.gray('mobiscroll login')} to try again. Teams logging in with the team npm user's secret can use ${chalk.gray(
+          'mobiscroll login --password',
+        )}.`,
+      );
+    });
+}
+
+/**
+ * Logout: cancels the token written in the .npmrc on the registry, before the CLI removes it from the file.
+ * The registry cancels personal tokens only; a team npm user's token keeps working elsewhere (CI, other
+ * machines). A ${VAR} reference is not a token of this machine, so it is left alone.
+ * @returns {Promise<{ teamToken: boolean, tokensUrl: string }>} never rejects; teamToken is true when the registry says
+ * the token is a team npm user's and so still works (an older registry doesn't say: false); tokensUrl is the website's
+ * Access Tokens page as the registry gives it, or defaultTokensUrl
+ */
+function cancelRegistryToken(npmrcPath, proxy) {
+  const token = npmToken.tokenFromNpmrc(npmrcPath, mbscNpmUrl, true);
+  if (!token || token.indexOf('${') !== -1) {
+    return Promise.resolve({ teamToken: false, tokensUrl: defaultTokensUrl });
+  }
+  return axios({
+    method: 'delete',
+    url: mbscNpmUrl + '/-/user/token/' + encodeURIComponent(token),
+    headers: {
+      'User-Agent': 'request',
+      Authorization: 'Bearer ' + token,
+    },
+    proxy: proxy ? processProxyUrl(proxy) : undefined,
+    validateStatus: () => true,
+  }).then(
+    (res) => {
+      const data = res && res.status === 200 && res.data ? res.data : {};
+      return {
+        teamToken: data.teamToken === true,
+        tokensUrl: typeof data.tokensUrl === 'string' && /^https?:\/\//.test(data.tokensUrl) ? data.tokensUrl : defaultTokensUrl,
+      };
+    },
+    () => {
+      printWarning('Could not reach the Mobiscroll registry to cancel the token. It is removed from this machine only.');
+      return { teamToken: false, tokensUrl: defaultTokensUrl };
+    },
+  );
+}
+
+function passwordLogin(useGlobalNpmrc, proxy, framework) {
   // input questions
   var questions = [
     {
@@ -392,14 +597,10 @@ function login(useGlobalNpmrc, proxy) {
         )
           .then(() => {
             console.log(`  Logged in as ${answers.username}`);
-            printFeedback('Successful login!\n');
-            const currDir = useGlobalNpmrc ? os.homedir() : process.cwd();
-            const usePnpm = testPnpm(currDir);
-            const useYarn = !usePnpm && testYarn(currDir);
-
-            if (useYarn && semver.gte(useYarn, '2.0.0')) {
-              updateAuthTokenInYarnrc(currDir);
-            }
+            printFeedback('Successful login!');
+            console.log(`  Your tokens: ${defaultTokensUrl}\n`);
+            syncTokenToYarnrc(useGlobalNpmrc);
+            afterTokenSaved(useGlobalNpmrc, framework);
             resolve(answers.username);
           })
           .catch((error) => {
@@ -655,7 +856,38 @@ function findMonorepoRoot(currDir) {
   return null;
 }
 
+/**
+ * After the trial package is installed: whether it will work. The registry's licence check returns the account's trial
+ * (Trial: 'active' / 'expired' / 'none', TrialValid: its end); the trial package only runs with an active trial
+ * ("Trial not found" without one). Nothing is printed when the registry doesn't send it (an older registry, or the
+ * api.mobiscroll.com fallback).
+ */
+function printTrialStatus(data) {
+  if (!data || !data.Trial) {
+    return;
+  }
+  const end = data.TrialValid
+    ? new Date(data.TrialValid).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+  if (data.Trial === 'none') {
+    printWarning(
+      `Your account hasn't started a free trial yet, so the trial package will show "Trial not found" in your app. Start the trial (sign in with the same account): ${chalk.gray(
+        'https://mobiscroll.com/accounttrialstarter',
+      )}, then reload your app. Already started it? Your app works right away; this message can still show here for a few minutes.`,
+    );
+  } else if (data.Trial === 'expired') {
+    printWarning(
+      `Your free trial ended${end ? ' on ' + end : ''}, so the trial package won't work in your app. To extend it, write to us at ${chalk.gray(
+        'support@mobiscroll.com',
+      )} or go to ${chalk.gray('https://mobiscroll.com/contact')}. Or buy a license: ${chalk.gray('https://mobiscroll.com/pricing')}`,
+    );
+  } else if (data.Trial === 'active' && end) {
+    printFeedback(`Your free trial is active until ${end}.`);
+  }
+}
+
 module.exports = {
+  printTrialStatus,
   checkTypescriptVersion: (packageJson) => {
     var version = (packageJson.devDependencies ? packageJson.devDependencies.typescript : '') || packageJson.dependencies.typescript;
 
@@ -722,7 +954,11 @@ module.exports = {
       callback();
     }
   },
-  checkMbscNpmLogin: (isTrial, useGlobalNpmrc, proxy, framework, installVersion, callback) => {
+  /**
+   * options: { password, noWait, nonInteractive } - see login()
+   */
+  checkMbscNpmLogin: (isTrial, useGlobalNpmrc, proxy, framework, installVersion, callback, options) => {
+    options = options || {};
     printFeedback('Checking logged in status...');
     // check if the user is already logged in
     runCommand('npm whoami --registry=' + mbscNpmUrl + (proxy ? ' --proxy ' + proxy : ''), false, true)
@@ -734,7 +970,7 @@ module.exports = {
             return userName;
           }
           console.log(`  Logging in to the Mobiscroll NPM registry...`);
-          return login(useGlobalNpmrc, proxy);
+          return login(useGlobalNpmrc, proxy, Object.assign({}, options, { framework }));
         },
         (err) => {
           console.log('Login error' + err);
@@ -749,7 +985,7 @@ module.exports = {
           if (data.HasAccess === false && data.License !== '') {
             if (data.License === 'complete') {
               printWarning(
-                `Looks like your maitenance agreement expired. You can check and renew your maintenance from your account at: ${chalk.gray(
+                `Looks like your maintenance agreement expired. You can check and renew your maintenance from your account at: ${chalk.gray(
                   'https://mobiscroll.com/account/licenses',
                 )}`,
               );
@@ -778,6 +1014,18 @@ module.exports = {
               `In case there's any trouble, submit a support ticket from: ${chalk.gray('https://mobiscroll.com/account/supporttickets')}`,
             );
 
+            if (options.nonInteractive) {
+              // --yes or no terminal (an agent, a script): no question, the trial goes on right away. The line says why,
+              // so an agent can tell the person to buy or renew. A person in a terminal is still asked (below).
+              printWarning(
+                `No active licence for ${chalk.gray('@mobiscroll/' + framework)}: installing the trial. Buy or renew at ${chalk.gray(
+                  'https://mobiscroll.com/account/licenses',
+                )}`,
+              );
+              callback(data.userName, true, data);
+              return;
+            }
+
             inquirer
               .prompt({
                 type: 'input',
@@ -796,20 +1044,12 @@ module.exports = {
             if (data.HasAccess) {
               if (!data.NpmUser && !data.NpmUserNoWarn) {
                 if (data.NpmUserSet) {
+                  // A personal token works for installs: warn, but don't stop (no password prompt anymore)
                   printWarning(
-                    `You are not logged in with the NPM user that was set up for your team. Please use the credentials for the NPM user.`,
+                    `Your team installs through its team NPM user, but you are signed in as ${userName}. To switch, run ${chalk.gray(
+                      'mobiscroll login',
+                    )} and pick the team NPM user on the approve page.`,
                   );
-                  printWarning(
-                    `You can check out the credentials of the NPM User on your licences page at: ${chalk.gray(
-                      'https://mobiscroll.com/account/licenses',
-                    )}`,
-                  );
-                  login(useGlobalNpmrc, proxy)
-                    .then((userName) => {
-                      getApiKey(userName, proxy, framework, installHandler);
-                    })
-                    .catch((err) => console.log('Login error ' + err));
-                  return;
                 } else {
                   printNpmWarning(
                     'team access not set up',
@@ -1038,6 +1278,7 @@ module.exports = {
   printLog,
   checkMeteor,
   login,
+  cancelRegistryToken,
   testYarn,
   appendContentToFile,
   checkAngularStandaloneComponent,
