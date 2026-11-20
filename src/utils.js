@@ -4,7 +4,7 @@ const exec = require('child_process').exec;
 const execSync = require('child_process').execSync;
 // The Mobiscroll npm registry. TESTING: points at the dev registry.
 // Switch back to 'https://npm.mobiscroll.com' before releasing.
-const mbscNpmUrl = 'https://npmdev.mobiscroll.com';
+const mbscNpmUrl = 'https://npm.mobiscroll.com';
 const mbscApiUrlBase = 'https://api.mobiscroll.com';
 // The website's Access Tokens page, when the registry doesn't say where it is (an older registry, --password login).
 // The browser sign-in and the logout take it from the registry, so a dev or staging registry points to its own website.
