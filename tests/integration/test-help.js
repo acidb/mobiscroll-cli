@@ -16,7 +16,7 @@ function run(args) {
 const screens = {
   '': {
     usage: 'Usage: mobiscroll <command> [options]',
-    has: ['config <type>', 'login', 'logout', 'start <type> <name>', '-g, --global', '-y, --yes', '-v, -V', '-h, --help'],
+    has: ['config <type>', 'login', 'logout', 'start <type> <name>', '-g, --global', '-y, --yes', '-v, -V, --version', '-h, --help'],
     agent: 'mobiscroll config react --yes --no-wait',
   },
   config: {
@@ -79,6 +79,23 @@ Object.keys(screens).forEach((command) => {
 test('-help (one dash) shows the main help', () => assert.ok(run(['-help']).startsWith(screens[''].usage)));
 test('-v prints the version', () => assert.strictEqual(run(['-v']).trim(), version));
 test('-V prints the version', () => assert.strictEqual(run(['-V']).trim(), version));
+test('--version prints the version', () => assert.strictEqual(run(['--version']).trim(), version));
+test('-y --version prints the version', () => assert.strictEqual(run(['-y', '--version']).trim(), version));
+
+// config has its own --version (the Mobiscroll UI version): the top-level --version must not catch it
+test('config --version <x> is still the config option', () =>
+  assert.ok(run(['config', '--version', '5.22.3', '--help']).startsWith(screens.config.usage)));
+test('logout --version is still an unknown option', () => {
+  let result;
+  try {
+    execFileSync(process.execPath, [cli, 'logout', '--version'], { encoding: 'utf8', stdio: 'pipe' });
+  } catch (err) {
+    result = err;
+  }
+  assert.ok(result, 'expected a failure');
+  assert.strictEqual(result.status, 1);
+  assert.ok(String(result.stderr).includes("unknown option `--version'"), 'stderr: ' + result.stderr);
+});
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
