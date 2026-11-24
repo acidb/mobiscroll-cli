@@ -47,27 +47,6 @@ module.exports = {
       console.log(standaloneCode);
     }
   },
-  configHelp: () => {
-    console.log('\n\n  Installs Mobiscroll resources from npm and includes the necessary dependencies.');
-    console.log('\n  Types:\n');
-    console.log('    angular         Use it for configuring Angular 2+ applications.\n');
-    console.log('    ionic           Use it for configuring Ionic 2+ applications.\n');
-    console.log('    javascript      Use it for configuring JavaScript applications. Use it with frameworks like: Knockout, Ember.js...\n');
-    console.log('    jquery          Use it for configuring jQuery based applications.\n');
-    console.log('    react           Use it for configuring React applications.\n');
-    console.log('    vue             Use it for configuring Vue applications.\n');
-  },
-  startHelp: () => {
-    console.log('\n\n  Clones the repository containing Mobiscroll website demos and installs all required dependencies.');
-    console.log('\n  Types:\n');
-    console.log('    angular         Installs the Angular demo project.)\n');
-    console.log('    react           Installs the React demo project.)\n');
-    console.log('    react-ts        Installs the React typescript demo project.)\n');
-    console.log('    vue             Installs the Vue demo project.)\n');
-    console.log('    vue-ts          Installs the Vue typescript demo project.)\n');
-    console.log('    javascript      Installs the plain JavaScript demo project.)\n');
-    console.log('    jquery          Installs the jQuery demo project.)\n');
-  },
   jsHelp: (framework) => {
     console.log(`\nFind more information about the usage on the ` + terminalLink('documentation page:', `https://mobiscroll.com/docs/${framework}`));
     console.log(`\nFind usage examples on the ` + terminalLink('demo page:', `https://demo.mobiscroll.com/${framework}/eventcalendar/`) + '\n');

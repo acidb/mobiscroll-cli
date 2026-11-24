@@ -9,6 +9,7 @@ const configAngular = require('./src/configAngular.js').configAngular;
 const chalk = require('chalk');
 const path = require('path');
 const helperMessages = require('./src/helperMessages.js');
+const help = require('./src/help.js');
 const ncp = require('ncp').ncp;
 const figlet = require('figlet');
 const os = require('os');
@@ -30,8 +31,20 @@ var useGlobalNpmrc = false;
 var proxyUrl = '';
 var useScss = undefined;
 var startIoncVesrion = '';
+var isYes = false;
+var usePasswordLogin = false;
+var useNoWait = false;
 
 process.env.HOME = process.env.HOME || ''; // fix npm-cli-login plugin on windows
+
+// --yes, or no terminal to type into (most AI agents and scripts): never prompt, use the safe default or stop
+function isNonInteractive() {
+  return isYes || !process.stdin.isTTY || !process.stdout.isTTY;
+}
+
+function loginOptions() {
+  return { password: usePasswordLogin, noWait: useNoWait, nonInteractive: isNonInteractive() };
+}
 
 function checkUpdate(proxy) {
   let proxyParam = '';
@@ -45,7 +58,14 @@ function checkUpdate(proxy) {
       if (npmCliVersion) {
         npmCliVersion = npmCliVersion.trim();
 
-        if (localCliVersion != npmCliVersion) {
+        if (localCliVersion != npmCliVersion && isNonInteractive()) {
+          printWarning(
+            `The Mobiscroll CLI has an update available (${localCliVersion} => ${npmCliVersion}). To install it, run ${chalk.gray(
+              'npm install -g @mobiscroll/cli@latest',
+            )}`,
+          );
+          resolve();
+        } else if (localCliVersion != npmCliVersion) {
           // if the two versions are not equal ask for update
           inquirer
             .prompt({
@@ -99,23 +119,39 @@ function removeTokenFromNpmrc(currDir) {
   const npmrcPath = path.resolve(currDir, '.npmrc');
   const yarnRcPath = path.resolve(currDir, '.yarnrc.yml');
   if (fs.existsSync(npmrcPath)) {
-    let content = fs.readFileSync(npmrcPath).toString();
-    if (content.length > 5) {
-      // there is difference in the format of the auth token
-      const regexNpmFormat = /\/\/npm\.mobiscroll\.com\/:_authToken=.+\s\S+npm.mobiscroll.com\/?/gim;
-      const regexCliFormat = /@mobiscroll:registry=https:\/\/npm\.mobiscroll\.com(\/?)\s+(\S+)$/gim;
-      content = content.replace(regexCliFormat, '').replace(regexNpmFormat, '');
+    // cancel the token on the registry first (personal tokens only), then remove it from the file
+    utils.cancelRegistryToken(npmrcPath, proxyUrl).then((result) => {
+      const original = fs.readFileSync(npmrcPath).toString();
+      if (original.length > 5) {
+        // there is difference in the format of the auth token
+        // the registry's host (utils.npmUrl)
+        const host = utils.npmUrl
+          .replace(/^https?:\/\//, '')
+          .replace(/\/$/, '')
+          .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regexNpmFormat = new RegExp('\\/\\/' + host + '\\/:_authToken=.+\\s\\S+' + host + '\\/?', 'gim');
+        const regexCliFormat = new RegExp('@mobiscroll:registry=https?:\\/\\/' + host + '(\\/?)\\s+(\\S+)$', 'gim');
+        const content = original.replace(regexCliFormat, '').replace(regexNpmFormat, '');
 
-      utils.writeToFile(npmrcPath, content, () => {
-        printFeedback('Successful logout!\n');
-      });
-    } else {
-      notLoggedInFeedback();
-    }
+        if (content !== original) {
+          utils.writeToFile(npmrcPath, content, () => {
+            printFeedback('Successful logout!\n');
+            if (result.teamToken) {
+              // the registry doesn't cancel a team npm user's token: teammates and CI may use it
+              printWarning(`This was a team token: it still works elsewhere. Cancel it on ${result.tokensUrl} if needed.\n`);
+            }
+          });
+        } else {
+          notLoggedInFeedback();
+        }
+      } else {
+        notLoggedInFeedback();
+      }
 
-    if (fs.existsSync(yarnRcPath)) {
-      utils.updateAuthTokenInYarnrc(currDir, true);
-    }
+      if (fs.existsSync(yarnRcPath)) {
+        utils.updateAuthTokenInYarnrc(currDir, true);
+      }
+    });
   } else {
     console.log(`No${useGlobalNpmrc ? ' global' : ' local'} .npmrc file found.`);
     notLoggedInFeedback();
@@ -160,6 +196,18 @@ function handleStartIonicVersion(version) {
 
 function handleGlobalInstall() {
   useGlobalNpmrc = true;
+}
+
+function handleYes() {
+  isYes = true;
+}
+
+function handlePasswordLogin() {
+  usePasswordLogin = true;
+}
+
+function handleNoWait() {
+  useNoWait = true;
 }
 
 function config(settings, callback) {
@@ -236,30 +284,42 @@ function cloneProject(url, type, framework, name, newAppLocation, gitOptions, ca
       process.chdir(newAppLocation); // change directory to node modules folder
       console.log(`Installing dependencies may take several minutes:\n`);
 
-      utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, framework, mobiscrollVersion, (userName, useTrial) => {
-        let configObject = {
-          projectType: type.replace('-ts', ''),
-          currDir: newAppLocation,
-          userName,
-          useTrial,
-          mobiscrollVersion: 5,
-          proxyUrl,
-          package: type.replace('-ts', ''),
-        };
+      utils.checkMbscNpmLogin(
+        isTrial,
+        useGlobalNpmrc,
+        proxyUrl,
+        framework,
+        mobiscrollVersion,
+        (userName, useTrial, data) => {
+          let configObject = {
+            projectType: type.replace('-ts', ''),
+            currDir: newAppLocation,
+            userName,
+            useTrial,
+            mobiscrollVersion: 5,
+            proxyUrl,
+            package: type.replace('-ts', ''),
+            nonInteractive: isNonInteractive(),
+          };
 
-        try {
-          packageJson = require(path.resolve(newAppLocation, 'package.json'));
-          configObject.packageJson = packageJson;
-        } catch (err) {
-          utils.printError('Could not open package.json file.\n\n' + err);
-        }
-
-        utils.installMobiscroll(configObject, () => {
-          if (callback) {
-            callback();
+          try {
+            packageJson = require(path.resolve(newAppLocation, 'package.json'));
+            configObject.packageJson = packageJson;
+          } catch (err) {
+            utils.printError('Could not open package.json file.\n\n' + err);
           }
-        });
-      });
+
+          utils.installMobiscroll(configObject, () => {
+            if (callback) {
+              callback();
+            }
+            if (useTrial) {
+              utils.printTrialStatus(data);
+            }
+          });
+        },
+        loginOptions(),
+      );
     })
     .catch((err) => {
       utils.printError('Could not clone starter project from git.\n\n' + err);
@@ -301,7 +361,13 @@ function askStyleSheetType(version, useScss, config, callback) {
   }
 
   // only ask the scss install if the version is larger then 4.7.0
-  if (semver.gte(version, '4.7.0') && useScss === undefined && !skipQuestion) {
+  if (semver.gte(version, '4.7.0') && useScss === undefined && !skipQuestion && isNonInteractive()) {
+    // the question's default, without asking
+    console.log(`\nUsing ${isIonic ? 'SCSS' : 'CSS'} stylesheets. Pass ${chalk.gray('--scss')} or ${chalk.gray('--css')} to choose.`);
+    if (callback) {
+      callback(isIonic);
+    }
+  } else if (semver.gte(version, '4.7.0') && useScss === undefined && !skipQuestion) {
     let choices = ['CSS', 'SCSS'];
     console.log('\n');
     inquirer
@@ -330,7 +396,9 @@ function startProject(url, type, framework, name, gitOptions, callback) {
   var currDir = process.cwd(), // get the directory where the mobiscroll command was executed
     newAppLocation = path.resolve(currDir, name);
 
-  if (fs.existsSync(newAppLocation)) {
+  if (fs.existsSync(newAppLocation) && isNonInteractive()) {
+    utils.printError(`The directory .\\${name} already exists. Run the command again with another project name.`);
+  } else if (fs.existsSync(newAppLocation)) {
     inquirer
       .prompt({
         type: 'input',
@@ -406,7 +474,9 @@ Done. Now run:
 }
 
 function handleStart(type, name) {
-  if (!name) {
+  if (!name && isNonInteractive()) {
+    utils.printError(`Pass a project name: ${chalk.gray(`mobiscroll start ${type || '<type>'} <name>`)}`);
+  } else if (!name) {
     inquirer
       .prompt([
         {
@@ -479,38 +549,54 @@ function handleConfig(projectType) {
         config(configObject);
       });
     } else if (isNpmSource) {
-      utils.checkMbscNpmLogin(isTrial, useGlobalNpmrc, proxyUrl, framework, mobiscrollVersion, (userName, useTrial, data) => {
-        utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
-          let configObject = {
-            projectType,
-            currDir,
-            packageJsonLocation,
-            packageJson,
-            jsFileName,
-            cssFileName,
-            isNpmSource,
-            apiKey: useTrial ? data.TrialCode : '',
-            isLite,
-            useScss,
-            userName,
-            useTrial,
-            mobiscrollVersion,
-            proxyUrl,
-            framework,
-            legacyPeerFlag,
-            package: data.Package,
-          };
+      utils.checkMbscNpmLogin(
+        isTrial,
+        useGlobalNpmrc,
+        proxyUrl,
+        framework,
+        mobiscrollVersion,
+        (userName, useTrial, data) => {
+          utils.removeUnusedPackages(projectType, packageJsonLocation, useTrial, false, () => {
+            let configObject = {
+              projectType,
+              currDir,
+              packageJsonLocation,
+              packageJson,
+              jsFileName,
+              cssFileName,
+              isNpmSource,
+              apiKey: useTrial ? data.TrialCode : '',
+              isLite,
+              useScss,
+              userName,
+              useTrial,
+              mobiscrollVersion,
+              proxyUrl,
+              framework,
+              legacyPeerFlag,
+              package: data.Package,
+              nonInteractive: isNonInteractive(),
+            };
 
-          // Install mobiscroll npm package
-          utils.installMobiscroll(configObject, (version) => {
-            configObject.mobiscrollVersion = version;
-            askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
-              configObject.useScss = isScssSelected;
-              config(configObject);
+            // Install mobiscroll npm package
+            utils.installMobiscroll(configObject, (version) => {
+              configObject.mobiscrollVersion = version;
+              askStyleSheetType(version, useScss, configObject, (isScssSelected) => {
+                configObject.useScss = isScssSelected;
+                let trialNoted = false;
+                config(configObject, () => {
+                  // last: whether the installed trial will work (some Ionic paths call back more than once)
+                  if (useTrial && !trialNoted) {
+                    trialNoted = true;
+                    utils.printTrialStatus(data);
+                  }
+                });
+              });
             });
           });
-        });
-      });
+        },
+        loginOptions(),
+      );
     } else {
       // if no-npm flag is set
       var files,
@@ -738,7 +824,7 @@ function handleConfig(projectType) {
 }
 
 function handleLogin() {
-  utils.login(useGlobalNpmrc, proxyUrl);
+  utils.login(useGlobalNpmrc, proxyUrl, loginOptions());
 }
 
 function handleLogout() {
@@ -747,26 +833,35 @@ function handleLogout() {
 
 // options
 program
-  .version(localCliVersion, '-v')
   .option(
     '-g, --global',
-    "Modify the Mobiscroll npm login credentials save/use location to the global .npmrc file. Starting from cli v0.6.0 by default it is saved in the application's directory.",
+    "Save and use the login in your user-level ~/.npmrc instead of the project's .npmrc. npm still prefers a token in the project's .npmrc.",
     handleGlobalInstall,
   )
-  .usage('[commands] [options]');
+  .option('-y, --yes', 'Never ask questions (automatic without a terminal)', handleYes)
+  // not .version(): commander 2 can't take two flags for it
+  .option('-v, -V', 'output the version number', () => {
+    process.stdout.write(localCliVersion + '\n');
+    process.exit(0);
+  })
+  .usage('<command> [options]');
+program.helpInformation = () => help.main(program);
+
+const noWaitOptionText = 'Print the sign-in link and code, then stop; rerun after approving';
+const passwordOptionText = 'Sign in with user name and password (or the team npm user secret) instead of the browser';
+const proxyOptionText = 'Pass a proxy URL which will be passed to the internal requests.';
 
 // commands
 
 // config command
-program
+const configCommand = program
   .command('config [types]')
   .description(
-    `Configures your current project with the Mobiscroll resources and dependencies. For more information run the ${chalk.gray(
+    `Installs and configures Mobiscroll UI in your current project, signing you in first if needed. For more information run the ${chalk.gray(
       'mobiscroll config --help',
     )} command.\n`,
   )
   .action(handleConfig)
-  .on('--help', helperMessages.configHelp)
   //.option('-l, --lazy', 'Skipping MbscModule injection from app.module.ts in case of Ionic lazy loading project.\n', handleLazy)
   .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
   .option('-i, --lite', 'The project will be tuned up with lite configuration.\n', handleLite)
@@ -797,24 +892,39 @@ program
     '--legacy-peer-deps',
     `Pass the ${chalk.gray('--legacy-peer-deps')} flag to internally executed npm install command.`,
     handleLegacyPeerFlags,
-  );
+  )
+  .option('--password', passwordOptionText, handlePasswordLogin)
+  .option('--no-wait', noWaitOptionText, handleNoWait);
+configCommand.helpInformation = () => help.config(configCommand);
 
-program
+const loginCommand = program
   .command('login')
-  .description('Logs you in to the Mobiscroll npm registry. (Use the --global flag if you want to login globally). \n')
+  .description(
+    'Logs you in to the Mobiscroll npm registry: approve the sign-in in your browser. (Use the --global flag if you want to login globally). \n',
+  )
+  .option('--password', passwordOptionText, handlePasswordLogin)
+  .option('--no-wait', noWaitOptionText, handleNoWait)
+  .option('--proxy [proxy]', proxyOptionText, handleProxy)
   .action(handleLogin);
+loginCommand.helpInformation = () => help.login(loginCommand);
 
-program
+const logoutCommand = program
   .command('logout')
-  .description('Logs you out from the Mobiscroll npm registry. (Use the --global flag if you want to log out globally).\n')
+  .description(
+    "Logs you out from the Mobiscroll npm registry and cancels your token (a team npm user's token is only removed from the file). (Use the --global flag if you want to log out globally).\n",
+  )
+  .option('--proxy [proxy]', proxyOptionText, handleProxy)
   .action(handleLogout);
+logoutCommand.helpInformation = () => help.logout(logoutCommand);
 
-program
+const startCommand = program
   .command('start [types] [name]')
-  .on('--help', helperMessages.startHelp)
+  .description(`Creates a new Mobiscroll UI starter project and installs the Mobiscroll UI packages from npm.`)
   .option('-t, --trial', 'The project will be tuned up with trial configuration.\n', handleTrial)
-  .description(`Creates a new Mobiscroll starter project and installs the Mobiscroll resources from npm.`)
+  .option('--password', passwordOptionText, handlePasswordLogin)
+  .option('--proxy [proxy]', proxyOptionText, handleProxy)
   .action(handleStart);
+startCommand.helpInformation = () => help.start(startCommand);
 
 program.on('command:*', function () {
   // warning on unknown commands
