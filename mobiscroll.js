@@ -839,12 +839,14 @@ program
     handleGlobalInstall,
   )
   .option('-y, --yes', 'Never ask questions (automatic without a terminal)', handleYes)
-  // not .version(): commander 2 can't take two flags for it
+  // not .version(): commander 2 can't take two flags for it; --version is handled before parse (see below)
   .option('-v, -V', 'output the version number', () => {
     process.stdout.write(localCliVersion + '\n');
     process.exit(0);
   })
   .usage('<command> [options]');
+// The help row also names --version; commander matches -v / -V through the option's short / long, not this text
+program.options.find((o) => o.short === '-v').flags = '-v, -V, --version';
 program.helpInformation = () => help.main(program);
 
 const noWaitOptionText = 'Print the sign-in link and code, then stop; rerun after approving';
@@ -932,6 +934,15 @@ program.on('command:*', function () {
   console.error('\nSee --help for a list of available commands.');
   process.exit(1);
 });
+
+// --version: commander 2 can't give the -v option a third flag, and config has its own --version (the Mobiscroll UI
+// version to install), so it is handled here, and only when no command is given (mobiscroll --version, also with
+// -g / -y). Any other word (a command, an option value) leaves the arguments to commander, exactly as before.
+const topArgs = process.argv.slice(2);
+if (topArgs.includes('--version') && topArgs.every((arg) => arg.startsWith('-'))) {
+  process.stdout.write(localCliVersion + '\n');
+  process.exit(0);
+}
 
 program.parse(process.argv);
 

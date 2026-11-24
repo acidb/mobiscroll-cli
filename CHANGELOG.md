@@ -5,6 +5,12 @@ All notable changes to the Mobiscroll CLI are documented in this file. Full rele
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - Unreleased
+
+### Fixed
+
+- `mobiscroll --version` prints the CLI version, like `-v` and `-V`. `mobiscroll config --version <x>` still selects the Mobiscroll UI version to install.
+
 ## [2.0.0] - 2026-11-20
 
 ### Added

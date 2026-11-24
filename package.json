@@ -1,6 +1,6 @@
 {
   "name": "@mobiscroll/cli",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Installs and configures Mobiscroll UI components (Angular, Ionic, React, Vue, JavaScript, jQuery) from the Mobiscroll npm registry",
   "keywords": [
     "mobiscroll",
